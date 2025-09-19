@@ -836,3 +836,84 @@ style.textContent = `
     }
 `;
 document.head.appendChild(style);
+
+// Tariff Rate Trends Chart
+document.addEventListener("DOMContentLoaded", function () {
+  const ctx = document.getElementById("trends-chart").getContext("2d");
+
+  // Example data for the chart
+  const data = {
+    labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", 
+             "Aug", "Sep", "Oct", "Nov", "Des"], // X-axis labels
+    datasets: [
+      {
+        label: "Tariff Rate (%)",
+        data: [5, 10, 8, 12, 7, 9, 11, 10, 9, 15, 16, 17], // Y-axis data
+        backgroundColor: "rgba(59, 130, 246, 0.2)", // Light blue
+        borderColor: "rgba(59, 130, 246, 1)", // Blue
+        borderWidth: 2,
+        fill: true,
+      },
+    ],
+  };
+
+  // Chart configuration
+  const config = {
+    type: "line", // Line chart
+    data: data,
+    options: {
+      responsive: true,
+      plugins: {
+        legend: {
+          display: true,
+          position: "top",
+        },
+      },
+      scales: {
+        x: {
+          title: {
+            display: true,
+            text: "Months",
+          },
+        },
+        y: {
+          title: {
+            display: true,
+            text: "Tariff Rate (%)",
+          },
+          beginAtZero: true,
+        },
+      },
+    },
+  };
+
+  // Create and render the chart
+  new Chart(ctx, config);
+});
+
+// Clear Chart History
+async function clearHistory() {
+  try {
+    // Send DELETE request to the backend
+    const response = await fetch(`${API_BASE}/history`, {
+      method: "DELETE",
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    // Clear the history table body
+    const historyTableBody = document.getElementById("history-table-body");
+    historyTableBody.innerHTML = "";
+
+    // Hide the history content and show the "No calculations yet" message
+    document.getElementById("history-content").classList.add("hidden");
+    document.getElementById("history-empty").classList.remove("hidden");
+
+    console.log("History cleared!");
+  } catch (error) {
+    console.error("Error clearing history:", error);
+    showError("Failed to clear history. Please try again.");
+  }
+}
