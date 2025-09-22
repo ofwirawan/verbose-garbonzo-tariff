@@ -76,7 +76,7 @@ public class TariffController {
                         error -> error.getField(),
                         error -> error.getDefaultMessage()
                 )));
-        errorResponse.put("timestamp", java.time.LocalDateTime.now().toString);
+        errorResponse.put("timestamp", java.time.LocalDateTime.now().toString());
         return errorResponse;
     }
 
