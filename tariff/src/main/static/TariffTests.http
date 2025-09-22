@@ -1,79 +1,123 @@
-# Tariff Calculator API Tests
+# =====================================
+# Tariff Calculator API Test Suite
+# Using ISO-3166-1 Numeric Country Codes
+# =====================================
 
-### Health Check
+
+# -----------------------
+# Health Check
+# -----------------------
 GET http://localhost:8080/api/v1/tariff/health
+
 
 ###
 
-### Calculate Tariff - World (000) to USA (840)
+
+# -----------------------
+# Case 1: World (000) → USA (840)
+# -----------------------
+# "000" is a special code for World
+# USA = 840
+# Original Product Description: Steel pipes
 POST http://localhost:8080/api/v1/tariff/calculate
 Content-Type: application/json
+
 
 {
     "exportingCountry": "000",
     "importingCountry": "840",
-    "productDescription": "Steel pipes",
+    "productDescription": "730490",
     "tradeValue": 10000.00,
     "tradeDate": "2001-01-15",
     "currency": "USD"
 }
 
+
 ###
 
-### Calculate Tariff - China to USA
+
+# -----------------------
+# Case 2: China (156) → USA (840)
+# -----------------------
+# China = 156
+# USA   = 840
+# Original Product Description: Electronics
 POST http://localhost:8080/api/v1/tariff/calculate
 Content-Type: application/json
 
+
 {
-    "exportingCountry": "CHN",
-    "importingCountry": "USA",
-    "productDescription": "Electronics",
+    "exportingCountry": "156",
+    "importingCountry": "840",
+    "productDescription": "851712",
     "tradeValue": 50000.00,
-    "tradeDate": "2024-02-01",
+    "tradeDate": "2013-02-01",
     "currency": "USD"
 }
 
+
 ###
 
-### Calculate Tariff - Germany to Japan
+
+# -----------------------
+# Case 3: Germany (276) → Japan (392)
+# -----------------------
+# Germany = 276
+# Japan   = 392
+# Original Product Description: Automotive parts
 POST http://localhost:8080/api/v1/tariff/calculate
 Content-Type: application/json
 
+
 {
-    "exportingCountry": "DEU",
-    "importingCountry": "JPN",
-    "productDescription": "Automotive parts",
+    "exportingCountry": "276",
+    "importingCountry": "392",
+    "productDescription": "870899",
     "tradeValue": 25000.00,
-    "tradeDate": "2024-03-15",
+    "tradeDate": "2015-03-15",
     "currency": "EUR"
 }
 
+
 ###
 
-### Test Validation Error - Invalid Data
+
+# -----------------------
+# Case 4: Validation Error
+# -----------------------
+# Invalid data to test error handling:
+# - Empty exporting country
+# - Invalid importing country ("999")
+# - Empty product description
+# - Negative trade value
 POST http://localhost:8080/api/v1/tariff/calculate
 Content-Type: application/json
+
 
 {
     "exportingCountry": "",
-    "importingCountry": "US",
+    "importingCountry": "999",
     "productDescription": "",
     "tradeValue": -100,
-    "tradeDate": "2024-01-15",
+    "tradeDate": "2010-01-15",
     "currency": "USD"
 }
 
+
 ###
 
-### Calculate Tariff - Canada to Mexico
+
+# -----------------------
+# Case 5: USA (840) → NAFTA (N97) Automotive parts (870899), Year 2000
+# -----------------------
 POST http://localhost:8080/api/v1/tariff/calculate
 Content-Type: application/json
 
 {
-    "exportingCountry": "CAN",
-    "importingCountry": "MEX",
-    "productDescription": "Agricultural products",
-    "tradeValue": 1000.00,
-    "tradeDate": "2024-04-10",
-    "currency": "CAD"
+    "exportingCountry": "N97",
+    "importingCountry": "840",
+    "productDescription": "870899",
+    "tradeValue": 50000.00,
+    "tradeDate": "2000-01-01",
+    "currency": "USD"
 }
