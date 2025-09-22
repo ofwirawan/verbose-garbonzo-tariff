@@ -10,6 +10,8 @@ import lombok.Setter;
 @Configuration
 @ConfigurationProperties(prefix = "wits")
 public class WitsProperties {
+//Maps application.properties values into Java fields.
+//Keeps URLs/datasets configurable, no hardcoding in code.
 
     private String baseUrl;
 

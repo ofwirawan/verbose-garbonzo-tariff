@@ -14,6 +14,8 @@ import java.util.concurrent.TimeUnit;
 
 @Configuration
 public class WebClientConfig {
+//Creates one shared WebClient bean with base URL, timeouts, User-Agent.
+//Every service can inject and reuse it.
 
     private final WitsProperties props;
 
@@ -37,7 +39,7 @@ public class WebClientConfig {
         return WebClient.builder()
                 .baseUrl(props.getBaseUrl()) // from application.properties
                 .defaultHeader("User-Agent", "TariffApp/1.0")
-                .clientConnector(new ReactorClientHttpConnector(httpClient)) // ✅ correct class
+                .clientConnector(new ReactorClientHttpConnector(httpClient))
                 .build();
     }
 }
