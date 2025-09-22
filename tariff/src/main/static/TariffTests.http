@@ -1,0 +1,79 @@
+# Tariff Calculator API Tests
+
+### Health Check
+GET http://localhost:8080/api/v1/tariff/health
+
+###
+
+### Calculate Tariff - World (000) to USA (840)
+POST http://localhost:8080/api/v1/tariff/calculate
+Content-Type: application/json
+
+{
+    "exportingCountry": "000",
+    "importingCountry": "840",
+    "productDescription": "Steel pipes",
+    "tradeValue": 10000.00,
+    "tradeDate": "2001-01-15",
+    "currency": "USD"
+}
+
+###
+
+### Calculate Tariff - China to USA
+POST http://localhost:8080/api/v1/tariff/calculate
+Content-Type: application/json
+
+{
+    "exportingCountry": "CHN",
+    "importingCountry": "USA",
+    "productDescription": "Electronics",
+    "tradeValue": 50000.00,
+    "tradeDate": "2024-02-01",
+    "currency": "USD"
+}
+
+###
+
+### Calculate Tariff - Germany to Japan
+POST http://localhost:8080/api/v1/tariff/calculate
+Content-Type: application/json
+
+{
+    "exportingCountry": "DEU",
+    "importingCountry": "JPN",
+    "productDescription": "Automotive parts",
+    "tradeValue": 25000.00,
+    "tradeDate": "2024-03-15",
+    "currency": "EUR"
+}
+
+###
+
+### Test Validation Error - Invalid Data
+POST http://localhost:8080/api/v1/tariff/calculate
+Content-Type: application/json
+
+{
+    "exportingCountry": "",
+    "importingCountry": "US",
+    "productDescription": "",
+    "tradeValue": -100,
+    "tradeDate": "2024-01-15",
+    "currency": "USD"
+}
+
+###
+
+### Calculate Tariff - Canada to Mexico
+POST http://localhost:8080/api/v1/tariff/calculate
+Content-Type: application/json
+
+{
+    "exportingCountry": "CAN",
+    "importingCountry": "MEX",
+    "productDescription": "Agricultural products",
+    "tradeValue": 1000.00,
+    "tradeDate": "2024-04-10",
+    "currency": "CAD"
+}

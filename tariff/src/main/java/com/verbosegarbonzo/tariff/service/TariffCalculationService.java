@@ -27,7 +27,7 @@ public class TariffCalculationService {
         
         try {
             log.info("Starting tariff calculation for: {} -> {}", 
-                     request.getExportingCountry(), request.getImportingCountry());
+                    request.getExportingCountry(), request.getImportingCountry());
 
             // Set basic request data in response
             mapRequestToResponse(request, response);
@@ -89,7 +89,7 @@ public class TariffCalculationService {
 
     private String buildWITSUrl(TariffCalculationRequest request) {
         // Build URL based on WITS API format
-        return String.format("%s/reporter%s/partner%s/product%s/year%d/datatype/reported?format=JSON",
+        return String.format("%s/reporter/%s/partner/%s/product/%s/year/%d/datatype/reported?format=JSON",
                 WITS_BASE_URL,
                 request.getImportingCountry(),
                 request.getExportingCountry(), 
@@ -139,3 +139,4 @@ public class TariffCalculationService {
         response.setCalculationTimestamp(LocalDateTime.now());
     }
 }
+
