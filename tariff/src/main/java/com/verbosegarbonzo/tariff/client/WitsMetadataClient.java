@@ -1,5 +1,7 @@
 package com.verbosegarbonzo.tariff.client;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.verbosegarbonzo.tariff.config.WitsProperties;
 import com.verbosegarbonzo.tariff.model.CountryRef;
 import com.verbosegarbonzo.tariff.model.ProductRef;
@@ -29,15 +31,46 @@ public class WitsMetadataClient {
     @PostConstruct
     public void loadMetadata() {
         loadCountries();
-        loadProducts();
+        //loadProducts();
     }
 
     private void loadCountries() {
-        String xml = webClient.get()
-                .uri(props.getMetadata().getCountry() + "/ALL")
-                .retrieve()
-                .bodyToMono(String.class)
-                .block();
+        try {
+            String xml = webClient.get()
+                    .uri(props.getMetadata().getCountry() + "/ALL")
+                    .retrieve()
+                    .bodyToMono(String.class)
+                    .block();
+    
+            if (xml == null || xml.isEmpty()) {
+                System.err.println("No XML received from WITS countries endpoint.");
+                return;
+            }
+    
+            //System.out.println("RAW XML: " + xml.substring(0, Math.min(500, xml.length())));
+    
+            XmlMapper xmlMapper = new XmlMapper();
+            JsonNode root = xmlMapper.readTree(xml);
+    
+            List<CountryRef> refs = new ArrayList<>();
+    
+            JsonNode countries = root.path("countries");
+            for (JsonNode country : countries.withArray("country")) {
+                String iso3 = country.path("iso3Code").asText();
+                String name = country.path("name").asText();
+                String numeric = country.path("countrycode").asText(); //from attribute
+    
+                if (!iso3.isEmpty() && !name.isEmpty() && numeric.matches("\\d+")) { //to eliminate groups with no numeric code
+                    refs.add(new CountryRef(name, iso3, numeric));
+                }
+            }
+    
+            refs.forEach(c -> countriesByIso3.put(c.getIso3(), c));
+    
+            System.out.println("Loaded " + countriesByIso3.size() + " countries into cache.");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
         //Parse XML into CountryRef list (using Jackson XML)
         //Fill countriesByIso3 map and list
@@ -56,8 +89,11 @@ public class WitsMetadataClient {
 
     public List<CountryRef> searchCountries(String query) {
         if (query == null || query.length() < 2) return Collections.emptyList();
+    
         return countriesByIso3.values().stream()
-                .filter(c -> c.getName().toLowerCase().contains(query.toLowerCase()))
+                .filter(c -> c.getName().toLowerCase().contains(query.toLowerCase())
+                          || c.getIso3().toLowerCase().contains(query.toLowerCase())) //can search based on ISO3 code
+                .sorted(Comparator.comparing(CountryRef::getName)) //sorted for better UX
                 .limit(10) //limit to only 10 results
                 .collect(Collectors.toList());
     }
