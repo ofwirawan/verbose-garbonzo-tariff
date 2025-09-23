@@ -6,6 +6,8 @@ import com.verbosegarbonzo.tariff.config.WitsProperties;
 import com.verbosegarbonzo.tariff.model.CountryRef;
 import com.verbosegarbonzo.tariff.model.ProductRef;
 import jakarta.annotation.PostConstruct;
+
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 
@@ -23,8 +25,8 @@ public class WitsMetadataClient {
     private final Map<String, CountryRef> countriesByIso3 = new ConcurrentHashMap<>();
     private final List<ProductRef> products = new ArrayList<>();
 
-    public WitsMetadataClient(WebClient witsWebClient, WitsProperties props) {
-        this.webClient = witsWebClient;
+    public WitsMetadataClient(@Qualifier("metadataWebClient") WebClient metadataWebClient, WitsProperties props) {
+        this.webClient = metadataWebClient;
         this.props = props;
     }
 
@@ -65,6 +67,7 @@ public class WitsMetadataClient {
                 }
             }
     
+            countriesByIso3.clear();
             refs.forEach(c -> countriesByIso3.put(c.getIso3(), c));
     
             System.out.println("Loaded " + countriesByIso3.size() + " countries into cache.");

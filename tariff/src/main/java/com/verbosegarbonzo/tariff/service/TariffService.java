@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.verbosegarbonzo.tariff.config.WitsProperties;
 import com.verbosegarbonzo.tariff.model.CalculateRequest;
 import com.verbosegarbonzo.tariff.model.CalculateResponse;
+
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -24,8 +26,8 @@ public class TariffService {
     private final WitsProperties props;
     private final ObjectMapper om = new ObjectMapper(); //JSON parsing
 
-    public TariffService(WebClient witsWebClient, WitsProperties props) {
-        this.webClient = witsWebClient;
+    public TariffService(@Qualifier("tariffWebClient") WebClient tariffWebClient, WitsProperties props) {
+        this.webClient = tariffWebClient;
         this.props = props;
     }
 
@@ -33,21 +35,21 @@ public class TariffService {
         final int year = req.getTransactionDate().getYear();
 
         final String path = props.getTariff().getDataset()
-                + "/reporter/" + req.getReporter()
-                + "/partner/" + req.getPartner()
-                + "/product/" + req.getHs6()
-                + "/year/" + year
-                + "/datatype/reported?format=JSON";
+        + "/reporter/" + req.getReporter()
+        + "/partner/" + req.getPartner()
+        + "/product/" + req.getHs6()
+        + "/year/" + year
+        + "/datatype/reported?format=JSON";
 
-        final String dataUrl = props.getTariff().getBaseUrl() + path; 
+        final String dataUrl = props.getTariff().getBaseUrl() + "/" + path;
 
         //WebClient call hits WITS and waits for the response
         final String raw = webClient.get()
-                .uri(path)
-                .accept(MediaType.APPLICATION_JSON)
-                .retrieve()
-                .bodyToMono(String.class)
-                .block(); // block() is fine in a service method in this project
+            .uri("/" + path) //prepend slash to be safe
+            .accept(MediaType.APPLICATION_JSON)
+            .retrieve()
+            .bodyToMono(String.class)
+            .block(); // block() is fine in a service method in this project
 
         final BigDecimal ratePercent = extractMfnSimpleAveragePercent(raw);
         if (ratePercent == null) {
@@ -98,7 +100,7 @@ public class TariffService {
                 JsonNode observations = entry.getValue().path("observations");
                 JsonNode firstObs = observations.path("0");
                 if (firstObs.isArray() && firstObs.size() > 0 && firstObs.get(0).isNumber()) {
-                    //return as percentage
+                    //return as percentage 
                     return new BigDecimal(firstObs.get(0).asText());
                 }
             }

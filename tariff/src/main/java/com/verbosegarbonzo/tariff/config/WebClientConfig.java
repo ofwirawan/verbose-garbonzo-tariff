@@ -23,23 +23,31 @@ public class WebClientConfig {
         this.props = props;
     }
 
-    @Bean
-    public WebClient witsWebClient() {
-        HttpClient httpClient = HttpClient.create()
-                // connection timeout (5 seconds)
+    private HttpClient httpClient() {
+        return HttpClient.create()
                 .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 5000)
-                // response timeout (5 seconds)
                 .responseTimeout(Duration.ofSeconds(5))
-                // read/write timeouts
                 .doOnConnected(conn ->
                         conn.addHandlerLast(new ReadTimeoutHandler(5, TimeUnit.SECONDS))
                             .addHandlerLast(new WriteTimeoutHandler(5, TimeUnit.SECONDS))
                 );
+    }
 
+    @Bean
+    public WebClient metadataWebClient() {
         return WebClient.builder()
-                .baseUrl(props.getBaseUrl()) // from application.properties
+                .baseUrl(props.getBaseUrl()) //metadata base url
                 .defaultHeader("User-Agent", "TariffApp/1.0")
-                .clientConnector(new ReactorClientHttpConnector(httpClient))
+                .clientConnector(new ReactorClientHttpConnector(httpClient()))
                 .build();
     }
-}
+
+    @Bean
+    public WebClient tariffWebClient() {
+        return WebClient.builder()
+                .baseUrl(props.getTariff().getBaseUrl()) //tariff base url
+                .defaultHeader("User-Agent", "TariffApp/1.0")
+                .clientConnector(new ReactorClientHttpConnector(httpClient()))
+                .build();
+    }
+    }
