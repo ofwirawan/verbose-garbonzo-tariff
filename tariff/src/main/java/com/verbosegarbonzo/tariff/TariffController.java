@@ -444,12 +444,17 @@ public class TariffController {
         double countryModifier = calculateCountryModifier(reporterCountry, partnerCountry);
         double adjustedBaseTariff = baseTariff * countryModifier;
         
+        // Create a deterministic seed based on the combination of countries and product
+        // This ensures the same input always produces the same output
+        String seedString = reporterCountry + partnerCountry + productCode;
+        Random deterministicRandom = new Random(seedString.hashCode());
+        
         // Generate 10 years of realistic tariff data with trends
         for (int i = 0; i < 10; i++) {
             int year = 2015 + i;
             
-            // Add year-over-year variation and trends
-            double yearVariation = (random.nextGaussian() * 0.5); // Small random variation
+            // Add year-over-year variation and trends (using deterministic random)
+            double yearVariation = (deterministicRandom.nextGaussian() * 0.5); // Small random variation
             double trendFactor = 1.0 - (i * 0.02); // Slight declining trend (trade liberalization)
             
             double tariffRate = Math.max(0.1, adjustedBaseTariff * trendFactor + yearVariation);
@@ -497,8 +502,11 @@ public class TariffController {
             modifier *= 0.7;
         }
         
-        // Add some randomization for realism
-        modifier *= (0.8 + random.nextDouble() * 0.4);
+        // Add deterministic variation based on country combination
+        // This replaces the random component with a deterministic one
+        String combinedCountries = reporterCountry + partnerCountry;
+        double deterministicVariation = 0.8 + (Math.abs(combinedCountries.hashCode()) % 40) / 100.0; // 0.8 to 1.2 range
+        modifier *= deterministicVariation;
         
         return modifier;
     }
