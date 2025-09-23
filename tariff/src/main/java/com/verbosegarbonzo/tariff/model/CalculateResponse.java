@@ -14,7 +14,7 @@ public class CalculateResponse {
     private String reporter;
     private String partner;
     private int year;
-    private BigDecimal rateDecimal;  // 0.05 = 5%
+    private BigDecimal ratePercent;
     private BigDecimal tradeValue;
     private BigDecimal duty;         // tradeValue * rateDecimal
     private BigDecimal totalPayable; // tradeValue + duty
