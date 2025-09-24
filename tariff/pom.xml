@@ -78,17 +78,17 @@
 		</dependency>
 
 		<!-- Spring Data JPA for ORM (map Java entities to Supabase/PostgreSQL tables) -->
-		<dependency>
+		<!-- <dependency>
     		<groupId>org.springframework.boot</groupId>
     		<artifactId>spring-boot-starter-data-jpa</artifactId>
-		</dependency>
+		</dependency> -->
 
 		<!-- PostgreSQL JDBC driver (required to connect Spring Boot JPA with Supabase/Postgres database) -->
-		<dependency>
+		<!-- <dependency>
 			<groupId>org.postgresql</groupId>
 			<artifactId>postgresql</artifactId>
 			<scope>runtime</scope>
-		</dependency>
+		</dependency> -->
 
 	</dependencies>
 
