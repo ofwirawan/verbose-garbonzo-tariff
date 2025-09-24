@@ -2,7 +2,7 @@ package com.verbosegarbonzo.tariff.controller;
 
 import com.verbosegarbonzo.tariff.client.WitsMetadataClient;
 import com.verbosegarbonzo.tariff.model.CountryRef;
-import com.verbosegarbonzo.tariff.model.ProductRef;
+import com.verbosegarbonzo.tariff.model.Product;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -29,10 +29,21 @@ public class MetadataController {
     }
 
     @GetMapping("/products")
-    public ResponseEntity<List<ProductRef>> products(@RequestParam String query) {
+    public ResponseEntity<List<Product>> products(@RequestParam String query) {
         if (query == null || query.trim().length() < 2) { //ignore queries < 2 chars
             return ResponseEntity.ok(Collections.emptyList());
         }
         return ResponseEntity.ok(client.searchProducts(query.trim()));
     }
+
+    @PostMapping("/products/sync")
+    public ResponseEntity<String> syncProducts() {
+        try {
+            client.loadProducts(); //load and save to Supabase
+            return ResponseEntity.ok("Products synced successfully!");
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body("Failed to sync: " + e.getMessage());
+        }
+    }
 }
+
