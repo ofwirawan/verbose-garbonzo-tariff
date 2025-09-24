@@ -51,6 +51,32 @@ export function TariffChart({
   const [productCode, setProductCode] = useState(initialProductCode);
   const [timeRange, setTimeRange] = useState("all");
 
+  // Simulation parameters
+  const [simBaseRate, setSimBaseRate] = useState<number | undefined>(undefined);
+  const [simCountryModifier, setSimCountryModifier] = useState<
+    number | undefined
+  >(undefined);
+  const [simTrend, setSimTrend] = useState<number | undefined>(undefined);
+
+  // Listen for simulation changes from dashboard panel
+  useEffect(() => {
+    function handleSimChange(e: CustomEvent) {
+      if (e.detail.baseRate !== undefined) setSimBaseRate(e.detail.baseRate);
+      if (e.detail.countryModifier !== undefined)
+        setSimCountryModifier(e.detail.countryModifier);
+      if (e.detail.trend !== undefined) setSimTrend(e.detail.trend);
+    }
+    window.addEventListener(
+      "tariffSimChange",
+      handleSimChange as EventListener
+    );
+    return () =>
+      window.removeEventListener(
+        "tariffSimChange",
+        handleSimChange as EventListener
+      );
+  }, []);
+
   // Country options
   const countryOptions = [
     { label: "Afghanistan", value: "AFG" },
@@ -282,7 +308,19 @@ export function TariffChart({
   useEffect(() => {
     setIsLoading(true);
     setHasError(false);
-    const API_URL = `http://localhost:8080/api/tariffs?importingCountry=${importingCountry}&exportingCountry=${exportingCountry}&productCode=${productCode}&year=2020`;
+    // Build simulation query params if present
+    const simParams = [
+      simBaseRate !== undefined ? `simBaseRate=${simBaseRate}` : "",
+      simCountryModifier !== undefined
+        ? `simCountryModifier=${simCountryModifier}`
+        : "",
+      simTrend !== undefined ? `simTrend=${simTrend}` : "",
+    ]
+      .filter(Boolean)
+      .join("&");
+    const API_URL = `http://localhost:8080/api/tariffs?importingCountry=${importingCountry}&exportingCountry=${exportingCountry}&productCode=${productCode}&year=2020${
+      simParams ? `&${simParams}` : ""
+    }`;
     fetch(API_URL)
       .then((res) => {
         if (!res.ok) throw new Error("Network response was not ok");
@@ -306,7 +344,14 @@ export function TariffChart({
         setHasError(true);
         setIsLoading(false);
       });
-  }, [importingCountry, exportingCountry, productCode]);
+  }, [
+    importingCountry,
+    exportingCountry,
+    productCode,
+    simBaseRate,
+    simCountryModifier,
+    simTrend,
+  ]);
 
   // Filter data by time range (all, 5y, 3y, 1y)
   const filteredData = (() => {

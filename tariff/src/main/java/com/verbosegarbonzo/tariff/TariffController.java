@@ -294,12 +294,15 @@ public class TariffController {
             @RequestParam(required = false) String importingCountry,
             @RequestParam(required = false) String exportingCountry,
             @RequestParam String productCode,
-            @RequestParam(required = false) String year) {
-        
+            @RequestParam(required = false) String year,
+            @RequestParam(required = false) Double simBaseRate,
+            @RequestParam(required = false) Double simCountryModifier,
+            @RequestParam(required = false) Double simTrend
+    ) {
         // Handle different parameter naming conventions
         String reporter = reporterCountry != null ? reporterCountry : importingCountry;
         String partner = partnerCountry != null ? partnerCountry : exportingCountry;
-        
+
         if (reporter == null || partner == null) {
             Map<String, Object> error = Map.of(
                 "error", "Missing required parameters",
@@ -307,7 +310,7 @@ public class TariffController {
             );
             return ResponseEntity.badRequest().body(error);
         }
-        
+
         try {
             // Try WITS API first
             Map<String, Object> apiData = fetchFromWitsApi(reporter, partner, productCode);
@@ -318,8 +321,10 @@ public class TariffController {
             System.out.println("WITS API failed: " + e.getMessage());
         }
 
-        // Generate enhanced fallback data
-        Map<String, Object> fallbackData = generateEnhancedFallbackData(reporter, partner, productCode);
+        // Generate enhanced fallback data with simulation params
+        Map<String, Object> fallbackData = generateEnhancedFallbackData(
+            reporter, partner, productCode, simBaseRate, simCountryModifier, simTrend
+        );
         return ResponseEntity.ok(fallbackData);
     }
 
@@ -434,37 +439,46 @@ public class TariffController {
         return parts.length > 0 ? parts[0] : "2020";
     }
 
-    private Map<String, Object> generateEnhancedFallbackData(String reporterCountry, String partnerCountry, String productCode) {
+    private Map<String, Object> generateEnhancedFallbackData(
+        String reporterCountry,
+        String partnerCountry,
+        String productCode,
+        Double simBaseRate,
+        Double simCountryModifier,
+        Double simTrend
+    ) {
         List<Map<String, Object>> tariffData = new ArrayList<>();
-        
-        // Get base tariff rate for this product
-        Double baseTariff = productBaseTariffs.getOrDefault(productCode, 10.0);
-        
-        // Apply country relationship modifiers
-        double countryModifier = calculateCountryModifier(reporterCountry, partnerCountry);
+
+        // Get base tariff rate for this product, override if simulation param provided
+        Double baseTariff = simBaseRate != null ? simBaseRate : productBaseTariffs.getOrDefault(productCode, 10.0);
+
+        // Apply country relationship modifiers, override if simulation param provided
+        double countryModifier = simCountryModifier != null ? simCountryModifier : calculateCountryModifier(reporterCountry, partnerCountry);
         double adjustedBaseTariff = baseTariff * countryModifier;
-        
+
         // Create a deterministic seed based on the combination of countries and product
-        // This ensures the same input always produces the same output
         String seedString = reporterCountry + partnerCountry + productCode;
         Random deterministicRandom = new Random(seedString.hashCode());
-        
+
+        // Use simulation trend if provided, otherwise default to -2% per year
+        double trendPercent = simTrend != null ? simTrend : -2.0;
+
         // Generate 10 years of realistic tariff data with trends
         for (int i = 0; i < 10; i++) {
             int year = 2015 + i;
-            
+
             // Add year-over-year variation and trends (using deterministic random)
             double yearVariation = (deterministicRandom.nextGaussian() * 0.5); // Small random variation
-            double trendFactor = 1.0 - (i * 0.02); // Slight declining trend (trade liberalization)
-            
+            double trendFactor = 1.0 + (trendPercent / 100.0) * i; // e.g. -2% per year
+
             double tariffRate = Math.max(0.1, adjustedBaseTariff * trendFactor + yearVariation);
-            
+
             Map<String, Object> dataPoint = new HashMap<>();
             dataPoint.put("year", String.valueOf(year));
             dataPoint.put("tariff", Math.round(tariffRate * 100.0) / 100.0);
             tariffData.add(dataPoint);
         }
-        
+
         Map<String, Object> result = new HashMap<>();
         result.put("data", tariffData);
         result.put("source", "Enhanced Simulation Model");
@@ -477,7 +491,7 @@ public class TariffController {
         result.put("methodology", "Country development level, regional trade agreements, and product sensitivity factors");
         result.put("baseTariff", baseTariff);
         result.put("countryModifier", Math.round(countryModifier * 100.0) / 100.0);
-        
+
         return result;
     }
 
