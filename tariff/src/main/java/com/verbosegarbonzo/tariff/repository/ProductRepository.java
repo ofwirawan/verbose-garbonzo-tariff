@@ -5,15 +5,19 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.domain.Pageable;
 import com.verbosegarbonzo.tariff.model.Product;
 
 import java.util.List;
 
 public interface ProductRepository extends JpaRepository<Product, String> { //gives you CRUD methods for DB
 
-    List<Product> findTop10ByDescriptionContainingIgnoreCase(String keyword);
-    //auto generate a SQL query like:
-    //select * from products where lower(description) like '%keyword%' limit 10;
+    @Query("""
+        SELECT p FROM Product p
+        WHERE LOWER(p.description) LIKE LOWER(CONCAT('%', :q, '%'))
+           OR p.hs6Code LIKE CONCAT(:q, '%')
+        """)
+    List<Product> searchProducts(@Param("q") String query, Pageable page);
 
     @Modifying
     @Transactional

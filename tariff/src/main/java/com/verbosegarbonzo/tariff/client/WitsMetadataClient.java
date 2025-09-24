@@ -14,8 +14,10 @@ import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.core.io.buffer.DataBufferUtils;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.data.domain.Sort;
 
 import java.io.InputStream;
 import java.util.*;
@@ -237,8 +239,10 @@ public class WitsMetadataClient {
     }
 
     public List<Product> searchProducts(String query) {
-        if (query == null || query.length() < 2)
-            return Collections.emptyList();
-        return productRepository.findTop10ByDescriptionContainingIgnoreCase(query);
+        if (query == null || (query = query.trim()).length() < 2) {
+        return Collections.emptyList();
     }
+    var page = PageRequest.of(0, 10, Sort.by(Sort.Direction.ASC, "description"));
+    return productRepository.searchProducts(query, page); //sorted by description, asc
+}
 }
