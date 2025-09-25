@@ -1,16 +1,13 @@
 package com.verbosegarbonzo.tariff.controller;
 
-import com.verbosegarbonzo.tariff.model.CalculateRequest;
-import com.verbosegarbonzo.tariff.model.CalculateResponse;
-import com.verbosegarbonzo.tariff.service.TariffService;
-import com.verbosegarbonzo.tariff.service.TariffService.RateNotFoundException;
-import com.verbosegarbonzo.tariff.service.TariffService.ExternalServiceException;
+import com.verbosegarbonzo.tariff.model.*;
+import com.verbosegarbonzo.tariff.service.*;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/tariff")
+@RequestMapping("/api")
 public class TariffController {
 
     private final TariffService service;
