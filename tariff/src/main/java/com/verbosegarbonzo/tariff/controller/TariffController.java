@@ -5,6 +5,8 @@ import com.verbosegarbonzo.tariff.service.*;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.verbosegarbonzo.tariff.service.TariffService.RateNotFoundException;
+import com.verbosegarbonzo.tariff.service.TariffService.ExternalServiceException;
 
 @RestController
 @RequestMapping("/api")
