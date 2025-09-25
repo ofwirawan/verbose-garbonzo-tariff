@@ -24,6 +24,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Skeleton } from "@/components/ui/skeleton";
 
 /**
  * TariffChart: Styled like ChartAreaInteractive, shows tariff data as an area chart.
@@ -428,60 +429,79 @@ export function TariffChart({
         </CardAction>
       </CardHeader>
       <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
-        <ChartContainer
-          config={chartConfig}
-          className="aspect-auto h-[300px] w-full rounded-xl shadow-lg bg-white p-4"
-        >
-          <AreaChart data={filteredData}>
-            <defs>
-              <linearGradient id="fillTariff" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#000" stopOpacity={1} />
-                <stop offset="100%" stopColor="#000" stopOpacity={0.1} />
-              </linearGradient>
-            </defs>
-            <CartesianGrid
-              vertical={false}
-              strokeDasharray="4 4"
-              stroke="#e5e7eb"
-            />
-            <XAxis
-              dataKey="date"
-              tickLine={false}
-              axisLine={false}
-              tickMargin={16}
-              minTickGap={0}
-              interval={0}
-              padding={{ left: 16, right: 32 }}
-              tick={{ fontSize: 14, fill: "#000", fontWeight: 600 }}
-              tickFormatter={(value) => value}
-            />
-            <ChartTooltip
-              cursor={false}
-              content={
-                <ChartTooltipContent
-                  labelFormatter={(value) => `Year: ${value}`}
-                  indicator="dot"
-                />
-              }
-            />
-            <Area
-              dataKey="value"
-              type="monotone"
-              fill="url(#fillTariff)"
-              stroke="#000"
-              strokeWidth={3}
-              dot={{ r: 5, stroke: "#000", strokeWidth: 2, fill: "#fff" }}
-              activeDot={{
-                r: 7,
-                fill: "#000",
-                stroke: "#fff",
-                strokeWidth: 2,
-              }}
-              isAnimationActive={true}
-              style={{ filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.15))" }}
-            />
-          </AreaChart>
-        </ChartContainer>
+        {isLoading ? (
+          <div className="h-[300px] w-full rounded-xl shadow-lg bg-white p-4 flex items-center justify-center">
+            {/* Skeleton for chart area */}
+            <div className="w-full h-full flex flex-col gap-4">
+              <div className="flex gap-2 mb-2">
+                <Skeleton className="h-6 w-32" />
+                <Skeleton className="h-6 w-20" />
+                <Skeleton className="h-6 w-16" />
+              </div>
+              <Skeleton className="h-48 w-full rounded-xl" />
+              <div className="flex gap-2 mt-4">
+                <Skeleton className="h-4 w-16" />
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-4 w-20" />
+              </div>
+            </div>
+          </div>
+        ) : (
+          <ChartContainer
+            config={chartConfig}
+            className="aspect-auto h-[300px] w-full rounded-xl shadow-lg bg-white p-4"
+          >
+            <AreaChart data={filteredData}>
+              <defs>
+                <linearGradient id="fillTariff" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#000" stopOpacity={1} />
+                  <stop offset="100%" stopColor="#000" stopOpacity={0.1} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid
+                vertical={false}
+                strokeDasharray="4 4"
+                stroke="#e5e7eb"
+              />
+              <XAxis
+                dataKey="date"
+                tickLine={false}
+                axisLine={false}
+                tickMargin={16}
+                minTickGap={0}
+                interval={0}
+                padding={{ left: 16, right: 32 }}
+                tick={{ fontSize: 14, fill: "#000", fontWeight: 600 }}
+                tickFormatter={(value) => value}
+              />
+              <ChartTooltip
+                cursor={false}
+                content={
+                  <ChartTooltipContent
+                    labelFormatter={(value) => `Year: ${value}`}
+                    indicator="dot"
+                  />
+                }
+              />
+              <Area
+                dataKey="value"
+                type="monotone"
+                fill="url(#fillTariff)"
+                stroke="#000"
+                strokeWidth={3}
+                dot={{ r: 5, stroke: "#000", strokeWidth: 2, fill: "#fff" }}
+                activeDot={{
+                  r: 7,
+                  fill: "#000",
+                  stroke: "#fff",
+                  strokeWidth: 2,
+                }}
+                isAnimationActive={true}
+                style={{ filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.15))" }}
+              />
+            </AreaChart>
+          </ChartContainer>
+        )}
       </CardContent>
       <CardContent>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 w-full max-w-4xl">
@@ -547,9 +567,7 @@ export function TariffChart({
           </div>
         </div>
       </CardContent>
-      {isLoading && (
-        <div className="text-center py-8 text-gray-500">Loading chart...</div>
-      )}
+      {/* Removed old loading text, replaced by skeleton above */}
       {hasError && (
         <div className="text-red-500 text-center py-8">
           Failed to fetch tariff data.
