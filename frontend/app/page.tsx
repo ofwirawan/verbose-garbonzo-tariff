@@ -1,10 +1,14 @@
 "use client";
 
 import { TariffChart } from "./TariffChart";
+import { ViewCalculation } from "./ViewCalculation";
 
-/**
- * Demo: Fetches tariff data between countries and renders a line chart.
- */
 export default function Home() {
-  return <TariffChart />;
+  return (
+    <div className="space-y-16 max-w-6xl mx-auto p-4">
+      <TariffChart />
+      <ViewCalculation />
+    </div>
+  );
 }
+
