@@ -6,7 +6,7 @@ import { SectionCards } from "@/components/section-cards";
 import { SiteHeader } from "@/components/site-header";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 
-import { TariffChart } from "../TariffChart";
+import { TariffChart } from "./components/TariffChart";
 import data from "./data.json";
 
 export default function Page() {

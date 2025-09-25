@@ -1,0 +1,52 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model countries {
+  iso_code                                          String         @id(map: "Countries_pkey") @db.VarChar
+  name                                              String         @default("")
+  transactions_transactions_exporter_isoTocountries transactions[] @relation("transactions_exporter_isoTocountries")
+  transactions_transactions_importer_isoTocountries transactions[] @relation("transactions_importer_isoTocountries")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model products {
+  hs_code      String         @db.VarChar
+  hs_version   Int            @db.SmallInt
+  description  String?        @default("")
+  hs6code      String         @db.VarChar(6)
+  transactions transactions[]
+
+  @@id([hs_code, hs_version])
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model transactions {
+  tid                                            BigInt    @id
+  uid                                            String    @db.Uuid
+  t_date                                         DateTime  @db.Date
+  importer_iso                                   String    @db.VarChar
+  exporter_iso                                   String    @db.VarChar
+  hs_code                                        String?   @db.VarChar
+  hs_version                                     Int?      @db.SmallInt
+  trade_original                                 Decimal   @db.Decimal
+  countries_transactions_exporter_isoTocountries countries @relation("transactions_exporter_isoTocountries", fields: [exporter_iso], references: [iso_code], onDelete: NoAction)
+  products                                       products? @relation(fields: [hs_code, hs_version], references: [hs_code, hs_version], onDelete: Cascade)
+  countries_transactions_importer_isoTocountries countries @relation("transactions_importer_isoTocountries", fields: [importer_iso], references: [iso_code], onDelete: NoAction)
+  user                                           user      @relation(fields: [uid], references: [uid], onDelete: NoAction, onUpdate: NoAction)
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model user {
+  uid          String         @id @default(dbgenerated("auth.uid()")) @db.Uuid
+  email        String         @unique
+  pw_hash      String
+  created_at   DateTime       @default(now()) @db.Timestamptz(6)
+  transactions transactions[]
+}
