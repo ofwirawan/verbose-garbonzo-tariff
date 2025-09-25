@@ -16,15 +16,15 @@ import java.math.RoundingMode;
 
 @Service
 public class TariffService {
-//- Build WITS SDMX URL
-//- Call WITS
-//- Extract ratePercent
-//- Compute duty and totalPayable
-//- Return response
+    // - Build WITS SDMX URL
+    // - Call WITS
+    // - Extract ratePercent
+    // - Compute duty and totalPayable
+    // - Return response
 
     private final WebClient webClient;
     private final WitsProperties props;
-    private final ObjectMapper om = new ObjectMapper(); //JSON parsing
+    private final ObjectMapper om = new ObjectMapper(); // JSON parsing
 
     public TariffService(@Qualifier("tariffWebClient") WebClient tariffWebClient, WitsProperties props) {
         this.webClient = tariffWebClient;
@@ -34,44 +34,86 @@ public class TariffService {
     public CalculateResponse calculate(CalculateRequest req) {
         final int year = req.getTransactionDate().getYear();
 
-        final String path = props.getTariff().getDataset()
-        + "/reporter/" + req.getReporter()
-        + "/partner/" + req.getPartner()
-        + "/product/" + req.getHs6()
-        + "/year/" + year
-        + "/datatype/reported?format=JSON";
+        // Build the initial WITS API path using original reporter and partner
+        String partner = req.getPartner();
+        String path = props.getTariff().getDataset()
+                + "/reporter/" + req.getReporter()
+                + "/partner/" + partner
+                + "/product/" + req.getHs6()
+                + "/year/" + year
+                + "/datatype/reported?format=JSON";
 
-        final String dataUrl = props.getTariff().getBaseUrl() + "/" + path;
+        final String dataUrlBase = props.getTariff().getBaseUrl();
 
-        //WebClient call hits WITS and waits for the response
-        final String raw = webClient.get()
-            .uri("/" + path) //prepend slash to be safe
-            .accept(MediaType.APPLICATION_JSON)
-            .retrieve()
-            .bodyToMono(String.class)
-            .block(); // block() is fine in a service method in this project
+        String dataUrl = dataUrlBase + "/" + path;
 
-        final BigDecimal ratePercent = extractMfnSimpleAveragePercent(raw);
-        if (ratePercent == null) {
+        // WebClient call hits WITS and waits for the response
+        String raw = webClient.get()
+                .uri("/" + path) // prepend slash to be safe
+                .accept(MediaType.APPLICATION_JSON)
+                .retrieve()
+                .bodyToMono(String.class)
+                .block(); // block() is fine in a service method in this project
+
+        // Extract tariff percentage from WITS JSON response
+        BigDecimal ratePercent = extractMfnSimpleAveragePercent(raw);
+
+        // If rate not found, attempt fallback with partner "000" (default/world)
+        if (ratePercent == null && !"000".equals(partner)) {
+            partner = "000"; // fallback to partner '000'
+
+            // Rebuild path with fallback partner
+            path = props.getTariff().getDataset()
+                    + "/reporter/" + req.getReporter()
+                    + "/partner/" + partner
+                    + "/product/" + req.getHs6()
+                    + "/year/" + year
+                    + "/datatype/reported?format=JSON";
+
+            dataUrl = dataUrlBase + "/" + path;
+
+            // Retry WITS call with fallback partner
+            raw = webClient.get()
+                    .uri("/" + path) // prepend slash again
+                    .accept(MediaType.APPLICATION_JSON)
+                    .retrieve()
+                    .bodyToMono(String.class)
+                    .block();
+
+            ratePercent = extractMfnSimpleAveragePercent(raw);
+
+            // Throw exception if fallback also yields no rate
+            if (ratePercent == null) {
+                throw new RateNotFoundException("No MFN rate for hs6=" + req.getHs6()
+                        + " reporter=" + req.getReporter()
+                        + " partner=" + partner
+                        + " year=" + year);
+            }
+        } else if (ratePercent == null) {
+            // Rate not found and partner was already '000' or no fallback possible
             throw new RateNotFoundException("No MFN rate for hs6=" + req.getHs6()
                     + " reporter=" + req.getReporter()
-                    + " partner=" + req.getPartner()
+                    + " partner=" + partner
                     + " year=" + year);
         }
 
-        final BigDecimal rateDecimal = ratePercent.movePointLeft(2);
+        // Convert percentage rate (e.g., 5.00) to decimal (e.g., 0.05) for calculations
+        BigDecimal rateDecimal = ratePercent.movePointLeft(2);
 
-        final BigDecimal duty = req.getTradeValue()
+        // Calculate duty by multiplying trade value by decimal rate and rounding
+        BigDecimal duty = req.getTradeValue()
                 .multiply(rateDecimal)
                 .setScale(2, RoundingMode.HALF_UP);
 
-        final BigDecimal totalPayable = req.getTradeValue().add(duty);
+        // Calculate total amount payable including duty
+        BigDecimal totalPayable = req.getTradeValue().add(duty);
 
-        //build output DTO
+        // Build output DTO with results and metadata including possibly fallback
+        // partner
         final CalculateResponse resp = new CalculateResponse();
         resp.setHs6(req.getHs6());
         resp.setReporter(req.getReporter());
-        resp.setPartner(req.getPartner());
+        resp.setPartner(partner); // shows fallback partner if used
         resp.setYear(year);
         resp.setRatePercent(ratePercent.setScale(2, RoundingMode.HALF_UP));
         resp.setTradeValue(req.getTradeValue());
@@ -81,26 +123,29 @@ public class TariffService {
         return resp;
     }
 
-    //pulling out the tariff percentage from the JSON response returned by WITS
+    // pulling out the tariff percentage from the JSON response returned by WITS
     private BigDecimal extractMfnSimpleAveragePercent(String rawJson) {
         try {
             JsonNode root = om.readTree(rawJson);
 
             JsonNode dataSets = root.path("dataSets");
-            if (!dataSets.isArray() || dataSets.isEmpty()) return null;
+            if (!dataSets.isArray() || dataSets.isEmpty())
+                return null;
 
             JsonNode seriesNode = dataSets.get(0).path("series");
-            //must be an array with at least one element, otherwise return null
-            if (seriesNode.isMissingNode()) return null; 
+            // must be an array with at least one element, otherwise return null
+            if (seriesNode.isMissingNode())
+                return null;
 
             var it = seriesNode.fields();
-            //Look at the "0" entry, if it is an array and the first element is a number -> return that as a BigDecimal.
+            // Look at the "0" entry, if it is an array and the first element is a number ->
+            // return that as a BigDecimal.
             while (it.hasNext()) {
                 var entry = it.next();
                 JsonNode observations = entry.getValue().path("observations");
                 JsonNode firstObs = observations.path("0");
                 if (firstObs.isArray() && firstObs.size() > 0 && firstObs.get(0).isNumber()) {
-                    //return as percentage 
+                    // return as percentage
                     return new BigDecimal(firstObs.get(0).asText());
                 }
             }
@@ -110,13 +155,17 @@ public class TariffService {
         }
     }
 
-    //404 when WITS has no observation for the chosen combo
+    // 404 when WITS has no observation for the chosen combo
     public static class RateNotFoundException extends RuntimeException {
-        public RateNotFoundException(String msg) { super(msg); }
+        public RateNotFoundException(String msg) {
+            super(msg);
+        }
     }
 
-    //502 or 500 when WITS payload is malformed or network/parsing fails
+    // 502 or 500 when WITS payload is malformed or network/parsing fails
     public static class ExternalServiceException extends RuntimeException {
-        public ExternalServiceException(String msg, Throwable cause) { super(msg, cause); }
+        public ExternalServiceException(String msg, Throwable cause) {
+            super(msg, cause);
+        }
     }
 }
