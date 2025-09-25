@@ -13,6 +13,14 @@
 # testing
 /coverage
 
+# Compiled class files
+*.class
+
+# Build output folders
+/target/
+/bin/
+/build/
+
 # next.js
 /.next/
 /out/
