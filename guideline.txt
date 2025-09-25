@@ -1,0 +1,106 @@
+examine the whole app and suggest what additional feature i should add into the app
+
+this is the project guideline 
+Theme: Trade Agreements Regulating Imports and Foreign Fees
+Design and implement a system called TARIFF (Trade Agreements Regulating Imports and Foreign
+Fees): its purpose is to define import tariffs (and/or additional fees) and to calculate them against a
+certain industry or product between different countries at any given times.
+You can explore any industries and realistic ways of tariff calculations under this theme
+only. Your final MVP must have all the following components as the baseline:
+▪ 1. Backend: REST API routes with Swagger UI, user authentication and management, business logic, and a database to
+store all involved information.
+▪ 2. The business logic should handle all features in the tariff calculation system.
+▪ 3. Public deployment of the backend on any cloud platform.
+4Collaborative Software Development
+
+Project Grading
+▪ Agile process
+▪ Team to decide on stories, sprints, backlog, tracking, etc.
+▪ Team to assign own roles as project owner, Scrum master, etc.
+▪ Tools
+▪ Java, Spring Boot (mandatory for at least one component/service in your
+app), and other languages/frameworks as needed
+▪ Git (mandatory): Bitbucket/GitHub
+▪ Project management and tracking: Jira (recommended)
+▪ Public deployment of services
+▪ Team to choose deployment platforms (AWS, Azure, etc.)
+5Collaborative Software Development
+
+and below this is the project vision 
+Project Vision: TARIFF (Trade Agreements Regulating Imports and
+Foreign Fees)
+1. Vision Statement
+To design and implement a robust and accessible system named TARIFF (Trade Agreements
+Regulating Imports and Foreign Fees)1
+. Our vision is to create a platform that can define
+import tariffs and/or additional fees, and accurately calculate them for a specific industry or
+product between different countries at any given time2
+. This system will serve as a
+foundational tool for understanding the complexities of international trade policies.
+2. Problem Statement
+International trade is governed by a complex web of agreements, tariffs, and fees that are
+difficult to track and calculate. As noted by Senior Minister Lee Hsien Loong, the
+consequences of trade policy moves are not temporary, and their impacts are significant3
+.
+There is a need for a clear and systematic way to model and compute these financial
+regulations to provide clarity for businesses, policymakers, and researchers. Our project,
+TARIFF, aims to address this by creating a system to manage and calculate these intricate
+trade-related fees4
+.
+3. Target Users
+While the project allows for exploration of any industry5
+, the target users for this system could
+include:
+●
+●
+●
+●
+Businesses involved in import/export.
+Economists and policy analysts.
+Students of international trade and finance.
+Government agencies monitoring trade flows.
+4. Product Goals & Key Features (Minimum Viable Product - MVP)
+The final delivered MVP will serve as the baseline for the project and must include the
+following components6:
+●
+Backend System: A comprehensive backend featuring:
+○
+REST API routes with a Swagger UI for clear documentation and interaction7
+.
+○
+User authentication and management capabilities8
+.
+○
+Core business logic to handle all features related to the tariff calculation system9
+.
+○
+A persistent database to store all necessary information, such as country data,
+products, and tariff rules10
+.
+6. Development Methodology & Technology Stack
+●
+Methodology: The project will be executed using an Agile process17
+. The team is
+responsible for defining user stories, managing the backlog, and planning sprints18
+. Team
+members will also assign their own roles, such as project owner and Scrum master19
+.
+●
+Mandatory Tools:
+○
+Backend: Java and Spring Boot are mandatory for at least one component or service
+in the application20
+.
+○
+Version Control: Git is mandatory for source code management, using platforms like
+Bitbucket or GitHub21
+.
+●
+Recommended Tools:
+○
+Project Management: Jira is recommended for project tracking22
+.
+●
+Deployment: The team will choose a suitable public cloud platform (e.g., AWS, Azure) for
+deployment23
+.
