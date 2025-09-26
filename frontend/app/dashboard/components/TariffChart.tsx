@@ -242,18 +242,27 @@ export function TariffChart({
             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+        <PopoverContent
+          className="w-[var(--radix-popover-trigger-width)] p-0"
+          align="start"
+        >
           <Command
             filter={(value, search) => {
-              const country = countryOptions.find(c => c.label === value);
+              const country = countryOptions.find((c) => c.label === value);
               if (!country) return 0;
               const searchLower = search.toLowerCase();
-              const labelMatch = country.label.toLowerCase().includes(searchLower);
-              const valueMatch = country.value.toLowerCase().includes(searchLower);
+              const labelMatch = country.label
+                .toLowerCase()
+                .includes(searchLower);
+              const valueMatch = country.value
+                .toLowerCase()
+                .includes(searchLower);
               return labelMatch || valueMatch ? 1 : 0;
             }}
           >
-            <CommandInput placeholder={`Search ${placeholder.toLowerCase()}...`} />
+            <CommandInput
+              placeholder={`Search ${placeholder.toLowerCase()}...`}
+            />
             <CommandList className="max-h-[200px]">
               <CommandEmpty>No country found.</CommandEmpty>
               <CommandGroup>
@@ -262,7 +271,9 @@ export function TariffChart({
                     key={country.value}
                     value={country.label}
                     onSelect={() => {
-                      onValueChange(country.value === value ? "" : country.value);
+                      onValueChange(
+                        country.value === value ? "" : country.value
+                      );
                       setOpen(false);
                     }}
                   >
