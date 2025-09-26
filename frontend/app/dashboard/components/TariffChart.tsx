@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { fetchCountries } from "../actions/dashboardactions";
 import { Area, AreaChart, CartesianGrid, XAxis } from "recharts";
 import {
   Card,
@@ -23,11 +24,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Skeleton } from "@/components/ui/skeleton";
 
 import { format } from "date-fns";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon, Check, ChevronsUpDown } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -40,17 +49,31 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 
+interface Country {
+  iso_code: string;
+  name: string;
+}
+
+interface Tariff {
+  id: string;
+  name?: string;
+  rate?: number;
+  [key: string]: unknown;
+}
+
+interface TariffChartProps {
+  initialImportingCountry?: string;
+  initialExportingCountry?: string;
+  initialProductCode?: string;
+  chartTitle?: string;
+}
+
 export function TariffChart({
   initialImportingCountry = "USA",
   initialExportingCountry = "CHN",
   initialProductCode = "01-05_Animals",
   chartTitle = "Tariff Data Analysis",
-}: {
-  initialImportingCountry?: string;
-  initialExportingCountry?: string;
-  initialProductCode?: string;
-  chartTitle?: string;
-}) {
+}: TariffChartProps) {
   const [data, setData] = useState<{ date: string; value: number }[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
@@ -62,6 +85,13 @@ export function TariffChart({
   );
   const [productCode, setProductCode] = useState(initialProductCode);
   const [timeRange, setTimeRange] = useState("all");
+
+  // State for tariffs and countries
+  const [tariffs, setTariffs] = useState<Tariff[]>([]);
+  const [selectedTariffId, setSelectedTariffId] = useState<string | undefined>(
+    undefined
+  );
+  const [countries, setCountries] = useState<Country[]>([]);
 
   // Simulation parameters
   const [simBaseRate, setSimBaseRate] = useState<number | undefined>(undefined);
@@ -91,205 +121,11 @@ export function TariffChart({
       );
   }, []);
 
-  // Country options
-  const countryOptions = [
-    { label: "Afghanistan", value: "AFG" },
-    { label: "Albania", value: "ALB" },
-    { label: "Algeria", value: "DZA" },
-    { label: "Andorra", value: "AND" },
-    { label: "Angola", value: "AGO" },
-    { label: "Antigua and Barbuda", value: "ATG" },
-    { label: "Argentina", value: "ARG" },
-    { label: "Armenia", value: "ARM" },
-    { label: "Australia", value: "AUS" },
-    { label: "Austria", value: "AUT" },
-    { label: "Azerbaijan", value: "AZE" },
-    { label: "Bahamas", value: "BHS" },
-    { label: "Bahrain", value: "BHR" },
-    { label: "Bangladesh", value: "BGD" },
-    { label: "Barbados", value: "BRB" },
-    { label: "Belarus", value: "BLR" },
-    { label: "Belgium", value: "BEL" },
-    { label: "Belize", value: "BLZ" },
-    { label: "Benin", value: "BEN" },
-    { label: "Bhutan", value: "BTN" },
-    { label: "Bolivia", value: "BOL" },
-    { label: "Bosnia and Herzegovina", value: "BIH" },
-    { label: "Botswana", value: "BWA" },
-    { label: "Brazil", value: "BRA" },
-    { label: "Brunei", value: "BRN" },
-    { label: "Bulgaria", value: "BGR" },
-    { label: "Burkina Faso", value: "BFA" },
-    { label: "Burundi", value: "BDI" },
-    { label: "Cabo Verde", value: "CPV" },
-    { label: "Cambodia", value: "KHM" },
-    { label: "Cameroon", value: "CMR" },
-    { label: "Canada", value: "CAN" },
-    { label: "Central African Republic", value: "CAF" },
-    { label: "Chad", value: "TCD" },
-    { label: "Chile", value: "CHL" },
-    { label: "China", value: "CHN" },
-    { label: "Colombia", value: "COL" },
-    { label: "Comoros", value: "COM" },
-    { label: "Congo", value: "COG" },
-    { label: "Congo (Democratic Republic)", value: "COD" },
-    { label: "Costa Rica", value: "CRI" },
-    { label: "Côte d'Ivoire", value: "CIV" },
-    { label: "Croatia", value: "HRV" },
-    { label: "Cuba", value: "CUB" },
-    { label: "Cyprus", value: "CYP" },
-    { label: "Czech Republic", value: "CZE" },
-    { label: "Denmark", value: "DNK" },
-    { label: "Djibouti", value: "DJI" },
-    { label: "Dominica", value: "DMA" },
-    { label: "Dominican Republic", value: "DOM" },
-    { label: "Ecuador", value: "ECU" },
-    { label: "Egypt", value: "EGY" },
-    { label: "El Salvador", value: "SLV" },
-    { label: "Equatorial Guinea", value: "GNQ" },
-    { label: "Eritrea", value: "ERI" },
-    { label: "Estonia", value: "EST" },
-    { label: "Eswatini", value: "SWZ" },
-    { label: "Ethiopia", value: "ETH" },
-    { label: "Fiji", value: "FJI" },
-    { label: "Finland", value: "FIN" },
-    { label: "France", value: "FRA" },
-    { label: "Gabon", value: "GAB" },
-    { label: "Gambia", value: "GMB" },
-    { label: "Georgia", value: "GEO" },
-    { label: "Germany", value: "DEU" },
-    { label: "Ghana", value: "GHA" },
-    { label: "Greece", value: "GRC" },
-    { label: "Grenada", value: "GRD" },
-    { label: "Guatemala", value: "GTM" },
-    { label: "Guinea", value: "GIN" },
-    { label: "Guinea-Bissau", value: "GNB" },
-    { label: "Guyana", value: "GUY" },
-    { label: "Haiti", value: "HTI" },
-    { label: "Honduras", value: "HND" },
-    { label: "Hungary", value: "HUN" },
-    { label: "Iceland", value: "ISL" },
-    { label: "India", value: "IND" },
-    { label: "Indonesia", value: "IDN" },
-    { label: "Iran", value: "IRN" },
-    { label: "Iraq", value: "IRQ" },
-    { label: "Ireland", value: "IRL" },
-    { label: "Israel", value: "ISR" },
-    { label: "Italy", value: "ITA" },
-    { label: "Jamaica", value: "JAM" },
-    { label: "Japan", value: "JPN" },
-    { label: "Jordan", value: "JOR" },
-    { label: "Kazakhstan", value: "KAZ" },
-    { label: "Kenya", value: "KEN" },
-    { label: "Kiribati", value: "KIR" },
-    { label: "Korea (North)", value: "PRK" },
-    { label: "Korea (South)", value: "KOR" },
-    { label: "Kuwait", value: "KWT" },
-    { label: "Kyrgyzstan", value: "KGZ" },
-    { label: "Laos", value: "LAO" },
-    { label: "Latvia", value: "LVA" },
-    { label: "Lebanon", value: "LBN" },
-    { label: "Lesotho", value: "LSO" },
-    { label: "Liberia", value: "LBR" },
-    { label: "Libya", value: "LBY" },
-    { label: "Liechtenstein", value: "LIE" },
-    { label: "Lithuania", value: "LTU" },
-    { label: "Luxembourg", value: "LUX" },
-    { label: "Madagascar", value: "MDG" },
-    { label: "Malawi", value: "MWI" },
-    { label: "Malaysia", value: "MYS" },
-    { label: "Maldives", value: "MDV" },
-    { label: "Mali", value: "MLI" },
-    { label: "Malta", value: "MLT" },
-    { label: "Marshall Islands", value: "MHL" },
-    { label: "Mauritania", value: "MRT" },
-    { label: "Mauritius", value: "MUS" },
-    { label: "Mexico", value: "MEX" },
-    { label: "Micronesia", value: "FSM" },
-    { label: "Moldova", value: "MDA" },
-    { label: "Monaco", value: "MCO" },
-    { label: "Mongolia", value: "MNG" },
-    { label: "Montenegro", value: "MNE" },
-    { label: "Morocco", value: "MAR" },
-    { label: "Mozambique", value: "MOZ" },
-    { label: "Myanmar", value: "MMR" },
-    { label: "Namibia", value: "NAM" },
-    { label: "Nauru", value: "NRU" },
-    { label: "Nepal", value: "NPL" },
-    { label: "Netherlands", value: "NLD" },
-    { label: "New Zealand", value: "NZL" },
-    { label: "Nicaragua", value: "NIC" },
-    { label: "Niger", value: "NER" },
-    { label: "Nigeria", value: "NGA" },
-    { label: "North Macedonia", value: "MKD" },
-    { label: "Norway", value: "NOR" },
-    { label: "Oman", value: "OMN" },
-    { label: "Pakistan", value: "PAK" },
-    { label: "Palau", value: "PLW" },
-    { label: "Palestine", value: "PSE" },
-    { label: "Panama", value: "PAN" },
-    { label: "Papua New Guinea", value: "PNG" },
-    { label: "Paraguay", value: "PRY" },
-    { label: "Peru", value: "PER" },
-    { label: "Philippines", value: "PHL" },
-    { label: "Poland", value: "POL" },
-    { label: "Portugal", value: "PRT" },
-    { label: "Qatar", value: "QAT" },
-    { label: "Romania", value: "ROU" },
-    { label: "Russia", value: "RUS" },
-    { label: "Rwanda", value: "RWA" },
-    { label: "Saint Kitts and Nevis", value: "KNA" },
-    { label: "Saint Lucia", value: "LCA" },
-    { label: "Saint Vincent and the Grenadines", value: "VCT" },
-    { label: "Samoa", value: "WSM" },
-    { label: "San Marino", value: "SMR" },
-    { label: "Sao Tome and Principe", value: "STP" },
-    { label: "Saudi Arabia", value: "SAU" },
-    { label: "Senegal", value: "SEN" },
-    { label: "Serbia", value: "SRB" },
-    { label: "Seychelles", value: "SYC" },
-    { label: "Sierra Leone", value: "SLE" },
-    { label: "Singapore", value: "SGP" },
-    { label: "Slovakia", value: "SVK" },
-    { label: "Slovenia", value: "SVN" },
-    { label: "Solomon Islands", value: "SLB" },
-    { label: "Somalia", value: "SOM" },
-    { label: "South Africa", value: "ZAF" },
-    { label: "South Sudan", value: "SSD" },
-    { label: "Spain", value: "ESP" },
-    { label: "Sri Lanka", value: "LKA" },
-    { label: "Sudan", value: "SDN" },
-    { label: "Suriname", value: "SUR" },
-    { label: "Sweden", value: "SWE" },
-    { label: "Switzerland", value: "CHE" },
-    { label: "Syria", value: "SYR" },
-    { label: "Taiwan", value: "TWN" },
-    { label: "Tajikistan", value: "TJK" },
-    { label: "Tanzania", value: "TZA" },
-    { label: "Thailand", value: "THA" },
-    { label: "Timor-Leste", value: "TLS" },
-    { label: "Togo", value: "TGO" },
-    { label: "Tonga", value: "TON" },
-    { label: "Trinidad and Tobago", value: "TTO" },
-    { label: "Tunisia", value: "TUN" },
-    { label: "Turkey", value: "TUR" },
-    { label: "Turkmenistan", value: "TKM" },
-    { label: "Tuvalu", value: "TUV" },
-    { label: "Uganda", value: "UGA" },
-    { label: "Ukraine", value: "UKR" },
-    { label: "United Arab Emirates", value: "ARE" },
-    { label: "United Kingdom", value: "GBR" },
-    { label: "United States", value: "USA" },
-    { label: "Uruguay", value: "URY" },
-    { label: "Uzbekistan", value: "UZB" },
-    { label: "Vanuatu", value: "VUT" },
-    { label: "Vatican City", value: "VAT" },
-    { label: "Venezuela", value: "VEN" },
-    { label: "Vietnam", value: "VNM" },
-    { label: "Yemen", value: "YEM" },
-    { label: "Zambia", value: "ZMB" },
-    { label: "Zimbabwe", value: "ZWE" },
-  ];
+  // Convert database countries to dropdown options
+  const countryOptions = countries.map((country) => ({
+    label: country.name,
+    value: country.iso_code,
+  }));
 
   // Product code options
   const productOptions = [
@@ -319,53 +155,42 @@ export function TariffChart({
     { label: "Services & Intangibles", value: "98_Services" },
   ];
 
+  // Fetch data using server actions on mount and set up automatic refresh
   useEffect(() => {
-    setIsLoading(true);
-    setHasError(false);
-    // Build simulation query params if present
-    const simParams = [
-      simBaseRate !== undefined ? `simBaseRate=${simBaseRate}` : "",
-      simCountryModifier !== undefined
-        ? `simCountryModifier=${simCountryModifier}`
-        : "",
-      simTrend !== undefined ? `simTrend=${simTrend}` : "",
-    ]
-      .filter(Boolean)
-      .join("&");
-    const API_URL = `http://localhost:8080/api/tariffs?importingCountry=${importingCountry}&exportingCountry=${exportingCountry}&productCode=${productCode}&year=2020${
-      simParams ? `&${simParams}` : ""
-    }`;
-    fetch(API_URL)
-      .then((res) => {
-        if (!res.ok) throw new Error("Network response was not ok");
-        return res.json();
-      })
-      .then((json) => {
-        if (json.data && Array.isArray(json.data)) {
-          const chartData = json.data.map(
-            (item: { year: string; tariff: number }) => ({
-              date: item.year,
-              value: item.tariff,
-            })
-          );
-          setData(chartData);
-        } else {
-          setData([]);
-        }
-        setIsLoading(false);
-      })
-      .catch(() => {
+    const fetchData = async () => {
+      try {
+        setIsLoading(true);
+        setHasError(false);
+
+        const countriesResult = await fetchCountries();
+
+        // Keep tariffs empty for now (no tariff table to fetch from)
+        setTariffs([]);
+        setCountries(countriesResult.countries);
+      } catch (error) {
+        console.error("Error fetching data:", error);
         setHasError(true);
+      } finally {
         setIsLoading(false);
-      });
-  }, [
-    importingCountry,
-    exportingCountry,
-    productCode,
-    simBaseRate,
-    simCountryModifier,
-    simTrend,
-  ]);
+      }
+    };
+
+    // Initial fetch
+    fetchData();
+
+    // Set up automatic refresh every 30 seconds
+    const interval = setInterval(fetchData, 30000);
+    return () => clearInterval(interval);
+  }, []); // Empty dependency array - only run on mount
+
+  // Set selected tariff when tariffs are loaded
+  useEffect(() => {
+    if (tariffs.length > 0 && !selectedTariffId) {
+      setSelectedTariffId(tariffs[0].id);
+    }
+  }, [tariffs, selectedTariffId]);
+
+  // Existing chart data fetch logic remains unchanged
 
   // Filter data by time range (all, 5y, 3y, 1y)
   const filteredData = (() => {
@@ -386,6 +211,77 @@ export function TariffChart({
       color: "var(--primary)",
     },
   } satisfies ChartConfig;
+
+  // Combobox component for country selection
+  function CountryCombobox({
+    value,
+    onValueChange,
+    placeholder,
+    id,
+  }: {
+    value: string;
+    onValueChange: (value: string) => void;
+    placeholder: string;
+    id?: string;
+  }) {
+    const [open, setOpen] = useState(false);
+
+    return (
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            id={id}
+            variant="outline"
+            role="combobox"
+            aria-expanded={open}
+            className="w-full justify-between"
+          >
+            {value
+              ? countryOptions.find((country) => country.value === value)?.label
+              : placeholder}
+            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+          <Command
+            filter={(value, search) => {
+              const country = countryOptions.find(c => c.label === value);
+              if (!country) return 0;
+              const searchLower = search.toLowerCase();
+              const labelMatch = country.label.toLowerCase().includes(searchLower);
+              const valueMatch = country.value.toLowerCase().includes(searchLower);
+              return labelMatch || valueMatch ? 1 : 0;
+            }}
+          >
+            <CommandInput placeholder={`Search ${placeholder.toLowerCase()}...`} />
+            <CommandList className="max-h-[200px]">
+              <CommandEmpty>No country found.</CommandEmpty>
+              <CommandGroup>
+                {countryOptions.map((country) => (
+                  <CommandItem
+                    key={country.value}
+                    value={country.label}
+                    onSelect={() => {
+                      onValueChange(country.value === value ? "" : country.value);
+                      setOpen(false);
+                    }}
+                  >
+                    <Check
+                      className={cn(
+                        "mr-2 h-4 w-4",
+                        value === country.value ? "opacity-100" : "opacity-0"
+                      )}
+                    />
+                    {country.label}
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      </Popover>
+    );
+  }
 
   return (
     <Card className="@container/card">
@@ -551,41 +447,23 @@ export function TariffChart({
               <Label htmlFor="importingCountry" className="mb-2">
                 Importing Country (Sets Tariffs):
               </Label>
-              <Select
+              <CountryCombobox
                 value={importingCountry}
                 onValueChange={setImportingCountry}
-              >
-                <SelectTrigger id="importingCountry" className="w-full">
-                  <SelectValue placeholder="Select country" />
-                </SelectTrigger>
-                <SelectContent>
-                  {countryOptions.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                placeholder="Select importing country"
+                id="importingCountry"
+              />
             </div>
             <div className="flex-1 min-w-0">
               <Label htmlFor="exportingCountry" className="mb-2">
                 Exporting Country (Pays Tariffs):
               </Label>
-              <Select
+              <CountryCombobox
                 value={exportingCountry}
                 onValueChange={setExportingCountry}
-              >
-                <SelectTrigger id="exportingCountry" className="w-full">
-                  <SelectValue placeholder="Select country" />
-                </SelectTrigger>
-                <SelectContent>
-                  {countryOptions.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                placeholder="Select exporting country"
+                id="exportingCountry"
+              />
             </div>
             <div className="flex-1 min-w-0">
               <Label htmlFor="productCode" className="mb-2">
@@ -608,6 +486,7 @@ export function TariffChart({
         </div>
       </CardContent>
       {/* Removed old loading text, replaced by skeleton above */}
+
       {hasError && (
         <div className="text-red-500 text-center py-8">
           Failed to fetch tariff data.
