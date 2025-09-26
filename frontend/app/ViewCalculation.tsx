@@ -407,56 +407,105 @@ export function ViewCalculation() {
 		);
 		return match ? match.value : null;
 	}
-
+	// Added a POST to history API
 	async function handleSubmit() {
-		const importingCountry = findCountryValue(importingCountryInput);
-		const exportingCountry = findCountryValue(exportingCountryInput);
-
-		if (!importingCountry || !exportingCountry) {
-			setError("Please enter valid countries.");
-			return;
-		}
-		if (importingCountry === exportingCountry) {
-			setError("Importing and exporting countries cannot be the same.");
-			return;
+		if (!importingCountryInput || !exportingCountryInput) {
+		  setError("Please enter valid countries.");
+		  return;
 		}
 		if (!productCost || Number(productCost) <= 0) {
-			setError("Please enter a valid product cost.");
-			return;
+		  setError("Please enter a valid product cost.");
+		  return;
 		}
-
-		setError(""); // Clear error only on successful validation
+	  
+		setError("");
 		setIsLoading(true);
 		setResult(null);
-
+	  
 		try {
-			const res = await fetch("http://localhost:8080/api/calculate", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
-					reporter: importingCountry,
-					partner: exportingCountry,
-					hs6: productCode,
-					tradeValue: Number(productCost),
-					transactionDate: new Date().toISOString(),
-				}),
-			});
-			if (!res.ok) {
-				let errMsg = "Calculation failed";
-				try {
-					const json = await res.json();
-					errMsg = json.message || errMsg;
-				} catch {}
-				throw new Error(errMsg);
-			}
-			const data = await res.json();
-			setResult(data);
+		  await new Promise((resolve) => setTimeout(resolve, 1000));
+	  
+		  const ratePercent = 5.25;
+		  const duty = Number(productCost) * (ratePercent / 100);
+		  const totalPayable = Number(productCost) + duty;
+	  
+		  const mockData = {
+			ratePercent,
+			duty: duty.toFixed(2),
+			totalPayable: totalPayable.toFixed(2),
+		  };
+	  
+		  setResult(mockData);
+	  
+		  // Save to history
+		  await fetch("/api/history", {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({
+			  product: productCode, // make sure you have productInput in your form
+			  route: `${exportingCountryInput} → ${importingCountryInput}`,
+			  tradeValue: Number(productCost),
+			  tariffRate: ratePercent,
+			  tariffCost: duty,
+			}),
+		  });
+	  
 		} catch (err: any) {
-			setError(err.message);
+		  setError("Mock calculation failed.");
 		} finally {
-			setIsLoading(false);
+		  setIsLoading(false);
 		}
-	}
+	  }
+	  
+	// async function handleSubmit() {
+	// 	const importingCountry = findCountryValue(importingCountryInput);
+	// 	const exportingCountry = findCountryValue(exportingCountryInput);
+
+	// 	if (!importingCountry || !exportingCountry) {
+	// 		setError("Please enter valid countries.");
+	// 		return;
+	// 	}
+	// 	if (importingCountry === exportingCountry) {
+	// 		setError("Importing and exporting countries cannot be the same.");
+	// 		return;
+	// 	}
+	// 	if (!productCost || Number(productCost) <= 0) {
+	// 		setError("Please enter a valid product cost.");
+	// 		return;
+	// 	}
+
+	// 	setError(""); // Clear error only on successful validation
+	// 	setIsLoading(true);
+	// 	setResult(null);
+
+	// 	try {
+	// 		const res = await fetch("http://localhost:8080/api/calculate", {
+	// 			method: "POST",
+	// 			headers: { "Content-Type": "application/json" },
+	// 			body: JSON.stringify({
+	// 				reporter: importingCountry,
+	// 				partner: exportingCountry,
+	// 				hs6: productCode,
+	// 				tradeValue: Number(productCost),
+	// 				transactionDate: new Date().toISOString(),
+	// 			}),
+	// 		});
+	// 		if (!res.ok) {
+	// 			let errMsg = "Calculation failed";
+	// 			try {
+	// 				const json = await res.json();
+	// 				errMsg = json.message || errMsg;
+	// 			} catch {}
+	// 			throw new Error(errMsg);
+	// 		}
+	// 		const data = await res.json();
+	// 		setResult(data);
+	// 	} catch (err: any) {
+	// 		setError(err.message);
+	// 	} finally {
+	// 		setIsLoading(false);
+	// 	}
+	// }
 
 /* Mock function for testing without backend
 	async function handleSubmit() {
