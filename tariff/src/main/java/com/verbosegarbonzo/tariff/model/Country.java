@@ -2,25 +2,24 @@ package com.verbosegarbonzo.tariff.model;
 
 import jakarta.persistence.*;
 import lombok.*;
-import java.io.Serializable;
 
 @Entity
-@Table(name = "countries")
+@Table(name = "countries", uniqueConstraints = {
+        @UniqueConstraint(columnNames = "iso_code"), @UniqueConstraint(columnNames = "name")
+})
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class Country implements Serializable {
+public class Country {
 
     @Id
-    @Column(name = "iso_code", length = 3)
-    private String iso3;
+    @Column(name = "numeric_code", length = 3)
+    private String numericCode; // Primary key - 3-digit numeric code
+
+    @Column(name = "iso_code", length = 3, unique = true)
+    private String iso3; // 3-letter ISO code, unique
 
     @Column(name = "name")
     private String name;
-
-    @Column(name = "numeric_code")
-    private String numericCode;
 }
-
-

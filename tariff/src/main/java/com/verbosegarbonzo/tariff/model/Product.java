@@ -19,7 +19,7 @@ public class Product {
     @Column(name = "hs6code", length = 6)
     private String hs6Code;
 
-    @Column(name = "description", columnDefinition = "text")
+    @Column(name = "description", nullable = false, columnDefinition = "text")
     private String description;
 
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)

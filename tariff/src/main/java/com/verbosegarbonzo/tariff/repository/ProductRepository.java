@@ -15,7 +15,7 @@ public interface ProductRepository extends JpaRepository<Product, String> { //gi
     @Query("""
         SELECT p FROM Product p
         WHERE LOWER(p.description) LIKE LOWER(CONCAT('%', :q, '%'))
-           OR p.hs6Code LIKE CONCAT(:q, '%')
+            OR p.hs6Code LIKE CONCAT(:q, '%')
         """)
     List<Product> searchProducts(@Param("q") String query, Pageable page);
 

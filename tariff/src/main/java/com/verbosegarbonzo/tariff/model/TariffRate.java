@@ -1,32 +1,11 @@
 package com.verbosegarbonzo.tariff.model;
-package com.verbosegarbonzo.tariff.model;
 
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.io.Serializable;
 import java.time.LocalDate;
-
-@Embeddable
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
-@EqualsAndHashCode
-public class TariffRateId implements Serializable {
-
-    @Column(name = "hs6code", length = 6)
-    private String hs6Code;
-
-    @Column(name = "importing", length = 3)
-    private String importing;
-
-    @Column(name = "exporting", length = 3)
-    private String exporting;
-
-    @Column(name = "date")
-    private LocalDate date;
-}
+import java.util.Objects;
 
 @Entity
 @Table(name = "tariff_rate")
@@ -35,6 +14,26 @@ public class TariffRateId implements Serializable {
 @NoArgsConstructor
 @AllArgsConstructor
 public class TariffRate {
+
+    @Embeddable
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @EqualsAndHashCode
+    public static class TariffRateId implements Serializable {
+        @Column(name = "hs6code", length = 6)
+        private String hs6Code;
+
+        @Column(name = "importing", length = 3)
+        private String importing;
+
+        @Column(name = "exporting", length = 3)
+        private String exporting;
+
+        @Column(name = "date")
+        private LocalDate date;
+    }
 
     @EmbeddedId
     private TariffRateId id;
@@ -46,17 +45,17 @@ public class TariffRate {
 
     @MapsId("importing")
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "importing", referencedColumnName = "iso_code", insertable = false, updatable = false)
+    @JoinColumn(name = "importing", referencedColumnName = "numeric_code", insertable = false, updatable = false)
     private Country importingCountry;
 
     @MapsId("exporting")
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "exporting", referencedColumnName = "iso_code", insertable = false, updatable = false)
+    @JoinColumn(name = "exporting", referencedColumnName = "numeric_code", insertable = false, updatable = false)
     private Country exportingCountry;
 
-    @Column(name = "expiry")
+    @Column(name = "expiry", nullable = false)
     private LocalDate expiry;
 
-    @Column(name = "rate")
+    @Column(name = "rate", nullable = false)
     private Double rate;
 }
