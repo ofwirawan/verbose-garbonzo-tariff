@@ -1,5 +1,6 @@
 package com.verbosegarbonzo.tariff.controller;
 
+import com.verbosegarbonzo.tariff.dto.CalculateResponse;
 import com.verbosegarbonzo.tariff.model.*;
 import com.verbosegarbonzo.tariff.service.*;
 import jakarta.validation.Valid;
