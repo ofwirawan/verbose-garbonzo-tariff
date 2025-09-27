@@ -1,0 +1,17 @@
+com\verbosegarbonzo\tariff\model\CalculateResponse.class
+com\verbosegarbonzo\tariff\client\WitsMetadataClient.class
+com\verbosegarbonzo\tariff\controller\TariffController.class
+com\verbosegarbonzo\tariff\repository\ProductRepository.class
+com\verbosegarbonzo\tariff\TariffApplication.class
+com\verbosegarbonzo\tariff\service\TariffService$ExternalServiceException.class
+com\verbosegarbonzo\tariff\controller\MetadataController.class
+com\verbosegarbonzo\tariff\config\WebClientConfig.class
+com\verbosegarbonzo\tariff\config\WitsProperties$Metadata.class
+com\verbosegarbonzo\tariff\model\Product.class
+com\verbosegarbonzo\tariff\config\WitsProperties.class
+com\verbosegarbonzo\tariff\model\CalculateRequest.class
+com\verbosegarbonzo\tariff\service\TariffService.class
+com\verbosegarbonzo\tariff\controller\TariffController$ErrorPayload.class
+com\verbosegarbonzo\tariff\config\WitsProperties$Tariff.class
+com\verbosegarbonzo\tariff\model\CountryRef.class
+com\verbosegarbonzo\tariff\service\TariffService$RateNotFoundException.class

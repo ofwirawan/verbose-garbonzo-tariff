@@ -25,11 +25,11 @@ public class WebClientConfig {
 
     private HttpClient httpClient() {
         return HttpClient.create()
-                .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 5000)
-                .responseTimeout(Duration.ofSeconds(5))
+                .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 30000)
+                .responseTimeout(Duration.ofSeconds(30))
                 .doOnConnected(conn ->
-                        conn.addHandlerLast(new ReadTimeoutHandler(5, TimeUnit.SECONDS))
-                            .addHandlerLast(new WriteTimeoutHandler(5, TimeUnit.SECONDS))
+                        conn.addHandlerLast(new ReadTimeoutHandler(30, TimeUnit.SECONDS))
+                            .addHandlerLast(new WriteTimeoutHandler(30, TimeUnit.SECONDS))
                 );
     }
 

@@ -1,2 +1,12 @@
-/Users/vindyanggiono/Documents/coding/GitHub/verbose-garbonzo-tariff/tariff/src/main/java/com/verbosegarbonzo/tariff/TariffApplication.java
-/Users/vindyanggiono/Documents/coding/GitHub/verbose-garbonzo-tariff/tariff/src/main/java/com/verbosegarbonzo/tariff/TariffController.java
+C:\Users\charl\OneDrive\Documents\CS203\Project\verbose-garbonzo-tariff\tariff\src\main\java\com\verbosegarbonzo\tariff\client\WitsMetadataClient.java
+C:\Users\charl\OneDrive\Documents\CS203\Project\verbose-garbonzo-tariff\tariff\src\main\java\com\verbosegarbonzo\tariff\config\WebClientConfig.java
+C:\Users\charl\OneDrive\Documents\CS203\Project\verbose-garbonzo-tariff\tariff\src\main\java\com\verbosegarbonzo\tariff\config\WitsProperties.java
+C:\Users\charl\OneDrive\Documents\CS203\Project\verbose-garbonzo-tariff\tariff\src\main\java\com\verbosegarbonzo\tariff\controller\MetadataController.java
+C:\Users\charl\OneDrive\Documents\CS203\Project\verbose-garbonzo-tariff\tariff\src\main\java\com\verbosegarbonzo\tariff\controller\TariffController.java
+C:\Users\charl\OneDrive\Documents\CS203\Project\verbose-garbonzo-tariff\tariff\src\main\java\com\verbosegarbonzo\tariff\model\CalculateRequest.java
+C:\Users\charl\OneDrive\Documents\CS203\Project\verbose-garbonzo-tariff\tariff\src\main\java\com\verbosegarbonzo\tariff\model\CalculateResponse.java
+C:\Users\charl\OneDrive\Documents\CS203\Project\verbose-garbonzo-tariff\tariff\src\main\java\com\verbosegarbonzo\tariff\model\CountryRef.java
+C:\Users\charl\OneDrive\Documents\CS203\Project\verbose-garbonzo-tariff\tariff\src\main\java\com\verbosegarbonzo\tariff\model\Product.java
+C:\Users\charl\OneDrive\Documents\CS203\Project\verbose-garbonzo-tariff\tariff\src\main\java\com\verbosegarbonzo\tariff\repository\ProductRepository.java
+C:\Users\charl\OneDrive\Documents\CS203\Project\verbose-garbonzo-tariff\tariff\src\main\java\com\verbosegarbonzo\tariff\service\TariffService.java
+C:\Users\charl\OneDrive\Documents\CS203\Project\verbose-garbonzo-tariff\tariff\src\main\java\com\verbosegarbonzo\tariff\TariffApplication.java

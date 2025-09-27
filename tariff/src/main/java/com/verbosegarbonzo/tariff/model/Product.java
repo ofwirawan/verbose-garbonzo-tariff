@@ -1,10 +1,11 @@
 package com.verbosegarbonzo.tariff.model;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.*;
+import java.io.Serializable;
+import java.time.LocalDate;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "products")
@@ -13,13 +14,14 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 public class Product {
-//created to parse product list into Supabase
-//WITS -> ProductRef -> Product -> Supabase
- 
+
     @Id
     @Column(name = "hs6code", length = 6)
     private String hs6Code;
 
     @Column(name = "description", columnDefinition = "text")
     private String description;
+
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<TariffRate> tariffRates = new HashSet<>();
 }
