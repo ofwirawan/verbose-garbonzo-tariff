@@ -16,9 +16,7 @@ import java.util.Optional;
 @Repository
 public interface TariffRateRepository extends JpaRepository<TariffRate, TariffRateId> {
 
-    // Create: save() method inherited from JpaRepository
-
-    // Read by TariffRateId (PK)
+    // Read by TariffRateId
     Optional<TariffRate> findById(TariffRateId id);
 
     // Read list between dates for given composite key excluding date

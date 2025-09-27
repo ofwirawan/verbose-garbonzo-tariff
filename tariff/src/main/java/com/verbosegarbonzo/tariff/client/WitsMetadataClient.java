@@ -70,7 +70,7 @@ public class WitsMetadataClient {
             XmlMapper xmlMapper = new XmlMapper();
             JsonNode root = xmlMapper.readTree(xml);
 
-            List<Country> s = new ArrayList<>();
+            List<Country> refs = new ArrayList<>();
 
             JsonNode countries = root.path("countries");
             for (JsonNode country : countries.withArray("country")) {
@@ -85,7 +85,7 @@ public class WitsMetadataClient {
             }
 
             countriesByIso3.clear();
-            s.forEach(c -> countriesByIso3.put(c.getIso3(), c));
+            refs.forEach(c -> countriesByIso3.put(c.getIso3(), c));
 
             System.out.println("Loaded " + countriesByIso3.size() + " countries into cache.");
         } catch (Exception e) {

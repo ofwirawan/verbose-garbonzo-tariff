@@ -7,9 +7,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import jakarta.validation.Valid;
 import java.time.LocalDate;
 import java.util.List;
-
+import java.util.NoSuchElementException;
 
 @RestController
 @RequestMapping("/api/admin/tariffrates")
@@ -21,66 +22,75 @@ public class AdminTariffRateController {
         this.tariffRateService = tariffRateService;
     }
 
+    // Create new tariff rate
     @PostMapping
-    public ResponseEntity<TariffRate> create(@RequestBody TariffRate tariffRate) {
+    public ResponseEntity<TariffRate> create(@Valid @RequestBody TariffRate tariffRate) {
         TariffRate created = tariffRateService.create(tariffRate);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
+    // Read tariff rate by composite key
     @GetMapping("/{hs6Code}/{importing}/{exporting}/{date}")
     public ResponseEntity<TariffRate> getById(
-        @PathVariable String hs6Code, 
-        @PathVariable String importing,
-        @PathVariable String exporting,
-        @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
-
-        TariffRate tariffRate = tariffRateService.getById(hs6Code, importing, exporting, date);
-        return ResponseEntity.ok(tariffRate);
+            @PathVariable String hs6Code,
+            @PathVariable String importing,
+            @PathVariable String exporting,
+            @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+        try {
+            TariffRate tariffRate = tariffRateService.getById(hs6Code, importing, exporting, date);
+            return ResponseEntity.ok(tariffRate);
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.notFound().build();
+        }
     }
 
+    // List tariff rates in date range for given keys
     @GetMapping("/search")
     public ResponseEntity<List<TariffRate>> search(
-        @RequestParam String hs6Code,
-        @RequestParam String importing,
-        @RequestParam String exporting,
-        @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
-        @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
-
+            @RequestParam String hs6Code,
+            @RequestParam String importing,
+            @RequestParam String exporting,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
         List<TariffRate> rates = tariffRateService.findAllByIdBetweenDates(hs6Code, importing, exporting, startDate, endDate);
         return ResponseEntity.ok(rates);
     }
 
+    // Update tariff rate by composite key
     @PutMapping("/{hs6Code}/{importing}/{exporting}/{date}")
     public ResponseEntity<String> update(
-        @PathVariable String hs6Code,
-        @PathVariable String importing,
-        @PathVariable String exporting,
-        @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
-        @RequestBody TariffRate rateUpdate) {
-
-        boolean success = tariffRateService.updateTariffRate(hs6Code, importing, exporting, date,
-            rateUpdate.getRate(), rateUpdate.getExpiry(), rateUpdate.getId().getDate());
-
-        if (success) {
+            @PathVariable String hs6Code,
+            @PathVariable String importing,
+            @PathVariable String exporting,
+            @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+            @Valid @RequestBody TariffRate rateUpdate) {
+        boolean updated = tariffRateService.updateTariffRate(
+                hs6Code,
+                importing,
+                exporting,
+                date,
+                rateUpdate.getRate(),
+                rateUpdate.getExpiry(),
+                rateUpdate.getId().getDate());
+        if (updated) {
             return ResponseEntity.ok("Tariff rate updated successfully");
         } else {
-            return ResponseEntity.badRequest().body("Update failed or tariff rate not found");
+            return ResponseEntity.badRequest().body("Tariff rate not found or update failed");
         }
     }
 
+    // Delete tariff rate by composite key
     @DeleteMapping("/{hs6Code}/{importing}/{exporting}/{date}")
     public ResponseEntity<String> delete(
-        @PathVariable String hs6Code,
-        @PathVariable String importing,
-        @PathVariable String exporting,
-        @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
-
-        boolean deleted = tariffRateService.delete(hs6Code, importing, exporting, date);
-        if (deleted) {
+            @PathVariable String hs6Code,
+            @PathVariable String importing,
+            @PathVariable String exporting,
+            @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+        try {
+            tariffRateService.deleteById(hs6Code, importing, exporting, date);
             return ResponseEntity.ok("Tariff rate deleted successfully");
-        } else {
+        } catch (NoSuchElementException e) {
             return ResponseEntity.badRequest().body("Tariff rate not found");
         }
     }
 }
-

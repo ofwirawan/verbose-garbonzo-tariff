@@ -3,7 +3,7 @@ package com.verbosegarbonzo.tariff.service;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.verbosegarbonzo.tariff.config.WitsProperties;
-import com.verbosegarbonzo.tariff.dto.CalculateResponse;
+import com.verbosegarbonzo.tariff.model.CalculateResponse;
 import com.verbosegarbonzo.tariff.model.CalculateRequest;
 
 import org.slf4j.Logger;
