@@ -34,11 +34,10 @@ public class TariffService {
     public CalculateResponse calculate(CalculateRequest req) {
         final int year = req.getTransactionDate().getYear();
 
-        // Build the initial WITS API path using original reporter and partner
-        String partner = req.getPartner();
+        // Build the WITS API path
         String path = props.getTariff().getDataset()
                 + "/reporter/" + req.getReporter()
-                + "/partner/" + partner
+                + "/partner/" + req.getPartner()
                 + "/product/" + req.getHs6()
                 + "/year/" + year
                 + "/datatype/reported?format=JSON";
@@ -57,44 +56,10 @@ public class TariffService {
 
         // Extract tariff percentage from WITS JSON response
         BigDecimal ratePercent = extractMfnSimpleAveragePercent(raw);
-
-        // If rate not found, attempt fallback with partner "000" (default/world)
-        if (ratePercent == null && !"000".equals(partner)) {
-            partner = "000"; // fallback to partner '000'
-
-            // Rebuild path with fallback partner
-            path = props.getTariff().getDataset()
-                    + "/reporter/" + req.getReporter()
-                    + "/partner/" + partner
-                    + "/product/" + req.getHs6()
-                    + "/year/" + year
-                    + "/datatype/reported?format=JSON";
-
-            dataUrl = dataUrlBase + "/" + path;
-
-            // Retry WITS call with fallback partner
-            raw = webClient.get()
-                    .uri("/" + path) // prepend slash again
-                    .accept(MediaType.APPLICATION_JSON)
-                    .retrieve()
-                    .bodyToMono(String.class)
-                    .block();
-
-            ratePercent = extractMfnSimpleAveragePercent(raw);
-
-            // Throw exception if fallback also yields no rate
-            if (ratePercent == null) {
-                throw new RateNotFoundException("No MFN rate for hs6=" + req.getHs6()
-                        + " reporter=" + req.getReporter()
-                        + " partner=" + partner
-                        + " year=" + year);
-            }
-        } else if (ratePercent == null) {
-            // Rate not found and partner was already '000' or no fallback possible
-            throw new RateNotFoundException("No MFN rate for hs6=" + req.getHs6()
-                    + " reporter=" + req.getReporter()
-                    + " partner=" + partner
-                    + " year=" + year);
+        
+        // If no rate found, use default 0% tariff rate
+        if (ratePercent == null) {
+            ratePercent = BigDecimal.ZERO;
         }
 
         // Convert percentage rate (e.g., 5.00) to decimal (e.g., 0.05) for calculations
@@ -108,12 +73,11 @@ public class TariffService {
         // Calculate total amount payable including duty
         BigDecimal totalPayable = req.getTradeValue().add(duty);
 
-        // Build output DTO with results and metadata including possibly fallback
-        // partner
+        // Build output DTO with results and metadata
         final CalculateResponse resp = new CalculateResponse();
         resp.setHs6(req.getHs6());
         resp.setReporter(req.getReporter());
-        resp.setPartner(partner); // shows fallback partner if used
+        resp.setPartner(req.getPartner());
         resp.setYear(year);
         resp.setRatePercent(ratePercent.setScale(2, RoundingMode.HALF_UP));
         resp.setTradeValue(req.getTradeValue());
