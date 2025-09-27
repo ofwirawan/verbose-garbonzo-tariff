@@ -17,6 +17,8 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 
+import { useRouter } from "next/navigation";
+
 // Country options
 const countryOptions = [
 	{ label: "Afghanistan", value: "AFG" },
@@ -245,6 +247,7 @@ const productOptions = [
 	{ label: "Services & Intangibles", value: "98_Services" },
 ];
 
+
 const inputClass =
 	"w-full min-w-[200px] h-12 min-h-[48px] border rounded px-3 py-2 focus:outline-none focus:ring-2 transition-all";
 
@@ -297,11 +300,10 @@ function CountryAutocomplete({
 				onFocus={() => setFocused(true)}
 				onBlur={() => setTimeout(() => setFocused(false), 100)}
 				placeholder={placeholder}
-				className={`${inputClass} ${
-					error
-						? "border-red-500 focus:ring-red-500"
-						: "border-gray-300 focus:ring-black"
-				}`}
+				className={`${inputClass} ${error
+					? "border-red-500 focus:ring-red-500"
+					: "border-gray-300 focus:ring-black"
+					}`}
 				autoComplete="off"
 			/>
 			{focused && value && filtered.length > 0 && (
@@ -363,6 +365,10 @@ export function ViewCalculation() {
 	const [exportingCountryInput, setExportingCountryInput] = useState("");
 	const [importingCountryError, setImportingCountryError] = useState(false);
 	const [exportingCountryError, setExportingCountryError] = useState(false);
+	// Added a transaction date for users & router
+	const [transactionDate, setTransactionDate] = useState<string>("");
+	const router = useRouter();
+
 
 	const [productCode, setProductCode] = useState("01-05_Animals");
 	const [productCost, setProductCost] = useState("");
@@ -407,56 +413,73 @@ export function ViewCalculation() {
 		);
 		return match ? match.value : null;
 	}
-	// Added a POST to history API
+	// Added a POST to history Java API 
 	async function handleSubmit() {
 		if (!importingCountryInput || !exportingCountryInput) {
-		  setError("Please enter valid countries.");
-		  return;
+			setError("Please enter valid countries.");
+			return;
 		}
 		if (!productCost || Number(productCost) <= 0) {
-		  setError("Please enter a valid product cost.");
-		  return;
+			setError("Please enter a valid product cost.");
+			return;
 		}
-	  
+		if (!transactionDate) {
+			setError("Please select a transaction date.");
+			return;
+		}
+
 		setError("");
 		setIsLoading(true);
 		setResult(null);
-	  
+
 		try {
-		  await new Promise((resolve) => setTimeout(resolve, 1000));
-	  
-		  const ratePercent = 5.25;
-		  const duty = Number(productCost) * (ratePercent / 100);
-		  const totalPayable = Number(productCost) + duty;
-	  
-		  const mockData = {
-			ratePercent,
-			duty: duty.toFixed(2),
-			totalPayable: totalPayable.toFixed(2),
-		  };
-	  
-		  setResult(mockData);
-	  
-		  // Save to history
-		  await fetch("/api/history", {
-			method: "POST",
-			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify({
-			  product: productCode, // make sure you have productInput in your form
-			  route: `${exportingCountryInput} → ${importingCountryInput}`,
-			  tradeValue: Number(productCost),
-			  tariffRate: ratePercent,
-			  tariffCost: duty,
-			}),
-		  });
-	  
+			await new Promise((resolve) => setTimeout(resolve, 1000));
+
+			const mockData = {
+				ratePercent: 5.25,
+				duty: (Number(productCost) * 0.0525).toFixed(2),
+				totalPayable: (Number(productCost) * 1.0525).toFixed(2),
+			};
+
+			setResult(mockData);
+
+			const formattedDate = new Date(transactionDate).toISOString().split("T")[0];
+			// Create the request body
+			const requestBody = {
+				date: formattedDate,
+				product: productOptions.find(p => p.value === productCode)?.label || "Your Product",
+				route: `${exportingCountryInput} → ${importingCountryInput}`,
+				tradeValue: Number(productCost),
+				tariffRate: mockData.ratePercent,
+				tariffCost: Number(mockData.duty),
+			};
+
+			console.log("Sending request:", JSON.stringify(requestBody, null, 2));
+
+			const response = await fetch("http://localhost:8080/api/history", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify(requestBody),
+			});
+
+			if (!response.ok) {
+				const errorText = await response.text();
+				console.error("Backend error:", errorText);
+				throw new Error(`Failed to save: ${response.status}`);
+			}
+
+			const savedData = await response.json();
+			console.log("Successfully saved:", savedData);
+
 		} catch (err: any) {
-		  setError("Mock calculation failed.");
+			console.error("Detailed error:", err);
+			setError("Calculation completed, but failed to save to history.");
 		} finally {
-		  setIsLoading(false);
+			setIsLoading(false);
 		}
-	  }
-	  
+	}
+
+
 	// async function handleSubmit() {
 	// 	const importingCountry = findCountryValue(importingCountryInput);
 	// 	const exportingCountry = findCountryValue(exportingCountryInput);
@@ -507,40 +530,40 @@ export function ViewCalculation() {
 	// 	}
 	// }
 
-/* Mock function for testing without backend
-	async function handleSubmit() {
-		if (!importingCountryInput || !exportingCountryInput) {
-			setError("Please enter valid countries.");
-			return;
+	/* Mock function for testing without backend
+		async function handleSubmit() {
+			if (!importingCountryInput || !exportingCountryInput) {
+				setError("Please enter valid countries.");
+				return;
+			}
+			if (!productCost || Number(productCost) <= 0) {
+				setError("Please enter a valid product cost.");
+				return;
+			}
+	
+			setError("");
+			setIsLoading(true);
+			setResult(null);
+	
+			try {
+				// Simulated delay to mimic API call
+				await new Promise((resolve) => setTimeout(resolve, 1000));
+	
+				// Mock response data
+				const mockData = {
+					ratePercent: 5.25,
+					duty: (Number(productCost) * 0.0525).toFixed(2),
+					totalPayable: (Number(productCost) * 1.0525).toFixed(2),
+				};
+	
+				setResult(mockData);
+			} catch (err: any) {
+				setError("Mock calculation failed.");
+			} finally {
+				setIsLoading(false);
+			}
 		}
-		if (!productCost || Number(productCost) <= 0) {
-			setError("Please enter a valid product cost.");
-			return;
-		}
-
-		setError("");
-		setIsLoading(true);
-		setResult(null);
-
-		try {
-			// Simulated delay to mimic API call
-			await new Promise((resolve) => setTimeout(resolve, 1000));
-
-			// Mock response data
-			const mockData = {
-				ratePercent: 5.25,
-				duty: (Number(productCost) * 0.0525).toFixed(2),
-				totalPayable: (Number(productCost) * 1.0525).toFixed(2),
-			};
-
-			setResult(mockData);
-		} catch (err: any) {
-			setError("Mock calculation failed.");
-		} finally {
-			setIsLoading(false);
-		}
-	}
-*/
+	*/
 	const isCalculateDisabled =
 		importingCountryError ||
 		exportingCountryError ||
@@ -631,6 +654,16 @@ export function ViewCalculation() {
 								placeholder="Enter cost"
 							/>
 						</div>
+
+						<div className="flex flex-col">
+							<label className="block text-sm font-medium mb-2">Transaction Date:</label>
+							<input
+								type="date"
+								value={transactionDate}
+								onChange={(e) => setTransactionDate(e.target.value)}
+								className={`${inputClass} border-gray-300 focus:ring-black`}
+							/>
+						</div>
 					</div>
 					<div className="flex justify-center mt-6">
 						<button
@@ -650,9 +683,8 @@ export function ViewCalculation() {
 						<CardContent>
 							<div
 								ref={resultRef}
-								className={`transition-opacity duration-700 ${
-									showResult ? "opacity-100" : "opacity-0"
-								}`}
+								className={`transition-opacity duration-700 ${showResult ? "opacity-100" : "opacity-0"
+									}`}
 							>
 								<h3 className="text-lg font-bold underline mb-4">
 									Calculation Result
@@ -680,6 +712,12 @@ export function ViewCalculation() {
 					)}
 				</CardContent>
 			</Card>
+			<button
+				onClick={() => router.push("/history")}
+				className="mt-4 bg-blue-600 text-white px-4 py-2 rounded"
+			>
+				View History
+			</button>
 		</div>
 	);
 }

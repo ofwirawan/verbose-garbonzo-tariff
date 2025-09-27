@@ -16,14 +16,15 @@ export default function HistoryPage() {
   const [history, setHistory] = useState<HistoryItem[]>([]);
 
   useEffect(() => {
-    fetch("/api/history")
+    fetch("http://localhost:8080/api/history")
       .then((res) => res.json())
       .then((data) => {
-        console.log("Fetched history:", data); // ✅ debug log
+        console.log("Fetched history:", data); // debug log
         setHistory(data);
       })
       .catch((err) => console.error("Fetch history error:", err));
   }, []);
+
 
   return (
     <div className="p-6">
