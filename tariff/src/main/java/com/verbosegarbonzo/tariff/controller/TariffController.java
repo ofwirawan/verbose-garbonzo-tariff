@@ -1,6 +1,6 @@
 package com.verbosegarbonzo.tariff.controller;
 
-import com.verbosegarbonzo.tariff.dto.CalculateResponse;
+import com.verbosegarbonzo.tariff.dto.BaseRateCalculateResponse;
 import com.verbosegarbonzo.tariff.model.*;
 import com.verbosegarbonzo.tariff.service.*;
 import jakarta.validation.Valid;
@@ -21,7 +21,7 @@ public class TariffController {
 
     @PostMapping("/calculate")
     public ResponseEntity<CalculateResponse> calculate(@Valid @RequestBody CalculateRequest req) {
-        return ResponseEntity.ok(service.calculate(req)); //does the WITS call and tariff calculation.
+        return ResponseEntity.ok(service.calculate(req)); //does the external api call and tariff calculation.
     }
 
     @ExceptionHandler(RateNotFoundException.class)

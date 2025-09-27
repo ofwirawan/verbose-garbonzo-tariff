@@ -3,7 +3,7 @@ package com.verbosegarbonzo.tariff.client;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.verbosegarbonzo.tariff.config.WitsProperties;
-import com.verbosegarbonzo.tariff.model.CountryRef;
+import com.verbosegarbonzo.tariff.model.Country;
 import com.verbosegarbonzo.tariff.model.Product;
 import com.verbosegarbonzo.tariff.repository.ProductRepository;
 
@@ -37,7 +37,7 @@ public class WitsMetadataClient {
     private final WitsProperties props;
     private final ProductRepository productRepository;
 
-    private final Map<String, CountryRef> countriesByIso3 = new ConcurrentHashMap<>();
+    private final Map<String, Country> countriesByIso3 = new ConcurrentHashMap<>();
 
     public WitsMetadataClient(@Qualifier("metadataWebClient") WebClient metadataWebClient, WitsProperties props,
             ProductRepository productRepository) {
@@ -70,7 +70,7 @@ public class WitsMetadataClient {
             XmlMapper xmlMapper = new XmlMapper();
             JsonNode root = xmlMapper.readTree(xml);
 
-            List<CountryRef> refs = new ArrayList<>();
+            List<Country> s = new ArrayList<>();
 
             JsonNode countries = root.path("countries");
             for (JsonNode country : countries.withArray("country")) {
@@ -80,19 +80,19 @@ public class WitsMetadataClient {
 
                 if (!iso3.isEmpty() && !name.isEmpty() && numeric.matches("\\d+")) { // to eliminate groups with no
                                                                                      // numeric code
-                    refs.add(new CountryRef(name, iso3, numeric));
+                    refs.add(new Country(name, iso3, numeric));
                 }
             }
 
             countriesByIso3.clear();
-            refs.forEach(c -> countriesByIso3.put(c.getIso3(), c));
+            s.forEach(c -> countriesByIso3.put(c.getIso3(), c));
 
             System.out.println("Loaded " + countriesByIso3.size() + " countries into cache.");
         } catch (Exception e) {
             e.printStackTrace();
         }
 
-        // Parse XML into CountryRef list (using Jackson XML)
+        // Parse XML into Country list (using Jackson XML)
         // Fill countriesByIso3 map and list
     }
 
@@ -226,14 +226,14 @@ public class WitsMetadataClient {
         }
     }
 
-    public List<CountryRef> searchCountries(String query) {
+    public List<Country> searchCountries(String query) {
         if (query == null || query.length() < 2)
             return Collections.emptyList();
 
         return countriesByIso3.values().stream()
                 .filter(c -> c.getName().toLowerCase().contains(query.toLowerCase())
                         || c.getIso3().toLowerCase().contains(query.toLowerCase())) // can search based on ISO3 code
-                .sorted(Comparator.comparing(CountryRef::getName)) // sorted for better UX
+                .sorted(Comparator.comparing(Country::getName)) // sorted for better UX
                 .limit(10) // limit to only 10 results
                 .collect(Collectors.toList());
     }

@@ -1,7 +1,7 @@
 package com.verbosegarbonzo.tariff.controller;
 
 import com.verbosegarbonzo.tariff.client.WitsMetadataClient;
-import com.verbosegarbonzo.tariff.model.CountryRef;
+import com.verbosegarbonzo.tariff.model.Country;
 import com.verbosegarbonzo.tariff.model.Product;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -21,7 +21,7 @@ public class MetadataController {
     }
 
     @GetMapping("/countries")
-    public ResponseEntity<List<CountryRef>> countries(@RequestParam String query) {
+    public ResponseEntity<List<Country>> countries(@RequestParam String query) {
         if (query == null || query.trim().length() < 2) { //ignore queries < 2 chars
             return ResponseEntity.ok(Collections.emptyList());
         }
