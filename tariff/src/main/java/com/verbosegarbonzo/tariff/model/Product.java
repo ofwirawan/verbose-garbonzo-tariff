@@ -21,7 +21,4 @@ public class Product {
 
     @Column(name = "description", nullable = false, columnDefinition = "text")
     private String description;
-
-    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Set<TariffRate> tariffRates = new HashSet<>();
 }

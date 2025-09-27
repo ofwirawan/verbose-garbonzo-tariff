@@ -10,21 +10,26 @@ import com.verbosegarbonzo.tariff.model.Product;
 
 import java.util.List;
 
-public interface ProductRepository extends JpaRepository<Product, String> { //gives you CRUD methods for DB
+public interface ProductRepository extends JpaRepository<Product, String> {
 
-    @Query("""
-        SELECT p FROM Product p
-        WHERE LOWER(p.description) LIKE LOWER(CONCAT('%', :q, '%'))
-            OR p.hs6Code LIKE CONCAT(:q, '%')
-        """)
-    List<Product> searchProducts(@Param("q") String query, Pageable page);
+    // 1. Search for products by description (case insensitive, with pagination)
+    List<Product> findByDescriptionContainingIgnoreCase(String description, Pageable pageable);
 
+    // 2. Update product description given product ID (hs6Code)
     @Modifying
     @Transactional
-    @Query(value = """
-        INSERT INTO products (hs6code, description)
-        VALUES (:hs6, :desc)
-        ON CONFLICT (hs6code) DO UPDATE SET description = EXCLUDED.description
-        """, nativeQuery = true)
-    void upsert(@Param("hs6") String hs6, @Param("desc") String desc);
+    @Query("UPDATE Product p SET p.description = :desc WHERE p.hs6Code = :hs6Code")
+    int updateDescriptionById(@Param("hs6Code") String hs6Code, @Param("desc") String desc);
+
+    // 3a. Delete products with exact description
+    @Transactional
+    int deleteByDescription(String description);
+
+    // 3b. Delete products matching description pattern (LIKE, case insensitive)
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM Product p WHERE LOWER(p.description) LIKE LOWER(CONCAT('%', :desc, '%'))")
+    int deleteByDescriptionLike(@Param("desc") String desc);
 }
+
+

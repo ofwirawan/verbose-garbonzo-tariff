@@ -1,16 +1,16 @@
 package com.verbosegarbonzo.tariff.controller.admin;
 
-import com.verbosegarbonzo.tariff.model.TariffRate;
+import com.verbosegarbonzo.tariff.dto.BaseTariffRateDTO;
 import com.verbosegarbonzo.tariff.service.TariffRateService;
-import org.springframework.format.annotation.DateTimeFormat;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import jakarta.validation.Valid;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/admin/tariffrates")
@@ -22,75 +22,86 @@ public class AdminTariffRateController {
         this.tariffRateService = tariffRateService;
     }
 
-    // Create new tariff rate
+    // Create a new tariff rate
     @PostMapping
-    public ResponseEntity<TariffRate> create(@Valid @RequestBody TariffRate tariffRate) {
-        TariffRate created = tariffRateService.create(tariffRate);
+    public ResponseEntity<BaseTariffRateDTO> create(@Valid @RequestBody BaseTariffRateDTO dto) {
+        BaseTariffRateDTO created = tariffRateService.createTariffRate(dto);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
-    // Read tariff rate by composite key
-    @GetMapping("/{hs6Code}/{importing}/{exporting}/{date}")
-    public ResponseEntity<TariffRate> getById(
-            @PathVariable String hs6Code,
-            @PathVariable String importing,
-            @PathVariable String exporting,
-            @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+    // Get tariff rate valid at date or closest before date
+    @GetMapping("/findClosest")
+    public ResponseEntity<BaseTariffRateDTO> getValidOrClosest(
+            @RequestParam String hs6Code,
+            @RequestParam String importing,
+            @RequestParam String exporting,
+            @RequestParam String date) {
+        LocalDate queryDate = LocalDate.parse(date);
+        Optional<BaseTariffRateDTO> tariffOpt = tariffRateService.findValidOrClosest(hs6Code, importing, exporting, queryDate);
+        return tariffOpt.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    // Search tariff rates by start date range
+    @GetMapping("/search")
+    public ResponseEntity<List<BaseTariffRateDTO>> searchBetweenStartDates(
+            @RequestParam String hs6Code,
+            @RequestParam String importing,
+            @RequestParam String exporting,
+            @RequestParam String startDate,
+            @RequestParam String endDate) {
+        List<BaseTariffRateDTO> result = tariffRateService.searchByStartDateRange(
+                hs6Code, importing, exporting, LocalDate.parse(startDate), LocalDate.parse(endDate));
+        return ResponseEntity.ok(result);
+    }
+
+    // Update tariff rate fully by id
+    @PutMapping("/{id}")
+    public ResponseEntity<BaseTariffRateDTO> update(
+            @PathVariable Long id,
+            @Valid @RequestBody BaseTariffRateDTO dto) {
         try {
-            TariffRate tariffRate = tariffRateService.getById(hs6Code, importing, exporting, date);
-            return ResponseEntity.ok(tariffRate);
+            BaseTariffRateDTO updated = tariffRateService.updateTariffRateById(id, dto);
+            return ResponseEntity.ok(updated);
         } catch (NoSuchElementException e) {
             return ResponseEntity.notFound().build();
         }
     }
 
-    // List tariff rates in date range for given keys
-    @GetMapping("/search")
-    public ResponseEntity<List<TariffRate>> search(
-            @RequestParam String hs6Code,
-            @RequestParam String importing,
-            @RequestParam String exporting,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
-        List<TariffRate> rates = tariffRateService.findAllByIdBetweenDates(hs6Code, importing, exporting, startDate, endDate);
-        return ResponseEntity.ok(rates);
-    }
-
-    // Update tariff rate by composite key
-    @PutMapping("/{hs6Code}/{importing}/{exporting}/{date}")
-    public ResponseEntity<String> update(
-            @PathVariable String hs6Code,
-            @PathVariable String importing,
-            @PathVariable String exporting,
-            @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
-            @Valid @RequestBody TariffRate rateUpdate) {
-        boolean updated = tariffRateService.updateTariffRate(
-                hs6Code,
-                importing,
-                exporting,
-                date,
-                rateUpdate.getRate(),
-                rateUpdate.getExpiry(),
-                rateUpdate.getId().getDate());
-        if (updated) {
-            return ResponseEntity.ok("Tariff rate updated successfully");
-        } else {
-            return ResponseEntity.badRequest().body("Tariff rate not found or update failed");
+    // Update only rate by id
+    @PutMapping("/{id}/rate")
+    public ResponseEntity<BaseTariffRateDTO> updateRate(
+            @PathVariable Long id,
+            @RequestParam Double rate) {
+        try {
+            BaseTariffRateDTO updated = tariffRateService.updateRate(id, rate);
+            return ResponseEntity.ok(updated);
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.notFound().build();
         }
     }
 
-    // Delete tariff rate by composite key
-    @DeleteMapping("/{hs6Code}/{importing}/{exporting}/{date}")
-    public ResponseEntity<String> delete(
-            @PathVariable String hs6Code,
-            @PathVariable String importing,
-            @PathVariable String exporting,
-            @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+    // Update only expiry by id
+    @PutMapping("/{id}/expiry")
+    public ResponseEntity<BaseTariffRateDTO> updateExpiry(
+            @PathVariable Long id,
+            @RequestParam String expiry) {
         try {
-            tariffRateService.deleteById(hs6Code, importing, exporting, date);
-            return ResponseEntity.ok("Tariff rate deleted successfully");
+            LocalDate expiryDate = LocalDate.parse(expiry);
+            BaseTariffRateDTO updated = tariffRateService.updateExpiry(id, expiryDate);
+            return ResponseEntity.ok(updated);
         } catch (NoSuchElementException e) {
-            return ResponseEntity.badRequest().body("Tariff rate not found");
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    // Delete tariff rate by id
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(@PathVariable Long id) {
+        try {
+            tariffRateService.deleteTariffRateById(id);
+            return ResponseEntity.noContent().build();
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.notFound().build();
         }
     }
 }
