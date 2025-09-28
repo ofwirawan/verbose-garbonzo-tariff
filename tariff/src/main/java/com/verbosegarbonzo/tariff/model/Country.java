@@ -4,8 +4,8 @@ import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
-@Table(name = "countries", uniqueConstraints = {
-        @UniqueConstraint(columnNames = "iso_code"), @UniqueConstraint(columnNames = "name")
+@Table(name = "country", uniqueConstraints = {
+        @UniqueConstraint(columnNames = "iso3code")
 })
 @Getter
 @Setter
@@ -14,12 +14,12 @@ import lombok.*;
 public class Country {
 
     @Id
-    @Column(name = "numeric_code", length = 3)
+    @Column(name = "numericcode", length = 3)
     private String numericCode; // Primary key - 3-digit numeric code
 
-    @Column(name = "iso_code", length = 3, unique = true)
-    private String iso3; // 3-letter ISO code, unique
+    @Column(name = "iso3code", length = 3, unique = true, nullable = false)
+    private String iso3code; // 3-letter ISO code, unique, not null
 
-    @Column(name = "name")
+    @Column(name = "name", nullable = false, length = 255)
     private String name;
 }
