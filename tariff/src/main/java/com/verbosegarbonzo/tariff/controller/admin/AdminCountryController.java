@@ -1,112 +1,79 @@
 package com.verbosegarbonzo.tariff.controller.admin;
 
 import com.verbosegarbonzo.tariff.model.Country;
-import com.verbosegarbonzo.tariff.service.CountryService;
+import com.verbosegarbonzo.tariff.repository.CountryRepository;
 import jakarta.validation.Valid;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.NoSuchElementException;
 
 @RestController
 @RequestMapping("/api/admin/countries")
 public class AdminCountryController {
 
-    private final CountryService countryService;
+    private final CountryRepository countryRepository;
 
-    public AdminCountryController(CountryService countryService) {
-        this.countryService = countryService;
+    public AdminCountryController(CountryRepository countryRepository) {
+        this.countryRepository = countryRepository;
     }
 
     // Create a new country
     @PostMapping
-    public ResponseEntity<Country> create(@Valid @RequestBody Country country) {
-        Country created = countryService.create(country);
-        return ResponseEntity.status(HttpStatus.CREATED).body(created);
+    public Country createCountry(@Valid @RequestBody Country country) {
+        return countryRepository.save(country);
     }
 
-    // Read country by numericCode (id)
-    @GetMapping("/{id}")
-    public ResponseEntity<Country> getById(@PathVariable("id") String numericCode) {
-        try {
-            Country country = countryService.getById(numericCode);
-            return ResponseEntity.ok(country);
-        } catch (NoSuchElementException e) {
-            return ResponseEntity.notFound().build();
-        }
+    // Get all countries
+    @GetMapping
+    public List<Country> getAllCountries() {
+        return countryRepository.findAll();
     }
 
-    // Delete country by numericCode (id)
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable("id") String numericCode) {
-        try {
-            countryService.deleteById(numericCode);
-            return ResponseEntity.noContent().build();
-        } catch (NoSuchElementException e) {
-            return ResponseEntity.notFound().build();
-        }
+    // Get country by numericCode
+    @GetMapping("/{numericCode}")
+    public ResponseEntity<Country> getCountryById(@PathVariable String numericCode) {
+        return countryRepository.findById(numericCode)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 
-    // Search countries by partial query on name, iso3, numericCode
+    // Search countries by query in name, iso3code, or numericCode
     @GetMapping("/search")
-    public ResponseEntity<List<Country>> searchCountries(@RequestParam String query) {
-        List<Country> result = countryService.searchCountries(query);
-        return ResponseEntity.ok(result);
+    public List<Country> searchCountries(@RequestParam String query) {
+        return countryRepository.searchCountries(query);
     }
 
-    // Update: update iso3 and name by numericCode
-    @PutMapping("/update")
-    public ResponseEntity<String> updateCountry(@RequestParam String numericCode,
-                                                @RequestParam String iso3,
-                                                @RequestParam String name) {
-        int updated = countryService.updateCountry(numericCode, iso3, name);
-        if (updated > 0) {
-            return ResponseEntity.ok("Country updated successfully.");
-        }
-        return ResponseEntity.badRequest().body("Country update failed.");
+    // Update country by numericCode
+    @PutMapping("/{numericCode}")
+    public ResponseEntity<Country> updateCountry(@PathVariable String numericCode, @Valid @RequestBody Country updatedCountry) {
+        return countryRepository.findById(numericCode)
+                .map(existingCountry -> {
+                    countryRepository.updateCountry(numericCode, updatedCountry.getIso3code(), updatedCountry.getName());
+                    // Refresh and return updated entity
+                    Country refreshed = countryRepository.findById(numericCode).orElse(existingCountry);
+                    return ResponseEntity.ok(refreshed);
+                })
+                .orElse(ResponseEntity.notFound().build());
     }
 
-    // Update iso3 by country name
-    @PutMapping("/updateIso3ByName")
-    public ResponseEntity<String> updateIso3ByName(@RequestParam String name,
-                                                   @RequestParam String iso3) {
-        int updated = countryService.updateIso3ByName(iso3, name);
-        if (updated > 0) {
-            return ResponseEntity.ok("Iso3 code updated successfully.");
-        }
-        return ResponseEntity.badRequest().body("Iso3 code update failed.");
-    }
-
-    // Update country name by iso3
-    @PutMapping("/updateNameByIso3")
-    public ResponseEntity<String> updateNameByIso3(@RequestParam String iso3,
-                                                   @RequestParam String name) {
-        int updated = countryService.updateNameByIso3(name, iso3);
-        if (updated > 0) {
-            return ResponseEntity.ok("Country name updated successfully.");
-        }
-        return ResponseEntity.badRequest().body("Country name update failed.");
-    }
-
-    // Delete by iso3
-    @DeleteMapping("/deleteIso3/{iso3}")
-    public ResponseEntity<String> deleteByIso3(@PathVariable String iso3) {
-        int deleted = countryService.deleteByIso3(iso3);
+    // Delete country by iso3code
+    @DeleteMapping("/deleteByIso3/{iso3code}")
+    public ResponseEntity<Void> deleteByIso3Code(@PathVariable String iso3code) {
+        int deleted = countryRepository.deleteByIso3code(iso3code);
         if (deleted > 0) {
-            return ResponseEntity.ok("Country deleted successfully.");
+            return ResponseEntity.noContent().build();
         }
-        return ResponseEntity.badRequest().body("Country deletion failed.");
+        return ResponseEntity.notFound().build();
     }
 
-    // Delete by name
-    @DeleteMapping("/deleteName/{name}")
-    public ResponseEntity<String> deleteByName(@PathVariable String name) {
-        int deleted = countryService.deleteByName(name);
+    // Delete country by name
+    @DeleteMapping("/deleteByName/{name}")
+    public ResponseEntity<Void> deleteByName(@PathVariable String name) {
+        int deleted = countryRepository.deleteByName(name);
         if (deleted > 0) {
-            return ResponseEntity.ok("Country deleted successfully.");
+            return ResponseEntity.noContent().build();
         }
-        return ResponseEntity.badRequest().body("Country deletion failed.");
+        return ResponseEntity.notFound().build();
     }
 }
