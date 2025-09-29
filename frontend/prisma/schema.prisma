@@ -38,17 +38,19 @@ model product {
 }
 
 model transactions {
-  tid            BigInt    @id
-  uid            String    @db.Uuid
-  t_date         DateTime  @db.Date
-  importer_code  String    @db.VarChar(3)
-  exporter_code  String    @db.VarChar(3)
-  hs6code        String?   @db.Char(6)
-  trade_original Decimal   @db.Decimal
-  importer       country   @relation("importer_transactions", fields: [importer_code], references: [country_code], onDelete: NoAction)
-  exporter       country   @relation("exporter_transactions", fields: [exporter_code], references: [country_code], onDelete: NoAction)
-  product        product?  @relation(fields: [hs6code], references: [hs6code], onDelete: Cascade)
-  user           user      @relation(fields: [uid], references: [uid], onDelete: NoAction, onUpdate: NoAction)
+  tid              BigInt    @id
+  uid              String    @db.Uuid
+  t_date           DateTime  @db.Date
+  importer_code    String    @db.VarChar(3)
+  exporter_code    String    @db.VarChar(3)
+  hs6code          String?   @db.Char(6)
+  trade_original   Decimal   @db.Decimal
+  net_weight       Float?    @db.Real
+  calculation_type String
+  importer         country   @relation("importer_transactions", fields: [importer_code], references: [country_code], onDelete: NoAction)
+  exporter         country   @relation("exporter_transactions", fields: [exporter_code], references: [country_code], onDelete: NoAction)
+  product          product?  @relation(fields: [hs6code], references: [hs6code], onDelete: Cascade)
+  user             user      @relation(fields: [uid], references: [uid], onDelete: NoAction, onUpdate: NoAction)
 }
 
 model measure {
