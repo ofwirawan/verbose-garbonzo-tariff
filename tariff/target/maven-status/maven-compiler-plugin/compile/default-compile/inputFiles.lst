@@ -11,8 +11,10 @@
 /Users/christianfrensty/Desktop/CS203 /verbose-garbonzo-tariff/tariff/src/main/java/com/verbosegarbonzo/tariff/model/Measure.java
 /Users/christianfrensty/Desktop/CS203 /verbose-garbonzo-tariff/tariff/src/main/java/com/verbosegarbonzo/tariff/model/Preference.java
 /Users/christianfrensty/Desktop/CS203 /verbose-garbonzo-tariff/tariff/src/main/java/com/verbosegarbonzo/tariff/model/Product.java
+/Users/christianfrensty/Desktop/CS203 /verbose-garbonzo-tariff/tariff/src/main/java/com/verbosegarbonzo/tariff/model/Transaction.java
 /Users/christianfrensty/Desktop/CS203 /verbose-garbonzo-tariff/tariff/src/main/java/com/verbosegarbonzo/tariff/repository/CountryRepository.java
 /Users/christianfrensty/Desktop/CS203 /verbose-garbonzo-tariff/tariff/src/main/java/com/verbosegarbonzo/tariff/repository/MeasureRepository.java
 /Users/christianfrensty/Desktop/CS203 /verbose-garbonzo-tariff/tariff/src/main/java/com/verbosegarbonzo/tariff/repository/PreferenceRepository.java
 /Users/christianfrensty/Desktop/CS203 /verbose-garbonzo-tariff/tariff/src/main/java/com/verbosegarbonzo/tariff/repository/ProductRepository.java
+/Users/christianfrensty/Desktop/CS203 /verbose-garbonzo-tariff/tariff/src/main/java/com/verbosegarbonzo/tariff/repository/TransactionRepository.java
 /Users/christianfrensty/Desktop/CS203 /verbose-garbonzo-tariff/tariff/src/main/java/com/verbosegarbonzo/tariff/service/TariffService.java
