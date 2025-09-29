@@ -7,27 +7,27 @@ import lombok.Setter;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
+//Input Data Transfer Object for tariff calculation
+
 @Getter
 @Setter
 public class CalculateRequest {
-//Input Data Transfer Object for tariff calculation
-
     @Pattern(regexp = "^\\d{6}$", message = "hs6 must be 6 digits")
     @NotBlank
     private String hs6;
 
-    @Pattern(regexp = "^\\d{3,4}$", message = "reporter must be numeric 3-4 digits")
     @NotBlank
-    private String reporter;
+    private String importerCode;
 
-    @Pattern(regexp = "^\\d{3,4}$", message = "partner must be numeric 3-4 digits")
-    @NotBlank
-    private String partner;
+    private String exporterCode; //optional
 
     @DecimalMin(value = "0.01")
     @Digits(integer = 18, fraction = 2)
     @NotNull
     private BigDecimal tradeValue;
+
+    @DecimalMin(value = "0.0", inclusive = false)
+    private BigDecimal netWeight; //optional, for specific/compound tariffs
 
     @NotNull
     private LocalDate transactionDate;
