@@ -24,7 +24,7 @@ public class CalculateRequest {
     @DecimalMin(value = "0.01")
     @Digits(integer = 18, fraction = 2)
     @NotNull
-    private BigDecimal tradeValue;
+    private BigDecimal tradeOriginal;
 
     @DecimalMin(value = "0.0", inclusive = false)
     private BigDecimal netWeight; //optional, for specific/compound tariffs

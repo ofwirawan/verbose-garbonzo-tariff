@@ -5,6 +5,7 @@ import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.UUID;
 
 //Output Data Transfer Object for tariff calculation
 
@@ -12,6 +13,7 @@ import java.time.LocalDate;
 @Setter
 public class CalculateResponse {
     private Long transactionId;
+    private UUID uid;
 
     private String hs6;
     private String importerCode;
@@ -19,7 +21,7 @@ public class CalculateResponse {
 
     private LocalDate transactionDate;
 
-    private BigDecimal tradeValue;
+    private BigDecimal tradeOriginal;
     private BigDecimal tradeFinal;   //after duty applied
 
     private BigDecimal rateAdval;    

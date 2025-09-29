@@ -1,12 +1,15 @@
 package com.verbosegarbonzo.tariff.controller;
 
-import com.verbosegarbonzo.tariff.model.*;
-import com.verbosegarbonzo.tariff.service.*;
+import com.verbosegarbonzo.tariff.model.CalculateRequest;
+import com.verbosegarbonzo.tariff.model.CalculateResponse;
+import com.verbosegarbonzo.tariff.service.TariffService;
+import com.verbosegarbonzo.tariff.exception.RateNotFoundException;
+
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import com.verbosegarbonzo.tariff.service.TariffService.RateNotFoundException;
-import com.verbosegarbonzo.tariff.service.TariffService.ExternalServiceException;
+
+import java.net.URI;
 
 @RestController
 @RequestMapping("/api")
@@ -20,17 +23,17 @@ public class TariffController {
 
     @PostMapping("/calculate")
     public ResponseEntity<CalculateResponse> calculate(@Valid @RequestBody CalculateRequest req) {
-        return ResponseEntity.ok(service.calculate(req)); //does the WITS call and tariff calculation.
+        CalculateResponse resp = service.calculate(req);
+
+        //return 201 Created with Location header
+        return ResponseEntity
+                .created(URI.create("/api/transactions/" + resp.getTransactionId()))
+                .body(resp);
     }
 
     @ExceptionHandler(RateNotFoundException.class)
     public ResponseEntity<?> handleNotFound(RateNotFoundException ex) {
         return ResponseEntity.status(404).body(new ErrorPayload("RATE_NOT_FOUND", ex.getMessage()));
-    }
-
-    @ExceptionHandler(ExternalServiceException.class)
-    public ResponseEntity<?> handleExternal(ExternalServiceException ex) {
-        return ResponseEntity.status(502).body(new ErrorPayload("EXTERNAL_SERVICE_ERROR", ex.getMessage()));
     }
 
     record ErrorPayload(String error, String message) {}
