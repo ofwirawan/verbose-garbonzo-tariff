@@ -1,30 +1,26 @@
 package com.verbosegarbonzo.tariff.repository;
 
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Modifying;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.data.domain.Pageable;
 import com.verbosegarbonzo.tariff.model.Product;
+import org.springframework.data.jpa.repository.*;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.repository.query.Param;
 
-import java.util.List;
+public interface ProductRepository extends JpaRepository<Product, String> { 
 
-public interface ProductRepository extends JpaRepository<Product, String> { //gives you CRUD methods for DB
-
-    @Query("""
-        SELECT p FROM Product p
-        WHERE LOWER(p.description) LIKE LOWER(CONCAT('%', :q, '%'))
-           OR p.hs6Code LIKE CONCAT(:q, '%')
-        """)
-    List<Product> searchProducts(@Param("q") String query, Pageable page);
 
     @Modifying
     @Transactional
     @Query(value = """
-        INSERT INTO products (hs6code, description)
+        INSERT INTO product (hs6code, description)
         VALUES (:hs6, :desc)
         ON CONFLICT (hs6code) DO UPDATE SET description = EXCLUDED.description
         """, nativeQuery = true)
     void upsert(@Param("hs6") String hs6, @Param("desc") String desc);
+
+    //remove previously-synced rows before a fresh load
+    @Modifying
+    @Transactional
+    @Query(value = "DELETE FROM product", nativeQuery = true)
+    int deleteAllProduct();
 }

@@ -7,14 +7,14 @@ import jakarta.persistence.Table;
 import lombok.*;
 
 @Entity
-@Table(name = "products")
+@Table(name = "product")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 public class Product {
 //created to parse product list into Supabase
-//WITS -> ProductRef -> Product -> Supabase
+//WITS -> Product -> Supabase
  
     @Id
     @Column(name = "hs6code", length = 6)

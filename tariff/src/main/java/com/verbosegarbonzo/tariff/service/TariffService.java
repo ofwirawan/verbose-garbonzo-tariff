@@ -1,135 +1,117 @@
 package com.verbosegarbonzo.tariff.service;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.verbosegarbonzo.tariff.config.WitsProperties;
+import com.verbosegarbonzo.tariff.exception.RateNotFoundException;
 import com.verbosegarbonzo.tariff.model.CalculateRequest;
 import com.verbosegarbonzo.tariff.model.CalculateResponse;
+import com.verbosegarbonzo.tariff.model.Measure;
+import com.verbosegarbonzo.tariff.model.Preference;
+import com.verbosegarbonzo.tariff.repository.MeasureRepository;
+import com.verbosegarbonzo.tariff.repository.PreferenceRepository;
 
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.client.WebClient;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
+import java.time.LocalDate;
+import java.util.Optional;
+import java.util.UUID;
 
 @Service
 public class TariffService {
-    // - Build WITS SDMX URL
-    // - Call WITS
-    // - Extract ratePercent
-    // - Compute duty and totalPayable
-    // - Return response
 
-    private final WebClient webClient;
-    private final WitsProperties props;
-    private final ObjectMapper om = new ObjectMapper(); // JSON parsing
+    private static final UUID TEMP_USER_ID = UUID.fromString("11111111-1111-1111-1111-111111111111");
 
-    public TariffService(@Qualifier("tariffWebClient") WebClient tariffWebClient, WitsProperties props) {
-        this.webClient = tariffWebClient;
-        this.props = props;
+    private final PreferenceRepository preferenceRepo;
+    private final MeasureRepository measureRepo;
+
+    public TariffService(PreferenceRepository preferenceRepo, MeasureRepository measureRepo) {
+        this.preferenceRepo = preferenceRepo;
+        this.measureRepo = measureRepo;
     }
 
     public CalculateResponse calculate(CalculateRequest req) {
-        final int year = req.getTransactionDate().getYear();
+        LocalDate date = req.getTransactionDate();
 
-        // Build the WITS API path
-        String path = props.getTariff().getDataset()
-                + "/reporter/" + req.getReporter()
-                + "/partner/" + req.getPartner()
-                + "/product/" + req.getHs6()
-                + "/year/" + year
-                + "/datatype/reported?format=JSON";
+        // 1. Check preference (if exporter provided)
+        Optional<Preference> prefOpt = (req.getExporterCode() != null && !req.getExporterCode().isBlank())
+                ? preferenceRepo.findValidRate(req.getImporterCode(), req.getExporterCode(), req.getHs6(), date)
+                : Optional.empty();
 
-        final String dataUrlBase = props.getTariff().getBaseUrl();
+        if (prefOpt.isPresent()) {
+            Preference pref = prefOpt.get();
 
-        String dataUrl = dataUrlBase + "/" + path;
+            BigDecimal ratePref = pref.getPrefAdvalRate();
+            BigDecimal ratePrefCalc = ratePref.multiply(BigDecimal.valueOf(0.01));
 
-        // WebClient call hits WITS and waits for the response
-        String raw = webClient.get()
-                .uri("/" + path) // prepend slash to be safe
-                .accept(MediaType.APPLICATION_JSON)
-                .retrieve()
-                .bodyToMono(String.class)
-                .block(); // block() is fine in a service method in this project
-
-        // Extract tariff percentage from WITS JSON response
-        BigDecimal ratePercent = extractMfnSimpleAveragePercent(raw);
-        
-        // If no rate found, use default 0% tariff rate
-        if (ratePercent == null) {
-            ratePercent = BigDecimal.ZERO;
+            BigDecimal duty = req.getTradeOriginal().multiply(ratePrefCalc);
+            return buildResponse(req, TEMP_USER_ID, duty, null, null, ratePref);
         }
 
-        // Convert percentage rate (e.g., 5.00) to decimal (e.g., 0.05) for calculations
-        BigDecimal rateDecimal = ratePercent.movePointLeft(2);
+        // 2. Otherwise, check measure
+        Optional<Measure> measureOpt = measureRepo.findValidRate(req.getImporterCode(), req.getHs6(), date);
+        if (measureOpt.isPresent()) {
+            Measure measure = measureOpt.get();
+            BigDecimal duty = BigDecimal.ZERO;
+            BigDecimal rateAdval = null, rateSpecific = null;
 
-        // Calculate duty by multiplying trade value by decimal rate and rounding
-        BigDecimal duty = req.getTradeValue()
-                .multiply(rateDecimal)
-                .setScale(2, RoundingMode.HALF_UP);
+            BigDecimal rateAdvalCalc = null;
 
-        // Calculate total amount payable including duty
-        BigDecimal totalPayable = req.getTradeValue().add(duty);
-
-        // Build output DTO with results and metadata
-        final CalculateResponse resp = new CalculateResponse();
-        resp.setHs6(req.getHs6());
-        resp.setReporter(req.getReporter());
-        resp.setPartner(req.getPartner());
-        resp.setYear(year);
-        resp.setRatePercent(ratePercent.setScale(2, RoundingMode.HALF_UP));
-        resp.setTradeValue(req.getTradeValue());
-        resp.setDuty(duty);
-        resp.setTotalPayable(totalPayable);
-        resp.setDataUrl(dataUrl);
-        return resp;
-    }
-
-    // pulling out the tariff percentage from the JSON response returned by WITS
-    private BigDecimal extractMfnSimpleAveragePercent(String rawJson) {
-        try {
-            JsonNode root = om.readTree(rawJson);
-
-            JsonNode dataSets = root.path("dataSets");
-            if (!dataSets.isArray() || dataSets.isEmpty())
-                return null;
-
-            JsonNode seriesNode = dataSets.get(0).path("series");
-            // must be an array with at least one element, otherwise return null
-            if (seriesNode.isMissingNode())
-                return null;
-
-            var it = seriesNode.fields();
-            // Look at the "0" entry, if it is an array and the first element is a number ->
-            // return that as a BigDecimal.
-            while (it.hasNext()) {
-                var entry = it.next();
-                JsonNode observations = entry.getValue().path("observations");
-                JsonNode firstObs = observations.path("0");
-                if (firstObs.isArray() && firstObs.size() > 0 && firstObs.get(0).isNumber()) {
-                    // return as percentage
-                    return new BigDecimal(firstObs.get(0).asText());
-                }
+            // normalize rates
+            if (measure.getMfnAdvalRate() != null) {
+                rateAdval = measure.getMfnAdvalRate();
+                rateAdvalCalc = rateAdval.multiply(BigDecimal.valueOf(0.01));
             }
-            return null;
-        } catch (Exception e) {
-            throw new ExternalServiceException("Failed to parse WITS JSON", e);
+            if (measure.getSpecificRatePerKg() != null) {
+                rateSpecific = measure.getSpecificRatePerKg(); // already per kg, no scaling
+            }
+
+            // compound case
+            if (rateAdval != null && rateSpecific != null && req.getNetWeight() != null) {
+                duty = req.getTradeOriginal().multiply(rateAdvalCalc)
+                        .add(req.getNetWeight().multiply(rateSpecific));
+            }
+            // ad-valorem only
+            else if (rateAdval != null) {
+                duty = req.getTradeOriginal().multiply(rateAdvalCalc);
+            }
+            // specific only
+            else if (rateSpecific != null && req.getNetWeight() != null) {
+                duty = req.getNetWeight().multiply(rateSpecific);
+            }
+
+            return buildResponse(req, TEMP_USER_ID, duty, rateAdval, rateSpecific, null);
         }
+
+        // 3. Nothing found
+        throw new RateNotFoundException("No applicable tariff found for hs6=" + req.getHs6());
     }
 
-    // 404 when WITS has no observation for the chosen combo
-    public static class RateNotFoundException extends RuntimeException {
-        public RateNotFoundException(String msg) {
-            super(msg);
-        }
-    }
+    private CalculateResponse buildResponse(
+            CalculateRequest req,
+            UUID uid,
+            BigDecimal duty,
+            BigDecimal rateAdval,
+            BigDecimal rateSpecific,
+            BigDecimal ratePref) {
 
-    // 502 or 500 when WITS payload is malformed or network/parsing fails
-    public static class ExternalServiceException extends RuntimeException {
-        public ExternalServiceException(String msg, Throwable cause) {
-            super(msg, cause);
-        }
+        // generate tid temporarily (later use DB sequence)
+        long tid = System.currentTimeMillis();
+
+        CalculateResponse resp = new CalculateResponse();
+        resp.setTransactionId(tid);
+        resp.setUid(uid);
+        resp.setHs6(req.getHs6());
+        resp.setImporterCode(req.getImporterCode());
+        resp.setExporterCode(req.getExporterCode());
+        resp.setTransactionDate(req.getTransactionDate());
+
+        resp.setTradeOriginal(req.getTradeOriginal());
+        resp.setNetWeight(req.getNetWeight());
+        resp.setTradeFinal(req.getTradeOriginal().add(duty));
+
+        resp.setRateAdval(rateAdval);
+        resp.setRateSpecific(rateSpecific);
+        resp.setRatePref(ratePref);
+
+        return resp;
     }
 }

@@ -1,0 +1,25 @@
+package com.verbosegarbonzo.tariff.repository;
+
+import com.verbosegarbonzo.tariff.model.Preference;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
+import java.time.LocalDate;
+import java.util.Optional;
+
+public interface PreferenceRepository extends JpaRepository<Preference, Integer> {
+    @Query("""
+        SELECT p FROM Preference p
+        WHERE p.importerCode = :importer
+          AND p.exporterCode = :exporter
+          AND p.productCode = :hs6
+          AND p.validFrom <= :date
+          AND (p.validTo IS NULL OR p.validTo >= :date)
+        """)
+    Optional<Preference> findValidRate(
+        @Param("importer") String importer,
+        @Param("exporter") String exporter,
+        @Param("hs6") String hs6,
+        @Param("date") LocalDate date);
+}
