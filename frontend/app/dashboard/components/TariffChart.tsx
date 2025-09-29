@@ -70,15 +70,18 @@ interface TariffChartProps {
 
 // Interface for the tariff calculation result from backend
 interface TariffCalculationResult {
+  transactionId: string;
   hs6: string;
-  reporter: string;
-  partner: string;
-  year: number;
-  ratePercent: number;
-  tradeValue: number;
-  duty: number;
-  totalPayable: number;
-  dataUrl: string;
+  importerCode: string;
+  exporterCode?: string;
+  transactionDate: string;
+  rateAdval?: number;
+  rateSpecific?: number;
+  ratePref?: number;
+  tradeOriginal: number;
+  tradeFinal: number;
+  suspensionNote?: string;
+  suspensionActive?: boolean;
 }
 
 export function TariffChart({
@@ -87,9 +90,18 @@ export function TariffChart({
   initialProductCode = "290110",
   chartTitle = "Tariff Data Analysis",
 }: TariffChartProps) {
-  const [data, setData] = useState<{ date: string; value: number }[]>([]);
+  const [data, setData] = useState<
+    {
+      date: string;
+      value: number;
+      rateType?: string;
+      isSuspended?: boolean;
+      dutyAmount?: number;
+    }[]
+  >([]);
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string>("");
   const [importingCountry, setImportingCountry] = useState(
     initialImportingCountry
   );
@@ -110,12 +122,10 @@ export function TariffChart({
     { hs6code: string; description: string | null }[]
   >([]);
 
-  // Simulation parameters
-  const [simBaseRate, setSimBaseRate] = useState<number | undefined>(undefined);
-  const [simCountryModifier, setSimCountryModifier] = useState<
-    number | undefined
-  >(undefined);
-  const [simTrend, setSimTrend] = useState<number | undefined>(undefined);
+  // Simulation parameters (handled via event listeners)
+  const [, setSimBaseRate] = useState<number | undefined>(undefined);
+  const [, setSimCountryModifier] = useState<number | undefined>(undefined);
+  const [, setSimTrend] = useState<number | undefined>(undefined);
 
   const [selectedYear, setSelectedYear] = useState<string>("2020");
   const [isCalculating, setIsCalculating] = useState(false);
@@ -220,12 +230,6 @@ export function TariffChart({
     }
   }, [tariffs, selectedTariffId]);
 
-  // Function to convert ISO3 country code to numeric code using database data
-  const getNumericCountryCode = (iso3Code: string): string => {
-    const country = countries.find((c) => c.country_code === iso3Code);
-    return country?.numeric_code || iso3Code; // Return original if not found
-  };
-
   // Function to calculate tariff using the TariffService
   const calculateTariff = async () => {
     if (!importingCountry || !exportingCountry || !tradeValue) {
@@ -235,26 +239,26 @@ export function TariffChart({
 
     setIsCalculating(true);
     const hs6Code = getHS6Code(productCode);
-    const reporterNumeric = getNumericCountryCode(importingCountry);
-    const partnerNumeric = getNumericCountryCode(exportingCountry);
 
     console.log("Starting tariff calculation with:", {
-      reporter: `${importingCountry} -> ${reporterNumeric}`,
-      partner: `${exportingCountry} -> ${partnerNumeric}`,
-      product: `${productCode} -> ${hs6Code}`,
-      tradeValue: Number(tradeValue),
+      importerCode: importingCountry,
+      exporterCode: exportingCountry,
+      hs6: hs6Code,
+      tradeOriginal: Number(tradeValue),
     });
 
     try {
       setHasError(false); // Clear previous errors
+      setErrorMessage(""); // Clear previous error message
       setCalculationResult(null); // Clear previous results
 
       const requestBody = {
-        reporter: reporterNumeric,
-        partner: partnerNumeric,
+        importerCode: importingCountry,
+        exporterCode: exportingCountry,
         hs6: hs6Code,
-        tradeValue: Number(tradeValue),
+        tradeOriginal: Number(tradeValue),
         transactionDate: `${selectedYear}-01-01`, // Use selected year
+        netWeight: null, // Optional field
       };
 
       console.log("Request body:", JSON.stringify(requestBody, null, 2));
@@ -275,11 +279,11 @@ export function TariffChart({
       );
 
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error("Response error:", errorText);
-        throw new Error(
-          `Tariff calculation failed: ${response.status} - ${errorText}`
-        );
+        const errorData = await response.json().catch(() => null);
+        const errorMsg = errorData?.message || errorData?.error || `HTTP ${response.status}`;
+        console.error("Response error:", errorMsg);
+        setErrorMessage(errorMsg);
+        throw new Error(errorMsg);
       }
 
       const result = await response.json();
@@ -288,17 +292,55 @@ export function TariffChart({
       // Store the full calculation result
       setCalculationResult(result);
 
-      // Update chart data with the calculated tariff rate
-      // Create a meaningful chart display showing the tariff data for the selected year
-      // We can expand this to show multiple years or comparisons in the future
+      // Determine if this is a suspension case (all rates are null/undefined and duty is 0)
+      const dutyAmount =
+        Number(result.tradeFinal) - Number(result.tradeOriginal);
+      const isSuspended =
+        (dutyAmount === 0 &&
+        !result.ratePref &&
+        !result.rateAdval &&
+        !result.rateSpecific) || result.suspensionActive === true || result.suspensionActive === false;
+
+      // Calculate the effective tariff rate and determine rate type
+      let effectiveRate = 0;
+      let rateType = "No Rate";
+
+      if (result.suspensionActive === true) {
+        effectiveRate = 0;
+        rateType = "Suspended (Active)";
+      } else if (result.suspensionActive === false) {
+        effectiveRate = 0;
+        rateType = "Suspended (Inactive)";
+      } else if (isSuspended) {
+        effectiveRate = 0;
+        rateType = "Suspended";
+      } else if (result.ratePref) {
+        effectiveRate = Number(result.ratePref);
+        rateType = "Preferential";
+      } else if (result.rateAdval) {
+        effectiveRate = Number(result.rateAdval);
+        rateType = "Ad-valorem";
+      } else if (result.rateSpecific) {
+        // For specific rates, calculate equivalent percentage
+        const specificDuty =
+          Number(result.rateSpecific) * (Number(result.netWeight) || 1);
+        effectiveRate = (specificDuty / Number(result.tradeOriginal)) * 100;
+        rateType = "Specific";
+      }
+
+      // Update chart data with enhanced information
       const chartData = [
         {
           date: selectedYear,
-          value: Number(result.ratePercent) || 0,
+          value: effectiveRate,
+          rateType: rateType,
+          isSuspended: isSuspended,
+          dutyAmount: dutyAmount,
         },
       ];
 
       setData(chartData);
+      console.log("Chart data updated:", chartData);
 
       // Clear any previous errors since we got a successful response
       setHasError(false);
@@ -335,6 +377,27 @@ export function TariffChart({
       color: "var(--primary)",
     },
   } satisfies ChartConfig;
+
+  // Determine chart color based on suspension status
+  const getChartColor = () => {
+    if (data.length > 0 && data[0].isSuspended) {
+      const rateType = data[0].rateType;
+      if (rateType === "Suspended (Inactive)") {
+        return {
+          fill: "url(#fillInactive)",
+          stroke: "#f59e0b", // Amber/orange for inactive suspension
+        };
+      }
+      return {
+        fill: "url(#fillSuspended)",
+        stroke: "#10b981", // Green for active suspended
+      };
+    }
+    return {
+      fill: "url(#fillTariff)",
+      stroke: "#000", // Black for normal tariffs
+    };
+  };
 
   // Combobox component for country selection
   function CountryCombobox({
@@ -593,6 +656,14 @@ export function TariffChart({
                   <stop offset="0%" stopColor="#000" stopOpacity={1} />
                   <stop offset="100%" stopColor="#000" stopOpacity={0.1} />
                 </linearGradient>
+                <linearGradient id="fillSuspended" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#10b981" stopOpacity={0.8} />
+                  <stop offset="100%" stopColor="#10b981" stopOpacity={0.1} />
+                </linearGradient>
+                <linearGradient id="fillInactive" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#f59e0b" stopOpacity={0.8} />
+                  <stop offset="100%" stopColor="#f59e0b" stopOpacity={0.1} />
+                </linearGradient>
               </defs>
               <CartesianGrid
                 vertical={false}
@@ -616,19 +687,54 @@ export function TariffChart({
                   <ChartTooltipContent
                     labelFormatter={(value) => `Year: ${value}`}
                     indicator="dot"
+                    formatter={(value, name, props) => {
+                      const payload = props.payload;
+                      const rateType = payload?.rateType || "Unknown";
+                      const isSuspended = payload?.isSuspended;
+
+                      return [
+                        <div key="rate" className="flex flex-col gap-1">
+                          <span className="text-sm font-medium">
+                            {isSuspended
+                              ? "Suspended (0%)"
+                              : `${Number(value).toFixed(2)}%`}
+                          </span>
+                          <span
+                            className={`text-xs px-2 py-1 rounded ${
+                              isSuspended
+                                ? "bg-green-100 text-green-700"
+                                : "bg-blue-100 text-blue-700"
+                            }`}
+                          >
+                            {rateType}
+                          </span>
+                          {payload?.dutyAmount !== undefined && (
+                            <span className="text-xs text-gray-600">
+                              Duty: ${Number(payload.dutyAmount).toFixed(2)}
+                            </span>
+                          )}
+                        </div>,
+                        "Tariff Rate",
+                      ];
+                    }}
                   />
                 }
               />
               <Area
                 dataKey="value"
                 type="monotone"
-                fill="url(#fillTariff)"
-                stroke="#000"
+                fill={getChartColor().fill}
+                stroke={getChartColor().stroke}
                 strokeWidth={3}
-                dot={{ r: 5, stroke: "#000", strokeWidth: 2, fill: "#fff" }}
+                dot={{
+                  r: 5,
+                  stroke: getChartColor().stroke,
+                  strokeWidth: 2,
+                  fill: "#fff",
+                }}
                 activeDot={{
                   r: 7,
-                  fill: "#000",
+                  fill: getChartColor().stroke,
                   stroke: "#fff",
                   strokeWidth: 2,
                 }}
@@ -727,54 +833,230 @@ export function TariffChart({
 
         {/* Display calculation results */}
         {calculationResult && (
-          <div className="mt-8 p-6 bg-gray-50 rounded-lg">
-            <h3 className="text-lg font-semibold mb-4">
-              Tariff Calculation Results
-            </h3>
+          <div
+            className={`mt-8 p-6 rounded-lg ${
+              calculationResult.suspensionActive === true
+                ? "bg-green-50 border-2 border-green-200"
+                : calculationResult.suspensionActive === false
+                ? "bg-amber-50 border-2 border-amber-200"
+                : "bg-gray-50"
+            }`}
+          >
+            <div className="flex items-center gap-2 mb-4">
+              <h3 className="text-lg font-semibold">
+                Tariff Calculation Results
+              </h3>
+              {calculationResult.suspensionActive === true && (
+                <span className="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
+                  🚫 TARIFF SUSPENDED (ACTIVE)
+                </span>
+              )}
+              {calculationResult.suspensionActive === false && (
+                <span className="bg-amber-100 text-amber-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
+                  ⚠️ TARIFF SUSPENDED (INACTIVE)
+                </span>
+              )}
+            </div>
+
+            {/* Suspension explanation */}
+            {calculationResult.suspensionActive === true && (
+              <div className="mb-4 p-3 bg-green-100 border-l-4 border-green-400 rounded">
+                <div className="flex items-center">
+                  <div className="ml-3">
+                    <p className="text-sm text-green-700">
+                      <strong>Tariff Suspension Active:</strong> This trade
+                      relationship has an active tariff suspension, meaning no
+                      duties are charged on this product from the specified
+                      exporter to importer.
+                    </p>
+                    {calculationResult.suspensionNote && (
+                      <p className="text-sm text-green-600 mt-2 italic">
+                        {calculationResult.suspensionNote}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+            {calculationResult.suspensionActive === false && (
+              <div className="mb-4 p-3 bg-amber-100 border-l-4 border-amber-400 rounded">
+                <div className="flex items-center">
+                  <div className="ml-3">
+                    <p className="text-sm text-amber-700">
+                      <strong>Historical Suspension Record:</strong> This trade
+                      relationship had a tariff suspension in the past, but it is
+                      currently inactive or expired. No tariff rate data is available.
+                    </p>
+                    {calculationResult.suspensionNote && (
+                      <p className="text-sm text-amber-600 mt-2 italic">
+                        {calculationResult.suspensionNote}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="bg-white p-4 rounded shadow">
-                <div className="text-sm text-gray-500">Tariff Rate</div>
-                <div className="text-xl font-bold text-blue-600">
-                  {calculationResult.ratePercent.toFixed(2)}%
+                <div className="text-sm text-gray-500">Applied Rate</div>
+                <div
+                  className={`text-xl font-bold ${
+                    Number(calculationResult.tradeFinal) -
+                      Number(calculationResult.tradeOriginal) ===
+                      0 &&
+                    !calculationResult.ratePref &&
+                    !calculationResult.rateAdval &&
+                    !calculationResult.rateSpecific
+                      ? "text-green-600"
+                      : "text-blue-600"
+                  }`}
+                >
+                  {(() => {
+                    const dutyAmount =
+                      Number(calculationResult.tradeFinal) -
+                      Number(calculationResult.tradeOriginal);
+                    const isSuspended =
+                      dutyAmount === 0 &&
+                      !calculationResult.ratePref &&
+                      !calculationResult.rateAdval &&
+                      !calculationResult.rateSpecific;
+
+                    if (isSuspended) {
+                      return "0.00";
+                    }
+
+                    const rate =
+                      calculationResult.ratePref ||
+                      calculationResult.rateAdval ||
+                      0;
+                    return Number(rate).toFixed(2);
+                  })()}
+                  %
+                </div>
+                <div className="text-xs text-gray-400 mt-1">
+                  {(() => {
+                    const dutyAmount =
+                      Number(calculationResult.tradeFinal) -
+                      Number(calculationResult.tradeOriginal);
+                    const isSuspended =
+                      dutyAmount === 0 &&
+                      !calculationResult.ratePref &&
+                      !calculationResult.rateAdval &&
+                      !calculationResult.rateSpecific;
+
+                    if (isSuspended) return "Suspended";
+                    if (calculationResult.ratePref) return "Preferential";
+                    if (calculationResult.rateAdval) return "Ad-valorem";
+                    if (calculationResult.rateSpecific) return "Specific";
+                    return "Standard";
+                  })()}
                 </div>
               </div>
               <div className="bg-white p-4 rounded shadow">
-                <div className="text-sm text-gray-500">Trade Value</div>
+                <div className="text-sm text-gray-500">
+                  Original Trade Value
+                </div>
                 <div className="text-xl font-bold">
-                  ${calculationResult.tradeValue.toLocaleString()}
+                  ${Number(calculationResult.tradeOriginal).toLocaleString()}
                 </div>
               </div>
               <div className="bg-white p-4 rounded shadow">
                 <div className="text-sm text-gray-500">Duty Amount</div>
-                <div className="text-xl font-bold text-red-600">
-                  ${calculationResult.duty.toFixed(2)}
+                <div
+                  className={`text-xl font-bold ${
+                    Number(calculationResult.tradeFinal) -
+                      Number(calculationResult.tradeOriginal) ===
+                    0
+                      ? "text-green-600"
+                      : "text-red-600"
+                  }`}
+                >
+                  $
+                  {(
+                    Number(calculationResult.tradeFinal) -
+                    Number(calculationResult.tradeOriginal)
+                  ).toFixed(2)}
                 </div>
+                {Number(calculationResult.tradeFinal) -
+                  Number(calculationResult.tradeOriginal) ===
+                  0 &&
+                  !calculationResult.ratePref &&
+                  !calculationResult.rateAdval &&
+                  !calculationResult.rateSpecific && (
+                    <div className="text-xs text-green-600 mt-1 font-medium">
+                      No duty - Suspended
+                    </div>
+                  )}
               </div>
               <div className="bg-white p-4 rounded shadow">
-                <div className="text-sm text-gray-500">Total Payable</div>
+                <div className="text-sm text-gray-500">Final Amount</div>
                 <div className="text-xl font-bold text-green-600">
-                  ${calculationResult.totalPayable.toFixed(2)}
+                  ${Number(calculationResult.tradeFinal).toFixed(2)}
                 </div>
               </div>
             </div>
+
+            {/* Additional rate details */}
+            <div className="mt-4 p-4 bg-white rounded border">
+              <h4 className="font-medium mb-2">Rate Details:</h4>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                {calculationResult.rateAdval && (
+                  <div>
+                    <span className="text-gray-500">Ad-valorem Rate:</span>
+                    <span className="ml-2 font-medium">
+                      {Number(calculationResult.rateAdval).toFixed(2)}%
+                    </span>
+                  </div>
+                )}
+                {calculationResult.rateSpecific && (
+                  <div>
+                    <span className="text-gray-500">Specific Rate:</span>
+                    <span className="ml-2 font-medium">
+                      ${Number(calculationResult.rateSpecific).toFixed(2)}/kg
+                    </span>
+                  </div>
+                )}
+                {calculationResult.ratePref && (
+                  <div>
+                    <span className="text-gray-500">Preferential Rate:</span>
+                    <span className="ml-2 font-medium">
+                      {Number(calculationResult.ratePref).toFixed(2)}%
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+
             <div className="mt-4 text-sm text-gray-600">
               <strong>Product:</strong> {calculationResult.hs6} |
-              <strong> Year:</strong> {calculationResult.year} |
-              <strong> Reporter:</strong> {calculationResult.reporter} |
-              <strong> Partner:</strong> {calculationResult.partner}
+              <strong> Transaction Date:</strong>{" "}
+              {calculationResult.transactionDate} |<strong> Importer:</strong>{" "}
+              {calculationResult.importerCode} |<strong> Exporter:</strong>{" "}
+              {calculationResult.exporterCode || "Not specified"}
             </div>
-            {calculationResult.dataUrl && (
-              <div className="mt-2">
-                <a
-                  href={calculationResult.dataUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-600 hover:text-blue-800 text-sm underline"
-                >
-                  View WITS Data Source →
-                </a>
+
+            <div className="mt-2 text-xs text-gray-500">
+              <strong>Transaction ID:</strong> {calculationResult.transactionId}
+            </div>
+
+            {/* Chart Legend */}
+            <div className="mt-4 p-3 bg-white rounded border">
+              <h5 className="text-sm font-medium mb-2">Chart Legend:</h5>
+              <div className="flex flex-wrap gap-4 text-xs">
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 bg-black rounded"></div>
+                  <span>Normal Tariff</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 bg-green-500 rounded"></div>
+                  <span>Suspended Tariff (0%)</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 bg-blue-500 rounded"></div>
+                  <span>Preferential Rate</span>
+                </div>
               </div>
-            )}
+            </div>
           </div>
         )}
       </CardContent>

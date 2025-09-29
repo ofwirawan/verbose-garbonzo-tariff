@@ -42,7 +42,11 @@ public class TariffService {
 
         if (suspOpt.isPresent()) {
             //tariff suspended, duty = 0
-            return buildResponse(req, TEMP_USER_ID, BigDecimal.ZERO, null, null, null);
+            Suspension susp = suspOpt.get();
+            CalculateResponse resp = buildResponse(req, TEMP_USER_ID, BigDecimal.ZERO, null, null, null);
+            resp.setSuspensionNote(susp.getSuspensionNote());
+            resp.setSuspensionActive(true);
+            return resp;
         }
 
         //Check preference (if exporter provided)
@@ -95,7 +99,20 @@ public class TariffService {
             return buildResponse(req, TEMP_USER_ID, duty, rateAdval, rateSpecific, null);
         }
 
-        // 3. Nothing found
+        // 3. Check if there's an inactive/historical suspension
+        Optional<Suspension> historicalSusp = suspensionRepo.findAnySuspension(
+                req.getImporterCode(), req.getExporterCode(), req.getHs6());
+
+        if (historicalSusp.isPresent()) {
+            Suspension hist = historicalSusp.get();
+            // Return a response showing the inactive suspension
+            CalculateResponse resp = buildResponse(req, TEMP_USER_ID, BigDecimal.ZERO, null, null, null);
+            resp.setSuspensionNote(hist.getSuspensionNote());
+            resp.setSuspensionActive(false); // Indicate inactive suspension
+            return resp;
+        }
+
+        // 4. Nothing found
         throw new RateNotFoundException("No applicable tariff found for hs6=" + req.getHs6());
     }
 

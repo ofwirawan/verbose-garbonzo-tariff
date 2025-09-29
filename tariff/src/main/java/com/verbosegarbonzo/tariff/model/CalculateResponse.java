@@ -24,9 +24,12 @@ public class CalculateResponse {
     private BigDecimal tradeOriginal;
     private BigDecimal tradeFinal;   //after duty applied
 
-    private BigDecimal rateAdval;    
-    private BigDecimal rateSpecific; 
-    private BigDecimal ratePref;     
+    private BigDecimal rateAdval;
+    private BigDecimal rateSpecific;
+    private BigDecimal ratePref;
 
-    private BigDecimal netWeight;    
+    private BigDecimal netWeight;
+
+    private String suspensionNote;
+    private Boolean suspensionActive;
 }
