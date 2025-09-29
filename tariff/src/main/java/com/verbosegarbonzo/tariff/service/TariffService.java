@@ -6,9 +6,11 @@ import com.verbosegarbonzo.tariff.model.CalculateResponse;
 import com.verbosegarbonzo.tariff.model.Measure;
 import com.verbosegarbonzo.tariff.model.Preference;
 import com.verbosegarbonzo.tariff.model.Transaction;
+import com.verbosegarbonzo.tariff.model.Suspension;
 import com.verbosegarbonzo.tariff.repository.MeasureRepository;
 import com.verbosegarbonzo.tariff.repository.PreferenceRepository;
 import com.verbosegarbonzo.tariff.repository.TransactionRepository;
+import com.verbosegarbonzo.tariff.repository.SuspensionRepository;
 
 import org.springframework.stereotype.Service;
 
@@ -25,18 +27,29 @@ public class TariffService {
     private final PreferenceRepository preferenceRepo;
     private final MeasureRepository measureRepo;
     private final TransactionRepository transactionRepo;
+    private final SuspensionRepository suspensionRepo;
 
     public TariffService(PreferenceRepository preferenceRepo, MeasureRepository measureRepo,
-            TransactionRepository transactionRepo) {
+            TransactionRepository transactionRepo, SuspensionRepository suspensionRepo) {
         this.preferenceRepo = preferenceRepo;
         this.measureRepo = measureRepo;
         this.transactionRepo = transactionRepo;
+        this.suspensionRepo = suspensionRepo;
     }
 
     public CalculateResponse calculate(CalculateRequest req) {
         LocalDate date = req.getTransactionDate();
 
-        // 1. Check preference (if exporter provided)
+        //Check suspension first
+        Optional<Suspension> suspOpt = suspensionRepo.findActiveSuspension(
+                req.getImporterCode(), req.getExporterCode(), req.getHs6(), date);
+
+        if (suspOpt.isPresent()) {
+            //tariff suspended, duty = 0
+            return buildResponse(req, TEMP_USER_ID, BigDecimal.ZERO, null, null, null);
+        }
+
+        //Check preference (if exporter provided)
         Optional<Preference> prefOpt = (req.getExporterCode() != null && !req.getExporterCode().isBlank())
                 ? preferenceRepo.findValidRate(req.getImporterCode(), req.getExporterCode(), req.getHs6(), date)
                 : Optional.empty();
@@ -51,7 +64,7 @@ public class TariffService {
             return buildResponse(req, TEMP_USER_ID, duty, null, null, ratePref);
         }
 
-        // 2. Otherwise, check measure
+        //Otherwise, check measure
         Optional<Measure> measureOpt = measureRepo.findValidRate(req.getImporterCode(), req.getHs6(), date);
         if (measureOpt.isPresent()) {
             Measure measure = measureOpt.get();
