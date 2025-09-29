@@ -5,11 +5,9 @@ import com.verbosegarbonzo.tariff.model.CalculateRequest;
 import com.verbosegarbonzo.tariff.model.CalculateResponse;
 import com.verbosegarbonzo.tariff.model.Measure;
 import com.verbosegarbonzo.tariff.model.Preference;
-import com.verbosegarbonzo.tariff.model.Transaction;
 import com.verbosegarbonzo.tariff.model.Suspension;
 import com.verbosegarbonzo.tariff.repository.MeasureRepository;
 import com.verbosegarbonzo.tariff.repository.PreferenceRepository;
-import com.verbosegarbonzo.tariff.repository.TransactionRepository;
 import com.verbosegarbonzo.tariff.repository.SuspensionRepository;
 
 import org.springframework.stereotype.Service;
@@ -26,14 +24,12 @@ public class TariffService {
 
     private final PreferenceRepository preferenceRepo;
     private final MeasureRepository measureRepo;
-    private final TransactionRepository transactionRepo;
     private final SuspensionRepository suspensionRepo;
 
     public TariffService(PreferenceRepository preferenceRepo, MeasureRepository measureRepo,
-            TransactionRepository transactionRepo, SuspensionRepository suspensionRepo) {
+            SuspensionRepository suspensionRepo) {
         this.preferenceRepo = preferenceRepo;
         this.measureRepo = measureRepo;
-        this.transactionRepo = transactionRepo;
         this.suspensionRepo = suspensionRepo;
     }
 
@@ -113,22 +109,6 @@ public class TariffService {
 
         //generate tid temporarily (later use DB sequence)
         long tid = System.currentTimeMillis();
-
-        Transaction tx = new Transaction();
-        tx.setTid(tid);
-        tx.setUid(uid);
-        tx.setTDate(req.getTransactionDate());
-        tx.setImporterCode(req.getImporterCode());
-        tx.setExporterCode(req.getExporterCode());
-        tx.setHs6code(req.getHs6());
-        tx.setTradeOriginal(req.getTradeOriginal());
-        tx.setNetWeight(req.getNetWeight());
-        tx.setTradeFinal(req.getTradeOriginal().add(duty));
-        tx.setRateAdval(rateAdval);
-        tx.setRateSpecific(rateSpecific);
-        tx.setRatePref(ratePref);
-
-        transactionRepo.save(tx);
 
         CalculateResponse resp = new CalculateResponse();
         resp.setTransactionId(tid);
