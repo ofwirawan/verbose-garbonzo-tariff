@@ -12,8 +12,8 @@ export async function fetchCountries() {
   const prisma = new PrismaClient();
   let countries = [];
   try {
-    countries = await prisma.countries.findMany({
-      select: { iso_code: true, name: true },
+    countries = await prisma.country.findMany({
+      select: { country_code: true, name: true, numeric_code: true },
       orderBy: { name: "asc" },
     });
   } catch (error) {
@@ -26,4 +26,22 @@ export async function fetchCountries() {
     await prisma.$disconnect();
   }
   return { countries };
+}
+
+export async function fetchProduct() {
+  const prisma = new PrismaClient();
+  let products = [];
+  try {
+    products = await prisma.product.findMany({
+      select: { hs6code: true, description: true },
+      orderBy: { description: "asc" },
+    });
+  } catch (error) {
+    throw new Error(
+      error instanceof Error ? error.message : "Unknown error fetching products"
+    );
+  } finally {
+    await prisma.$disconnect();
+  }
+  return { products };
 }

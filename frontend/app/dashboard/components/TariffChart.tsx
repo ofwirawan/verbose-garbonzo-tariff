@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { fetchCountries } from "../actions/dashboardactions";
+import { fetchCountries, fetchProduct } from "../actions/dashboardactions";
 import { Area, AreaChart, CartesianGrid, XAxis } from "recharts";
 import {
   Card,
@@ -49,8 +49,9 @@ import {
 } from "@/components/ui/popover";
 
 interface Country {
-  iso_code: string;
+  country_code: string;
   name: string;
+  numeric_code: string;
 }
 
 interface Tariff {
@@ -67,10 +68,23 @@ interface TariffChartProps {
   chartTitle?: string;
 }
 
+// Interface for the tariff calculation result from backend
+interface TariffCalculationResult {
+  hs6: string;
+  reporter: string;
+  partner: string;
+  year: number;
+  ratePercent: number;
+  tradeValue: number;
+  duty: number;
+  totalPayable: number;
+  dataUrl: string;
+}
+
 export function TariffChart({
   initialImportingCountry = "USA",
   initialExportingCountry = "CHN",
-  initialProductCode = "010121",
+  initialProductCode = "290110",
   chartTitle = "Tariff Data Analysis",
 }: TariffChartProps) {
   const [data, setData] = useState<{ date: string; value: number }[]>([]);
@@ -92,6 +106,9 @@ export function TariffChart({
     undefined
   );
   const [countries, setCountries] = useState<Country[]>([]);
+  const [product, setProduct] = useState<
+    { hs6code: string; description: string | null }[]
+  >([]);
 
   // Simulation parameters
   const [simBaseRate, setSimBaseRate] = useState<number | undefined>(undefined);
@@ -102,19 +119,6 @@ export function TariffChart({
 
   const [selectedYear, setSelectedYear] = useState<string>("2020");
   const [isCalculating, setIsCalculating] = useState(false);
-
-  // Interface for the tariff calculation result from backend
-  interface TariffCalculationResult {
-    hs6: string;
-    reporter: string;
-    partner: string;
-    year: number;
-    ratePercent: number;
-    tradeValue: number;
-    duty: number;
-    totalPayable: number;
-    dataUrl: string;
-  }
 
   const [calculationResult, setCalculationResult] =
     useState<TariffCalculationResult | null>(null);
@@ -141,143 +145,39 @@ export function TariffChart({
   // Convert database countries to dropdown options
   const countryOptions = countries.map((country) => ({
     label: country.name,
-    value: country.iso_code,
+    value: country.country_code,
   }));
 
-  // Product options with specific HS6 codes - based on WITS API requirements
-  const productOptions = [
-    // Live Animals & Animal Products
-    { label: "Live bovine animals (calves)", value: "010121", hs6: "010121" },
-    { label: "Live swine (over 50kg)", value: "010391", hs6: "010391" },
+  // Convert database products to dropdown options
+  const productOptions = product
+    .filter((prod) => prod.description !== null)
+    .map((prod) => ({
+      label: prod.description!,
+      value: prod.hs6code,
+    }));
 
-    // Vegetable Products
-    { label: "Bulbs, tubers (dormant)", value: "060110", hs6: "060110" },
-    { label: "Cut flowers and buds", value: "060310", hs6: "060310" },
+  console.log("Product options:", productOptions);
+  console.log("Number of product options:", productOptions.length);
 
-    // Food Products
-    { label: "Sausages and similar products", value: "160100", hs6: "160100" },
-    { label: "Prepared/preserved fish", value: "160414", hs6: "160414" },
-
-    // Mineral Products
-    { label: "Salt (sodium chloride)", value: "250100", hs6: "250100" },
-    { label: "Iron ores and concentrates", value: "260111", hs6: "260111" },
-
-    // Chemical Products
-    { label: "Chlorine", value: "280110", hs6: "280110" },
-    { label: "Sulfuric acid", value: "280700", hs6: "280700" },
-
-    // Plastics & Rubber
-    {
-      label: "Polyethylene (specific gravity < 0.94)",
-      value: "390110",
-      hs6: "390110",
-    },
-    { label: "Polystyrene", value: "390310", hs6: "390310" },
-
-    // Leather & Hides
-    { label: "Raw hides and skins of bovine", value: "410110", hs6: "410110" },
-    { label: "Raw skins of sheep or lambs", value: "410210", hs6: "410210" },
-
-    // Wood Products
-    { label: "Fuel wood, in logs", value: "440110", hs6: "440110" },
-    { label: "Wood in the rough (oak)", value: "440391", hs6: "440391" },
-
-    // Paper Products
-    { label: "Mechanical wood pulp", value: "470100", hs6: "470100" },
-    { label: "Newsprint", value: "480100", hs6: "480100" },
-
-    // Textiles
-    {
-      label: "Silk-worm cocoons suitable for reeling",
-      value: "500100",
-      hs6: "500100",
-    },
-    {
-      label: "Cotton yarn (85% or more cotton)",
-      value: "520511",
-      hs6: "520511",
-    },
-
-    // Footwear
-    {
-      label: "Sports footwear with outer soles of rubber",
-      value: "640110",
-      hs6: "640110",
-    },
-    { label: "Waterproof footwear", value: "640210", hs6: "640210" },
-
-    // Stone & Glass
-    {
-      label: "Natural or artificial abrasive powder",
-      value: "680100",
-      hs6: "680100",
-    },
-    {
-      label: "Float glass and surface ground glass",
-      value: "700500",
-      hs6: "700500",
-    },
-
-    // Precious Metals
-    { label: "Natural pearls", value: "710110", hs6: "710110" },
-    { label: "Diamonds (unsorted)", value: "710210", hs6: "710210" },
-
-    // Base Metals
-    { label: "Pig iron, non-alloy", value: "720110", hs6: "720110" },
-    { label: "Copper wire", value: "740819", hs6: "740819" },
-
-    // Machinery & Electronics
-    { label: "Electric motors and generators", value: "850220", hs6: "850220" },
-    { label: "Nuclear reactors", value: "840110", hs6: "840110" },
-
-    // Transportation
-    {
-      label: "Motor cars (spark-ignition engine)",
-      value: "870321",
-      hs6: "870321",
-    },
-    {
-      label: "Rail locomotives powered from external source",
-      value: "860110",
-      hs6: "860110",
-    },
-
-    // Optical & Medical Instruments
-    { label: "Optical fibers and bundles", value: "900110", hs6: "900110" },
-    { label: "Liquid crystal devices", value: "901380", hs6: "901380" },
-
-    // Arms & Ammunition
-    { label: "Military weapons", value: "930100", hs6: "930100" },
-    { label: "Shotguns", value: "930320", hs6: "930320" },
-
-    // Miscellaneous
-    {
-      label: "Seats of a kind used for aircraft",
-      value: "940110",
-      hs6: "940110",
-    },
-    { label: "Mattress supports", value: "940421", hs6: "940421" },
-
-    // Art & Antiques
-    {
-      label: "Paintings, drawings and pastels",
-      value: "970100",
-      hs6: "970100",
-    },
-    { label: "Original sculptures", value: "970300", hs6: "970300" },
-
-    // Special Transactions
-    {
-      label: "Special transactions and commodities",
-      value: "980100",
-      hs6: "980100",
-    },
-  ];
+  // Set default product if current selection is not available
+  useEffect(() => {
+    if (productOptions.length > 0) {
+      const currentProductExists = productOptions.find(
+        (opt) => opt.value === productCode
+      );
+      if (!currentProductExists) {
+        console.log(
+          "Current product code not found, setting to first available:",
+          productOptions[0]
+        );
+        setProductCode(productOptions[0].value);
+      }
+    }
+  }, [productOptions, productCode]);
 
   // Function to get HS6 code from product selection
   const getHS6Code = (productValue: string): string => {
-    const product = productOptions.find((p) => p.value === productValue);
-    return product?.hs6 || "010121"; // Default to first product if not found
+    return productValue; // The value itself is already the HS6 code
   };
 
   // Fetch data using server actions on mount and set up automatic refresh
@@ -288,10 +188,15 @@ export function TariffChart({
         setHasError(false);
 
         const countriesResult = await fetchCountries();
+        const productsResult = await fetchProduct();
+
+        console.log("Fetched products:", productsResult.products);
+        console.log("Number of products:", productsResult.products.length);
 
         // Keep tariffs empty for now (no tariff table to fetch from)
         setTariffs([]);
         setCountries(countriesResult.countries);
+        setProduct(productsResult.products);
       } catch (error) {
         console.error("Error fetching data:", error);
         setHasError(true);
@@ -315,86 +220,10 @@ export function TariffChart({
     }
   }, [tariffs, selectedTariffId]);
 
-  // ISO3 to ISO 3166-1 numeric country code mapping
-  const countryCodeMapping: { [key: string]: string } = {
-    USA: "840", // United States
-    CHN: "156", // China
-    DEU: "276", // Germany
-    JPN: "392", // Japan
-    GBR: "826", // United Kingdom
-    FRA: "250", // France
-    ITA: "380", // Italy
-    CAN: "124", // Canada
-    AUS: "036", // Australia
-    BRA: "076", // Brazil
-    IND: "356", // India
-    RUS: "643", // Russian Federation
-    KOR: "410", // South Korea
-    MEX: "484", // Mexico
-    ESP: "724", // Spain
-    NLD: "528", // Netherlands
-    CHE: "756", // Switzerland
-    BEL: "056", // Belgium
-    SWE: "752", // Sweden
-    NOR: "578", // Norway
-    AUT: "040", // Austria
-    DNK: "208", // Denmark
-    FIN: "246", // Finland
-    PRT: "620", // Portugal
-    GRC: "300", // Greece
-    IRL: "372", // Ireland
-    POL: "616", // Poland
-    TUR: "792", // Turkey
-    CZE: "203", // Czech Republic
-    HUN: "348", // Hungary
-    SVK: "703", // Slovakia
-    SVN: "705", // Slovenia
-    EST: "233", // Estonia
-    LVA: "428", // Latvia
-    LTU: "440", // Lithuania
-    BGR: "100", // Bulgaria
-    ROU: "642", // Romania
-    HRV: "191", // Croatia
-    SGP: "702", // Singapore
-    MYS: "458", // Malaysia
-    THA: "764", // Thailand
-    IDN: "360", // Indonesia
-    PHL: "608", // Philippines
-    VNM: "704", // Vietnam
-    ARE: "784", // United Arab Emirates
-    SAU: "682", // Saudi Arabia
-    ISR: "376", // Israel
-    EGY: "818", // Egypt
-    ZAF: "710", // South Africa
-    NGA: "566", // Nigeria
-    KEN: "404", // Kenya
-    MAR: "504", // Morocco
-    TUN: "788", // Tunisia
-    DZA: "012", // Algeria
-    ARG: "032", // Argentina
-    CHL: "152", // Chile
-    COL: "170", // Colombia
-    PER: "604", // Peru
-    URY: "858", // Uruguay
-    VEN: "862", // Venezuela
-    ECU: "218", // Ecuador
-    BOL: "068", // Bolivia
-    PRY: "600", // Paraguay
-    CRI: "188", // Costa Rica
-    PAN: "591", // Panama
-    GTM: "320", // Guatemala
-    HND: "340", // Honduras
-    SLV: "222", // El Salvador
-    NIC: "558", // Nicaragua
-    DOM: "214", // Dominican Republic
-    CUB: "192", // Cuba
-    JAM: "388", // Jamaica
-    TTO: "780", // Trinidad and Tobago
-  };
-
-  // Function to convert ISO3 country code to numeric code
+  // Function to convert ISO3 country code to numeric code using database data
   const getNumericCountryCode = (iso3Code: string): string => {
-    return countryCodeMapping[iso3Code] || iso3Code; // Return original if not found
+    const country = countries.find((c) => c.country_code === iso3Code);
+    return country?.numeric_code || iso3Code; // Return original if not found
   };
 
   // Function to calculate tariff using the TariffService
@@ -589,6 +418,93 @@ export function TariffChart({
     );
   }
 
+  // Combobox component for product selection
+  function ProductCombobox({
+    value,
+    onValueChange,
+    placeholder,
+    id,
+  }: {
+    value: string;
+    onValueChange: (value: string) => void;
+    placeholder: string;
+    id?: string;
+  }) {
+    const [open, setOpen] = useState(false);
+
+    return (
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            id={id}
+            variant="outline"
+            role="combobox"
+            aria-expanded={open}
+            className="w-full justify-between"
+          >
+            {value
+              ? productOptions.find((product) => product.value === value)?.label
+              : placeholder}
+            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent
+          className="w-[var(--radix-popover-trigger-width)] p-0"
+          align="start"
+        >
+          <Command
+            filter={(value, search) => {
+              const product = productOptions.find((p) => p.label === value);
+              if (!product) return 0;
+              const searchLower = search.toLowerCase();
+              const labelMatch = product.label
+                .toLowerCase()
+                .includes(searchLower);
+              const valueMatch = product.value
+                .toLowerCase()
+                .includes(searchLower);
+              return labelMatch || valueMatch ? 1 : 0;
+            }}
+          >
+            <CommandInput
+              placeholder={`Search ${placeholder.toLowerCase()}...`}
+            />
+            <CommandList className="max-h-[200px]">
+              <CommandEmpty>No product found.</CommandEmpty>
+              <CommandGroup>
+                {productOptions.map((product) => (
+                  <CommandItem
+                    key={product.value}
+                    value={product.label}
+                    onSelect={() => {
+                      onValueChange(
+                        product.value === value ? "" : product.value
+                      );
+                      setOpen(false);
+                    }}
+                  >
+                    <Check
+                      className={cn(
+                        "mr-2 h-4 w-4",
+                        value === product.value ? "opacity-100" : "opacity-0"
+                      )}
+                    />
+                    <div className="flex flex-col">
+                      <span className="font-medium">{product.label}</span>
+                      <span className="text-xs text-muted-foreground">
+                        HS6: {product.value}
+                      </span>
+                    </div>
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      </Popover>
+    );
+  }
+
   return (
     <Card className="@container/card">
       <CardHeader>
@@ -770,23 +686,12 @@ export function TariffChart({
               <Label htmlFor="productCode" className="mb-2">
                 Product (HS6 Code):
               </Label>
-              <Select value={productCode} onValueChange={setProductCode}>
-                <SelectTrigger id="productCode" className="w-full">
-                  <SelectValue placeholder="Select product" />
-                </SelectTrigger>
-                <SelectContent className="max-h-60 overflow-y-auto">
-                  {productOptions.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value}>
-                      <div className="flex flex-col">
-                        <span className="font-medium">{opt.label}</span>
-                        <span className="text-xs text-muted-foreground">
-                          HS6: {opt.hs6}
-                        </span>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <ProductCombobox
+                value={productCode}
+                onValueChange={setProductCode}
+                placeholder="Select product"
+                id="productCode"
+              />
             </div>
             <div className="flex-1 min-w-0">
               <Label htmlFor="tradeValue" className="mb-2">
