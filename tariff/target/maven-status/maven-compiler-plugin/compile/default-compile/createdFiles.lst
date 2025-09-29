@@ -1,5 +1,4 @@
 com/verbosegarbonzo/tariff/model/CalculateRequest.class
-com/verbosegarbonzo/tariff/model/CountryRef.class
 com/verbosegarbonzo/tariff/config/WitsProperties.class
 com/verbosegarbonzo/tariff/config/WebClientConfig.class
 com/verbosegarbonzo/tariff/model/CalculateResponse.class
