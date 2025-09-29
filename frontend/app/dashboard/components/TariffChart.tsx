@@ -101,6 +101,7 @@ export function TariffChart({
   const [simTrend, setSimTrend] = useState<number | undefined>(undefined);
 
   const [selectedYear, setSelectedYear] = useState<string>("2020");
+  const [isCalculating, setIsCalculating] = useState(false);
 
   // Interface for the tariff calculation result from backend
   interface TariffCalculationResult {
@@ -403,6 +404,7 @@ export function TariffChart({
       return;
     }
 
+    setIsCalculating(true);
     const hs6Code = getHS6Code(productCode);
     const reporterNumeric = getNumericCountryCode(importingCountry);
     const partnerNumeric = getNumericCountryCode(exportingCountry);
@@ -478,6 +480,8 @@ export function TariffChart({
         stack: error instanceof Error ? error.stack : undefined,
       });
       setHasError(true);
+    } finally {
+      setIsCalculating(false);
     }
   };
 
@@ -640,10 +644,15 @@ export function TariffChart({
         </CardAction>
       </CardHeader>
       <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
-        {isLoading ? (
+        {isLoading || isCalculating ? (
           <div className="h-[300px] w-full rounded-xl shadow-lg bg-white p-4 flex items-center justify-center">
             {/* Skeleton for chart area */}
             <div className="w-full h-full flex flex-col gap-4">
+              {isCalculating && (
+                <div className="text-center mb-4">
+                  <p className="text-gray-600">Calculating tariff data...</p>
+                </div>
+              )}
               <div className="flex gap-2 mb-2">
                 <Skeleton className="h-6 w-32" />
                 <Skeleton className="h-6 w-20" />
@@ -798,10 +807,15 @@ export function TariffChart({
           <div className="flex justify-center mt-6">
             <Button
               onClick={calculateTariff}
-              disabled={!importingCountry || !exportingCountry || !tradeValue}
+              disabled={
+                !importingCountry ||
+                !exportingCountry ||
+                !tradeValue ||
+                isCalculating
+              }
               className="bg-black text-white px-6 py-2 rounded hover:bg-gray-800 disabled:opacity-50"
             >
-              Calculate Tariff
+              {isCalculating ? "Calculating..." : "Calculate Tariff"}
             </Button>
           </div>
         </div>

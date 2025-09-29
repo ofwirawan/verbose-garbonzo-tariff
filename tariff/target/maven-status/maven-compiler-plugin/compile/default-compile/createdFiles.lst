@@ -11,6 +11,7 @@ com/verbosegarbonzo/tariff/TariffApplication.class
 com/verbosegarbonzo/tariff/model/CalculateResponse.class
 com/verbosegarbonzo/tariff/controller/MetadataController.class
 com/verbosegarbonzo/tariff/config/WitsProperties$Tariff.class
+com/verbosegarbonzo/tariff/config/WebClientConfig$1.class
 com/verbosegarbonzo/tariff/service/TariffService$ExternalServiceException.class
 com/verbosegarbonzo/tariff/service/TariffService$RateNotFoundException.class
 com/verbosegarbonzo/tariff/config/WitsProperties$Metadata.class
