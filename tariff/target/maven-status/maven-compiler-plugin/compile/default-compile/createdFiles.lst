@@ -1,0 +1,10 @@
+com/verbosegarbonzo/tariff/model/CalculateRequest.class
+com/verbosegarbonzo/tariff/model/CountryRef.class
+com/verbosegarbonzo/tariff/config/WitsProperties.class
+com/verbosegarbonzo/tariff/config/WebClientConfig.class
+com/verbosegarbonzo/tariff/model/CalculateResponse.class
+com/verbosegarbonzo/tariff/config/WitsProperties$Tariff.class
+com/verbosegarbonzo/tariff/service/TariffService$ExternalServiceException.class
+com/verbosegarbonzo/tariff/service/TariffService$RateNotFoundException.class
+com/verbosegarbonzo/tariff/config/WitsProperties$Metadata.class
+com/verbosegarbonzo/tariff/service/TariffService.class

@@ -23,6 +23,7 @@ import java.io.InputStream;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
+import java.util.regex.Pattern;
 
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamConstants;
@@ -32,6 +33,9 @@ import javax.xml.stream.XMLStreamReader;
 public class WitsMetadataClient {
     // Calls WITS metadata endpoints (countries/products), parses XML, caches in
     // memory, provides search methods
+
+    private static final Pattern LEAD_DASHES = Pattern.compile("^\\s*[-–—]+\\s*");
+    private static final Pattern YEAR_NOTE = Pattern.compile("^\\s*\\((?:-?\\d{4}|\\d{4}-\\d{0,4})\\)\\s*[-–—]*\\s*");
 
     private final WebClient webClient;
     private final WitsProperties props;
@@ -96,10 +100,42 @@ public class WitsMetadataClient {
         // Fill countriesByIso3 map and list
     }
 
+    //remove HS6 prefix, WITS leading dashes, and year notes.
+    private static String cleanDesc(String hs6, String desc) {
+        if (desc == null) return null;
+        String out = desc;
+
+        //remove an initial HS code like "290531" plus separators/dashes
+        String hs6fixed = hs6.substring(0, 6);
+        out = out.replaceFirst("^\\s*" + Pattern.quote(hs6fixed) + "\\s*[:.;,/]*\\s*[-–—]*\\s*", "");
+        
+
+        //strip any leading hierarchy dashes (WITS uses --, ---)
+        out = LEAD_DASHES.matcher(out).replaceFirst("");
+
+        //drop leading year qualifier notes (may appear more than once)
+        while (YEAR_NOTE.matcher(out).find()) {
+            out = YEAR_NOTE.matcher(out).replaceFirst("");
+        }
+
+        //normalise whitespace and trim
+        out = out.replaceAll("\\s{2,}", " ").trim();
+        return out;
+    }
+
+
     @Transactional
     public void loadProducts() {
         final int BATCH = 500;
 
+        try {
+            int deleted = productRepository.deleteChapter29();
+            System.out.println("Deleted existing Chapter 29 rows: " + deleted);
+        } catch (Exception e) {
+            System.err.println("Warning: failed to delete previous Chapter 29 rows; continuing ingest");
+            e.printStackTrace();
+        }
+        
         final String url = props.getBaseUrl() + props.getMetadata().getProduct() + "/ALL";
         final Flux<DataBuffer> body = webClient.get()
                 .uri(url)
@@ -114,8 +150,8 @@ public class WitsMetadataClient {
         }
 
         long seen = 0, queued = 0;
-        //seen: how many elements encountered
-        //queued: how many rows prepared for DB
+        // seen: how many elements encountered
+        // queued: how many rows prepared for DB
 
         final java.util.List<String[]> batch = new java.util.ArrayList<>(BATCH);
 
@@ -124,7 +160,7 @@ public class WitsMetadataClient {
             f.setProperty(XMLInputFactory.IS_NAMESPACE_AWARE, true);
             XMLStreamReader r = f.createXMLStreamReader(in);
 
-            //per-product scratch
+            // per-product scratch
             String hs6 = null;
             String desc = null;
 
@@ -147,26 +183,24 @@ public class WitsMetadataClient {
                             if (v.isEmpty())
                                 continue;
 
-                            //HS6
-                            if (n.equals("productcode") || n.equals("hs6code") || n.equals("code") || n.equals("id")) {
+                            // HS6
+                            if (n.equals("productcode")) {
                                 hs6 = v;
                             }
-                            //Description
-                            if (n.equals("productdesc") || n.equals("productdescription")
-                                    || n.equals("description") || n.equals("name")
-                                    || n.equals("title") || n.equals("label") || n.equals("desc")) {
+                            // Description
+                            if (n.equals("productdescription")) {
                                 desc = v;
                             }
                         }
                     }
 
-                    //WITS description is usually a child element:
-                    //<productdescription>…</productdescription>
+                    // WITS description is usually a child element:
+                    // <productdescription>…</productdescription>
                     if ("productdescription".equalsIgnoreCase(tag)) {
-                        String t = r.getElementText(); //consume text & END_ELEMENT for productdescription
+                        String t = r.getElementText(); // consume text & END_ELEMENT for productdescription
                         if (t != null && !t.isBlank())
                             desc = t.trim();
-                        continue; 
+                        continue;
                     }
                 }
 
@@ -174,15 +208,26 @@ public class WitsMetadataClient {
                     String end = r.getLocalName();
 
                     if ("product".equalsIgnoreCase(end)) {
-                        //finalize one product
+                        // finalize one product
                         if (hs6 != null && !hs6.isBlank() && desc != null && !desc.isBlank()) {
                             if (hs6.length() > 6)
                                 hs6 = hs6.substring(0, 6);
 
-                            //clean leading "HS6 -- " if present
-                            String cleaned = desc.replaceFirst("^\\s*"
-                                    + java.util.regex.Pattern.quote(hs6)
-                                    + "\\s*[-–—]*\\s*", "");
+                            // Filter for Chapter 29
+                            if (!hs6.startsWith("29")) {
+                                hs6 = null;
+                                desc = null;
+                                continue; // Skip products not in Chapter 29
+                            }
+
+                            //clean description and skip "Other"
+                            String cleaned = cleanDesc(hs6, desc);
+                            if (cleaned == null || cleaned.isBlank() || cleaned.equalsIgnoreCase("Other")) {
+                                //skip basket codes and empties
+                                hs6 = null;
+                                desc = null;
+                                continue;
+                            }
 
                             batch.add(new String[] { hs6, cleaned });
                             queued++;
@@ -197,7 +242,7 @@ public class WitsMetadataClient {
                                     "DEBUG missing fields at product #" + seen + " -> hs6=" + hs6 + ", desc=" + desc);
                         }
 
-                        //reset for next product
+                        // reset for next product
                         hs6 = null;
                         desc = null;
                     }
@@ -220,7 +265,7 @@ public class WitsMetadataClient {
     }
 
     private void flushBatch(java.util.List<String[]> batch) {
-        //upsert each row using the repository method
+        // upsert each row using the repository method
         for (String[] arr : batch) {
             productRepository.upsert(arr[0], arr[1]); // hs6, desc
         }
@@ -240,9 +285,9 @@ public class WitsMetadataClient {
 
     public List<Product> searchProducts(String query) {
         if (query == null || (query = query.trim()).length() < 2) {
-        return Collections.emptyList();
+            return Collections.emptyList();
+        }
+        var page = PageRequest.of(0, 10, Sort.by(Sort.Direction.ASC, "description"));
+        return productRepository.searchProducts(query, page); // sorted by description, asc
     }
-    var page = PageRequest.of(0, 10, Sort.by(Sort.Direction.ASC, "description"));
-    return productRepository.searchProducts(query, page); //sorted by description, asc
-}
 }

@@ -22,9 +22,15 @@ public interface ProductRepository extends JpaRepository<Product, String> { //gi
     @Modifying
     @Transactional
     @Query(value = """
-        INSERT INTO products (hs6code, description)
+        INSERT INTO product (hs6code, description)
         VALUES (:hs6, :desc)
         ON CONFLICT (hs6code) DO UPDATE SET description = EXCLUDED.description
         """, nativeQuery = true)
     void upsert(@Param("hs6") String hs6, @Param("desc") String desc);
+
+    //remove previously-synced rows before a fresh load
+    @Modifying
+    @Transactional
+    @Query(value = "DELETE FROM product WHERE hs6code LIKE '29%'", nativeQuery = true)
+    int deleteChapter29();
 }
