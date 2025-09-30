@@ -1,5 +1,9 @@
 package com.verbosegarbonzo.tariff.dto;
+
 import lombok.*;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
 
 @Data
 @NoArgsConstructor
@@ -9,7 +13,7 @@ public class PreferenceDTO {
     private String importerCode;
     private String exporterCode;
     private String productCode;
-    private String validFrom;
-    private String validTo;
-    private String prefAdvalRate;
+    private LocalDate validFrom;
+    private LocalDate validTo;
+    private BigDecimal prefAdValRate;
 }

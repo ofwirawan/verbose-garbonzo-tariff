@@ -3,10 +3,14 @@ package com.verbosegarbonzo.tariff.controller.admin;
 import com.verbosegarbonzo.tariff.model.Country;
 import com.verbosegarbonzo.tariff.repository.CountryRepository;
 import jakarta.validation.Valid;
+
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
+
 
 @RestController
 @RequestMapping("/api/admin/countries")
@@ -26,52 +30,37 @@ public class AdminCountryController {
 
     // Get all countries
     @GetMapping
-    public List<Country> getAllCountries() {
-        return countryRepository.findAll();
+    public Page<Country> getAllCountries(Pageable pageable) {
+        return countryRepository.findAll(pageable);
     }
 
-    // Get country by numericCode
-    @GetMapping("/{numericCode}")
-    public ResponseEntity<Country> getCountryById(@PathVariable String numericCode) {
-        return countryRepository.findById(numericCode)
+    // Get country by countryCode
+    @GetMapping("/{countryCode}")
+    public ResponseEntity<Country> getCountryById(@PathVariable String countryCode) {
+        return countryRepository.findById(countryCode)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    // Search countries by query in name, iso3code, or numericCode
-    @GetMapping("/search")
-    public List<Country> searchCountries(@RequestParam String query) {
-        return countryRepository.searchCountries(query);
-    }
-
-    // Update country by numericCode
-    @PutMapping("/{numericCode}")
-    public ResponseEntity<Country> updateCountry(@PathVariable String numericCode, @Valid @RequestBody Country updatedCountry) {
-        return countryRepository.findById(numericCode)
+    // Update country by countryCode
+    @PutMapping("/{countryCode}")
+    public ResponseEntity<Country> updateCountry(@PathVariable String countryCode,
+            @Valid @RequestBody Country updatedCountry) {
+        return countryRepository.findById(countryCode)
                 .map(existingCountry -> {
-                    countryRepository.updateCountry(numericCode, updatedCountry.getIso3code(), updatedCountry.getName());
-                    // Refresh and return updated entity
-                    Country refreshed = countryRepository.findById(numericCode).orElse(existingCountry);
-                    return ResponseEntity.ok(refreshed);
+                    existingCountry.setNumericCode(updatedCountry.getNumericCode());
+                    existingCountry.setName(updatedCountry.getName());
+                    Country saved = countryRepository.save(existingCountry);
+                    return ResponseEntity.ok(saved);
                 })
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    // Delete country by iso3code
-    @DeleteMapping("/deleteByIso3/{iso3code}")
-    public ResponseEntity<Void> deleteByIso3Code(@PathVariable String iso3code) {
-        int deleted = countryRepository.deleteByIso3code(iso3code);
-        if (deleted > 0) {
-            return ResponseEntity.noContent().build();
-        }
-        return ResponseEntity.notFound().build();
-    }
-
-    // Delete country by name
-    @DeleteMapping("/deleteByName/{name}")
-    public ResponseEntity<Void> deleteByName(@PathVariable String name) {
-        int deleted = countryRepository.deleteByName(name);
-        if (deleted > 0) {
+    // Delete country by countryCode
+    @DeleteMapping("/{countryCode}")
+    public ResponseEntity<Void> deleteCountry(@PathVariable String countryCode) {
+        if (countryRepository.existsById(countryCode)) {
+            countryRepository.deleteById(countryCode);
             return ResponseEntity.noContent().build();
         }
         return ResponseEntity.notFound().build();

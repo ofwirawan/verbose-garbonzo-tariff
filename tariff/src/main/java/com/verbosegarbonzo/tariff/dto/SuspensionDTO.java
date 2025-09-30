@@ -1,6 +1,7 @@
 package com.verbosegarbonzo.tariff.dto;
 
 import java.time.LocalDate;
+import java.math.BigDecimal;
 
 import lombok.*;
 
@@ -15,5 +16,5 @@ public class SuspensionDTO {
     private LocalDate validTo;
     private boolean suspensionFlag;
     private String suspensionNote;
-    private String suspensionRate;
+    private BigDecimal suspensionRate;
 }

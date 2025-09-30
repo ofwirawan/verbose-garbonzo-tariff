@@ -1,79 +1,118 @@
 package com.verbosegarbonzo.tariff.controller.admin;
 
+import com.verbosegarbonzo.tariff.dto.SuspensionDTO;
 import com.verbosegarbonzo.tariff.model.Suspension;
+import com.verbosegarbonzo.tariff.model.Country;
+import com.verbosegarbonzo.tariff.model.Product;
 import com.verbosegarbonzo.tariff.repository.SuspensionRepository;
+import com.verbosegarbonzo.tariff.repository.CountryRepository;
+import com.verbosegarbonzo.tariff.repository.ProductRepository;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDate;
-import java.util.List;
-import java.util.NoSuchElementException;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/admin/suspensions")
 public class AdminSuspensionController {
 
     private final SuspensionRepository suspensionRepository;
+    private final CountryRepository countryRepository;
+    private final ProductRepository productRepository;
 
-    public AdminSuspensionController(SuspensionRepository suspensionRepository) {
+    public AdminSuspensionController(SuspensionRepository suspensionRepository,
+            CountryRepository countryRepository,
+            ProductRepository productRepository) {
         this.suspensionRepository = suspensionRepository;
+        this.countryRepository = countryRepository;
+        this.productRepository = productRepository;
+    }
+
+    // Helper: entity to DTO
+    private SuspensionDTO toDTO(Suspension suspension) {
+        return new SuspensionDTO(
+                suspension.getSuspensionId(),
+                suspension.getImporter().getCountryCode(),
+                suspension.getProduct().getHs6Code(),
+                suspension.getValidFrom(),
+                suspension.getValidTo(),
+                suspension.isSuspensionFlag(),
+                suspension.getSuspensionNote(),
+                suspension.getSuspensionRate());
+    }
+
+    // Helper: DTO to entity
+    private Suspension toEntity(SuspensionDTO dto) {
+        Country importer = countryRepository.findById(dto.getImporterCode()).orElse(null);
+        Product product = productRepository.findById(dto.getProductCode()).orElse(null);
+        Suspension suspension = new Suspension();
+        suspension.setSuspensionId(dto.getSuspensionId());
+        suspension.setImporter(importer);
+        suspension.setProduct(product);
+        suspension.setValidFrom(dto.getValidFrom());
+        suspension.setValidTo(dto.getValidTo());
+        suspension.setSuspensionFlag(dto.isSuspensionFlag());
+        suspension.setSuspensionNote(dto.getSuspensionNote());
+        suspension.setSuspensionRate(dto.getSuspensionRate());
+        return suspension;
     }
 
     // Create new Suspension
     @PostMapping
-    public ResponseEntity<Suspension> createSuspension(@Valid @RequestBody Suspension suspension) {
+    public ResponseEntity<SuspensionDTO> createSuspension(@Valid @RequestBody SuspensionDTO dto) {
+        Suspension suspension = toEntity(dto);
         Suspension created = suspensionRepository.save(suspension);
-        return ResponseEntity.status(201).body(created);
+        return ResponseEntity.status(201).body(toDTO(created));
+    }
+
+    // Get all Suspensions (paginated)
+    @GetMapping
+    public Page<SuspensionDTO> getAllSuspensions(Pageable pageable) {
+        return suspensionRepository.findAll(pageable)
+                .map(this::toDTO);
     }
 
     // Get Suspension by ID
     @GetMapping("/{id}")
-    public ResponseEntity<Suspension> getSuspensionById(@PathVariable Long id) {
+    public ResponseEntity<SuspensionDTO> getSuspensionById(@PathVariable Long id) {
         return suspensionRepository.findById(id)
+                .map(this::toDTO)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    // Get active suspensions by importer, product, and date
-    @GetMapping("/active")
-    public List<Suspension> findActiveSuspensions(@RequestParam String importer,
-                                                  @RequestParam String hs6Code,
-                                                  @RequestParam LocalDate date) {
-        return suspensionRepository.findActiveSuspensions(importer, hs6Code, date);
-    }
-
-    // Update suspensionFlag and suspensionNote by ID
-    @PutMapping("/{id}/flag-note")
-    public ResponseEntity<String> updateFlagAndNote(@PathVariable Long id,
-                                                    @RequestParam Boolean flag,
-                                                    @RequestParam String note) {
-        int updated = suspensionRepository.updateFlagAndNoteById(id, flag, note);
-        if (updated == 1) {
-            return ResponseEntity.ok("Suspension flag and note updated");
-        }
-        return ResponseEntity.notFound().build();
-    }
-
-    // Update validTo date by ID
-    @PutMapping("/{id}/validto")
-    public ResponseEntity<String> updateValidTo(@PathVariable Long id, @RequestParam LocalDate validTo) {
-        int updated = suspensionRepository.updateValidToById(id, validTo);
-        if (updated == 1) {
-            return ResponseEntity.ok("Suspension validTo updated");
+    // Update Suspension by ID
+    @PutMapping("/{id}")
+    public ResponseEntity<SuspensionDTO> updateSuspension(@PathVariable Long id,
+            @Valid @RequestBody SuspensionDTO dto) {
+        Optional<Suspension> optionalSuspension = suspensionRepository.findById(id);
+        if (optionalSuspension.isPresent()) {
+            Suspension suspension = optionalSuspension.get();
+            Country importer = countryRepository.findById(dto.getImporterCode()).orElse(null);
+            Product product = productRepository.findById(dto.getProductCode()).orElse(null);
+            suspension.setImporter(importer);
+            suspension.setProduct(product);
+            suspension.setValidFrom(dto.getValidFrom());
+            suspension.setValidTo(dto.getValidTo());
+            suspension.setSuspensionFlag(dto.isSuspensionFlag());
+            suspension.setSuspensionNote(dto.getSuspensionNote());
+            suspension.setSuspensionRate(dto.getSuspensionRate());
+            Suspension saved = suspensionRepository.save(suspension);
+            return ResponseEntity.ok(toDTO(saved));
         }
         return ResponseEntity.notFound().build();
     }
 
     // Delete Suspension by ID
     @DeleteMapping("/{id}")
-    public ResponseEntity<String> deleteSuspensionById(@PathVariable Long id) {
-        try {
+    public ResponseEntity<Void> deleteSuspensionById(@PathVariable Long id) {
+        if (suspensionRepository.existsById(id)) {
             suspensionRepository.deleteById(id);
-            return ResponseEntity.ok("Deleted suspension with id: " + id);
-        } catch (NoSuchElementException ex) {
-            return ResponseEntity.notFound().build();
+            return ResponseEntity.noContent().build();
         }
+        return ResponseEntity.notFound().build();
     }
 }
-

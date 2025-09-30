@@ -2,6 +2,8 @@ package com.verbosegarbonzo.tariff.model;
 
 import jakarta.persistence.*;
 import lombok.*;
+
+import java.math.BigDecimal;
 import java.time.LocalDate;
 
 @Entity
@@ -32,11 +34,11 @@ public class Suspension {
     private LocalDate validTo;
 
     @Column(name = "suspension_flag", nullable = false)
-    private Boolean suspensionFlag;
+    private boolean suspensionFlag;
 
     @Column(name = "suspension_note", nullable = false)
     private String suspensionNote;
 
     @Column(name = "suspension_rate")
-    private String suspensionRate;
+    private BigDecimal suspensionRate;
 }
