@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 
 import java.time.LocalDate;
+import java.math.BigDecimal;
 
 @Entity
 @Table(name = "suspension")
@@ -24,11 +25,11 @@ public class Suspension {
     @Column(name = "importer_code", nullable = false)
     private String importerCode;
 
-    @Column(name = "exporter_code")
-    private String exporterCode; // nullable
-
     @Column(name = "product_code", nullable = false)
     private String productCode;
+
+    @Column(name = "suspension_rate")
+    private BigDecimal suspensionRate; //nullable, null means 0%
 
     @Column(name = "valid_from", nullable = false)
     private LocalDate validFrom;
@@ -39,6 +40,6 @@ public class Suspension {
     @Column(name = "suspension_flag", nullable = false)
     private boolean suspensionFlag;
 
-    @Column(name = "suspension_note")
+    @Column(name = "suspension_note", nullable = false)
     private String suspensionNote;
 }

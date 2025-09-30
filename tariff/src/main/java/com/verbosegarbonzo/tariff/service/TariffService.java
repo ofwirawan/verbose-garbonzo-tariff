@@ -1,5 +1,7 @@
 package com.verbosegarbonzo.tariff.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.verbosegarbonzo.tariff.exception.RateNotFoundException;
 import com.verbosegarbonzo.tariff.model.CalculateRequest;
 import com.verbosegarbonzo.tariff.model.CalculateResponse;
@@ -25,6 +27,7 @@ public class TariffService {
     private final PreferenceRepository preferenceRepo;
     private final MeasureRepository measureRepo;
     private final SuspensionRepository suspensionRepo;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     public TariffService(PreferenceRepository preferenceRepo, MeasureRepository measureRepo,
             SuspensionRepository suspensionRepo) {
@@ -36,16 +39,25 @@ public class TariffService {
     public CalculateResponse calculate(CalculateRequest req) {
         LocalDate date = req.getTransactionDate();
 
-        //Check suspension first
+        // Check suspension first
         Optional<Suspension> suspOpt = suspensionRepo.findActiveSuspension(
-                req.getImporterCode(), req.getExporterCode(), req.getHs6(), date);
+                req.getImporterCode(), req.getHs6(), date);
 
         if (suspOpt.isPresent()) {
-            //tariff suspended, duty = 0
-            return buildResponse(req, TEMP_USER_ID, BigDecimal.ZERO, null, null, null);
+            Suspension susp = suspOpt.get();
+
+            BigDecimal rateSusp = susp.getSuspensionRate();
+            if (rateSusp == null) {
+                rateSusp = BigDecimal.ZERO;
+            }
+            BigDecimal rateSuspCalc = rateSusp.multiply(BigDecimal.valueOf(0.01));
+
+            BigDecimal duty = req.getTradeOriginal().multiply(rateSuspCalc);
+            // tariff suspended
+            return buildResponse(req, TEMP_USER_ID, duty, null, null, null, rateSusp);
         }
 
-        //Check preference (if exporter provided)
+        // Check preference (if exporter provided)
         Optional<Preference> prefOpt = (req.getExporterCode() != null && !req.getExporterCode().isBlank())
                 ? preferenceRepo.findValidRate(req.getImporterCode(), req.getExporterCode(), req.getHs6(), date)
                 : Optional.empty();
@@ -57,10 +69,10 @@ public class TariffService {
             BigDecimal ratePrefCalc = ratePref.multiply(BigDecimal.valueOf(0.01));
 
             BigDecimal duty = req.getTradeOriginal().multiply(ratePrefCalc);
-            return buildResponse(req, TEMP_USER_ID, duty, null, null, ratePref);
+            return buildResponse(req, TEMP_USER_ID, duty, null, null, ratePref, null);
         }
 
-        //Otherwise, check measure
+        // Otherwise, check measure
         Optional<Measure> measureOpt = measureRepo.findValidRate(req.getImporterCode(), req.getHs6(), date);
         if (measureOpt.isPresent()) {
             Measure measure = measureOpt.get();
@@ -84,7 +96,7 @@ public class TariffService {
                         .add(req.getNetWeight().multiply(rateSpecific));
             }
             // ad-valorem only
-            else if (rateAdval != null) {
+            else if (rateAdval != null && req.getTradeOriginal() != null) {
                 duty = req.getTradeOriginal().multiply(rateAdvalCalc);
             }
             // specific only
@@ -92,7 +104,7 @@ public class TariffService {
                 duty = req.getNetWeight().multiply(rateSpecific);
             }
 
-            return buildResponse(req, TEMP_USER_ID, duty, rateAdval, rateSpecific, null);
+            return buildResponse(req, TEMP_USER_ID, duty, rateAdval, rateSpecific, null, null);
         }
 
         // 3. Nothing found
@@ -105,9 +117,10 @@ public class TariffService {
             BigDecimal duty,
             BigDecimal rateAdval,
             BigDecimal rateSpecific,
-            BigDecimal ratePref) {
+            BigDecimal ratePref,
+            BigDecimal rateSup) {
 
-        //generate tid temporarily (later use DB sequence)
+        // generate tid temporarily (later use DB sequence)
         long tid = System.currentTimeMillis();
 
         CalculateResponse resp = new CalculateResponse();
@@ -122,10 +135,22 @@ public class TariffService {
         resp.setNetWeight(req.getNetWeight());
         resp.setTradeFinal(req.getTradeOriginal().add(duty));
 
-        resp.setRateAdval(rateAdval);
-        resp.setRateSpecific(rateSpecific);
-        resp.setRatePref(ratePref);
+        // build applied_rate JSON
+        ObjectNode rateNode = objectMapper.createObjectNode();
+        if (ratePref != null) {
+            rateNode.set("prefAdval", objectMapper.getNodeFactory().numberNode(ratePref));
+        }
+        if (rateAdval != null) {
+            rateNode.set("mfnAdval", objectMapper.getNodeFactory().numberNode(rateAdval));
+        }
+        if (rateSpecific != null) {
+            rateNode.set("specific", objectMapper.getNodeFactory().numberNode(rateSpecific));
+        }
+        if (rateSup != null) {
+            rateNode.set("suspension", objectMapper.getNodeFactory().numberNode(rateSup));
+        }
 
+        resp.setAppliedRate(rateNode);
         return resp;
     }
 }
