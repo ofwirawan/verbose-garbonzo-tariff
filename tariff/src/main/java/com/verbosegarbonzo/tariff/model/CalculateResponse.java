@@ -9,8 +9,6 @@ import java.util.UUID;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
-import java.util.Map;
-
 //Output Data Transfer Object for tariff calculation
 
 @Getter

@@ -2,12 +2,18 @@ package com.verbosegarbonzo.tariff.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+
 import com.verbosegarbonzo.tariff.exception.RateNotFoundException;
+import com.verbosegarbonzo.tariff.exception.WeightRequiredException;
+import com.verbosegarbonzo.tariff.exception.InvalidRateException;
+import com.verbosegarbonzo.tariff.exception.InvalidRequestException;
+
 import com.verbosegarbonzo.tariff.model.CalculateRequest;
 import com.verbosegarbonzo.tariff.model.CalculateResponse;
 import com.verbosegarbonzo.tariff.model.Measure;
 import com.verbosegarbonzo.tariff.model.Preference;
 import com.verbosegarbonzo.tariff.model.Suspension;
+
 import com.verbosegarbonzo.tariff.repository.MeasureRepository;
 import com.verbosegarbonzo.tariff.repository.PreferenceRepository;
 import com.verbosegarbonzo.tariff.repository.SuspensionRepository;
@@ -16,8 +22,10 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.List;
 
 @Service
 public class TariffService {
@@ -37,6 +45,23 @@ public class TariffService {
     }
 
     public CalculateResponse calculate(CalculateRequest req) {
+        List<String> errors = new ArrayList<>();
+
+        if (req.getHs6() == null || req.getHs6().isBlank()) {
+            errors.add("HS6 code is required");
+        }
+        if (req.getTradeOriginal() == null) {
+            errors.add("Trade original is required");
+        }
+        if (req.getTransactionDate() == null) {
+            errors.add("Transaction date is required");
+        }
+
+        // If errors found, throw once
+        if (!errors.isEmpty()) {
+            throw new InvalidRequestException(String.join("; ", errors));
+        }
+
         LocalDate date = req.getTransactionDate();
 
         // Check suspension first
@@ -50,6 +75,11 @@ public class TariffService {
             if (rateSusp == null) {
                 rateSusp = BigDecimal.ZERO;
             }
+
+            if (rateSusp.compareTo(BigDecimal.ZERO) < 0) {
+                throw new InvalidRateException("Invalid suspension rate: " + rateSusp);
+            }
+
             BigDecimal rateSuspCalc = rateSusp.multiply(BigDecimal.valueOf(0.01));
 
             BigDecimal duty = req.getTradeOriginal().multiply(rateSuspCalc);
@@ -63,9 +93,15 @@ public class TariffService {
                 : Optional.empty();
 
         if (prefOpt.isPresent()) {
+            List<String> rateErrors = new ArrayList<>();
             Preference pref = prefOpt.get();
 
             BigDecimal ratePref = pref.getPrefAdvalRate();
+
+            if (ratePref.compareTo(BigDecimal.ZERO) < 0) {
+                rateErrors.add("Invalid preferential rate: " + ratePref);
+            }
+
             BigDecimal ratePrefCalc = ratePref.multiply(BigDecimal.valueOf(0.01));
 
             BigDecimal duty = req.getTradeOriginal().multiply(ratePrefCalc);
@@ -75,6 +111,7 @@ public class TariffService {
         // Otherwise, check measure
         Optional<Measure> measureOpt = measureRepo.findValidRate(req.getImporterCode(), req.getHs6(), date);
         if (measureOpt.isPresent()) {
+            List<String> rateErrors = new ArrayList<>();
             Measure measure = measureOpt.get();
             BigDecimal duty = BigDecimal.ZERO;
             BigDecimal rateAdval = null, rateSpecific = null;
@@ -84,10 +121,27 @@ public class TariffService {
             // normalize rates
             if (measure.getMfnAdvalRate() != null) {
                 rateAdval = measure.getMfnAdvalRate();
-                rateAdvalCalc = rateAdval.multiply(BigDecimal.valueOf(0.01));
+
+                if (rateAdval.compareTo(BigDecimal.ZERO) < 0) {
+                    rateErrors.add("Invalid MFN ad-valorem rate: " + rateAdval);
+                } else {
+                    rateAdvalCalc = rateAdval.multiply(BigDecimal.valueOf(0.01));
+                }
             }
             if (measure.getSpecificRatePerKg() != null) {
                 rateSpecific = measure.getSpecificRatePerKg(); // already per kg, no scaling
+
+                if (rateSpecific.compareTo(BigDecimal.ZERO) < 0) {
+                    rateErrors.add("Invalid specific duty rate: " + rateSpecific);
+                }
+            }
+
+            if (!rateErrors.isEmpty()) {
+                throw new InvalidRateException(String.join("; ", rateErrors));
+            }
+
+            if (rateSpecific != null && req.getNetWeight() == null) {
+                throw new WeightRequiredException("Net weight is required for specific duties");
             }
 
             // compound case
