@@ -8,12 +8,15 @@ import com.verbosegarbonzo.tariff.repository.MeasureRepository;
 import com.verbosegarbonzo.tariff.repository.CountryRepository;
 import com.verbosegarbonzo.tariff.repository.ProductRepository;
 import com.verbosegarbonzo.tariff.exception.InvalidRequestException;
+import com.verbosegarbonzo.tariff.exception.AlreadyExistsException;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.http.HttpStatus;
 
 import java.time.LocalDate;
 import java.util.Optional;
@@ -67,7 +70,19 @@ public class AdminMeasureController {
 
     // Create new Measure
     @PostMapping
-    public ResponseEntity<MeasureDTO> createMeasure(@Valid @RequestBody MeasureDTO dto) {
+    public ResponseEntity<?> createMeasure(@Valid @RequestBody MeasureDTO dto) {
+        Country importer = countryRepository.findById(dto.getImporterCode())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "Importer country not found: " + dto.getImporterCode()));
+        Product product = productRepository.findById(dto.getProductCode())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "Product not found: " + dto.getProductCode()));
+        boolean exists = measureRepository.findByImporterAndProductAndValidFrom(importer, product, dto.getValidFrom())
+                .isPresent();
+        if (exists) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "A measure with the same importer, product, and validFrom already exists.");
+        }
         Measure measure = toEntity(dto);
         Measure created = measureRepository.save(measure);
         return ResponseEntity.status(201).body(toDTO(created));
@@ -82,11 +97,11 @@ public class AdminMeasureController {
 
     // Get a Measure by ID
     @GetMapping("/{id}")
-    public ResponseEntity<MeasureDTO> getMeasureById(@PathVariable Integer id) {
+    public ResponseEntity<?> getMeasureById(@PathVariable Integer id) {
         return measureRepository.findById(id)
                 .map(this::toDTO)
                 .map(ResponseEntity::ok)
-                .orElseThrow(() -> new InvalidRequestException("Measure not found: " + id));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Measure not found: " + id));
     }
 
     // Update Measure by ID
@@ -100,6 +115,17 @@ public class AdminMeasureController {
                             () -> new InvalidRequestException("Importer country not found: " + dto.getImporterCode()));
             Product product = productRepository.findById(dto.getProductCode())
                     .orElseThrow(() -> new InvalidRequestException("Product not found: " + dto.getProductCode()));
+
+            // Duplicate check for update
+            boolean exists = measureRepository
+                    .findByImporterAndProductAndValidFrom(importer, product, dto.getValidFrom())
+                    .filter(m -> !m.getMeasureId().equals(id))
+                    .isPresent();
+            if (exists) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT,
+                        "A measure with the same importer, product, and validFrom already exists.");
+            }
+
             measure.setImporter(importer);
             measure.setProduct(product);
             measure.setValidFrom(dto.getValidFrom());
@@ -150,4 +176,5 @@ public class AdminMeasureController {
     public ResponseEntity<String> handleInvalidRequest(InvalidRequestException ex) {
         return ResponseEntity.badRequest().body(ex.getMessage());
     }
+
 }

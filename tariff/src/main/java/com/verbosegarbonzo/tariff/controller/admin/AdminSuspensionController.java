@@ -14,6 +14,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.http.HttpStatus;
 
 import java.util.Optional;
 
@@ -69,6 +71,17 @@ public class AdminSuspensionController {
     // Create new Suspension
     @PostMapping
     public ResponseEntity<SuspensionDTO> createSuspension(@Valid @RequestBody SuspensionDTO dto) {
+        Country importer = countryRepository.findById(dto.getImporterCode())
+                .orElseThrow(() -> new InvalidRequestException("Importer country not found: " + dto.getImporterCode()));
+        Product product = productRepository.findById(dto.getProductCode())
+                .orElseThrow(() -> new InvalidRequestException("Product not found: " + dto.getProductCode()));
+        boolean exists = suspensionRepository
+                .findByImporterAndProductAndValidFrom(importer, product, dto.getValidFrom())
+                .isPresent();
+        if (exists) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "A suspension with the same importer, product, and validFrom already exists.");
+        }
         Suspension suspension = toEntity(dto);
         Suspension created = suspensionRepository.save(suspension);
         return ResponseEntity.status(201).body(toDTO(created));
@@ -100,6 +113,16 @@ public class AdminSuspensionController {
                 .orElseThrow(() -> new InvalidRequestException("Importer country not found: " + dto.getImporterCode()));
         Product product = productRepository.findById(dto.getProductCode())
                 .orElseThrow(() -> new InvalidRequestException("Product not found: " + dto.getProductCode()));
+
+        boolean exists = suspensionRepository
+                .findByImporterAndProductAndValidFrom(importer, product, dto.getValidFrom())
+                .filter(s -> !s.getSuspensionId().equals(id))
+                .isPresent();
+        if (exists) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "A suspension with the same importer, product, and validFrom already exists.");
+        }
+
         suspension.setImporter(importer);
         suspension.setProduct(product);
         suspension.setValidFrom(dto.getValidFrom());

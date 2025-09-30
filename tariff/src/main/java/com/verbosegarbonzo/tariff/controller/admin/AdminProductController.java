@@ -9,6 +9,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.http.HttpStatus;
 
 @RestController
 @RequestMapping("/api/admin/products")
@@ -25,6 +27,11 @@ public class AdminProductController {
     public ResponseEntity<Product> createProduct(@Valid @RequestBody Product product) {
         if (product.getHs6Code() == null || product.getHs6Code().isEmpty()) {
             throw new InvalidRequestException("HS6 code is required.");
+        }
+        boolean exists = productRepository.existsById(product.getHs6Code());
+        if (exists) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "A product with HS6 code '" + product.getHs6Code() + "' already exists.");
         }
         Product created = productRepository.save(product);
         return ResponseEntity.status(201).body(created);
@@ -50,6 +57,16 @@ public class AdminProductController {
             @Valid @RequestBody Product updatedProduct) {
         Product existingProduct = productRepository.findById(hs6Code)
                 .orElseThrow(() -> new InvalidRequestException("Product not found: " + hs6Code));
+        // Check for duplicate HS6 code if updating the code itself (optional, if
+        // allowed)
+        if (updatedProduct.getHs6Code() != null && !updatedProduct.getHs6Code().equals(hs6Code)) {
+            boolean exists = productRepository.existsById(updatedProduct.getHs6Code());
+            if (exists) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT,
+                        "A product with HS6 code '" + updatedProduct.getHs6Code() + "' already exists.");
+            }
+            existingProduct.setHs6Code(updatedProduct.getHs6Code());
+        }
         existingProduct.setDescription(updatedProduct.getDescription());
         Product saved = productRepository.save(existingProduct);
         return ResponseEntity.ok(saved);

@@ -14,6 +14,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.http.HttpStatus;
 
 import java.util.Optional;
 
@@ -69,6 +71,22 @@ public class AdminPreferenceController {
     // Create new Preference
     @PostMapping
     public ResponseEntity<PreferenceDTO> createPreference(@Valid @RequestBody PreferenceDTO dto) {
+        Country importer = countryRepository.findById(dto.getImporterCode())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "Importer country not found: " + dto.getImporterCode()));
+        Country exporter = countryRepository.findById(dto.getExporterCode())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "Exporter country not found: " + dto.getExporterCode()));
+        Product product = productRepository.findById(dto.getProductCode())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "Product not found: " + dto.getProductCode()));
+        boolean exists = preferenceRepository
+                .findByImporterAndExporterAndProductAndValidFrom(importer, exporter, product, dto.getValidFrom())
+                .isPresent();
+        if (exists) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "A preference with the same importer, exporter, product, and validFrom already exists.");
+        }
         Preference preference = toEntity(dto);
         Preference created = preferenceRepository.save(preference);
         return ResponseEntity.status(201).body(toDTO(created));
@@ -95,13 +113,26 @@ public class AdminPreferenceController {
     public ResponseEntity<PreferenceDTO> updatePreference(@PathVariable Integer id,
             @Valid @RequestBody PreferenceDTO dto) {
         Preference preference = preferenceRepository.findById(id)
-                .orElseThrow(() -> new InvalidRequestException("Preference not found: " + id));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Preference not found: " + id));
         Country importer = countryRepository.findById(dto.getImporterCode())
-                .orElseThrow(() -> new InvalidRequestException("Importer country not found: " + dto.getImporterCode()));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "Importer country not found: " + dto.getImporterCode()));
         Country exporter = countryRepository.findById(dto.getExporterCode())
-                .orElseThrow(() -> new InvalidRequestException("Exporter country not found: " + dto.getExporterCode()));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "Exporter country not found: " + dto.getExporterCode()));
         Product product = productRepository.findById(dto.getProductCode())
-                .orElseThrow(() -> new InvalidRequestException("Product not found: " + dto.getProductCode()));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "Product not found: " + dto.getProductCode()));
+
+        boolean exists = preferenceRepository
+                .findByImporterAndExporterAndProductAndValidFrom(importer, exporter, product, dto.getValidFrom())
+                .filter(p -> !p.getPreferenceId().equals(id))
+                .isPresent();
+        if (exists) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "A preference with the same importer, exporter, product, and validFrom already exists.");
+        }
+
         preference.setImporter(importer);
         preference.setExporter(exporter);
         preference.setProduct(product);

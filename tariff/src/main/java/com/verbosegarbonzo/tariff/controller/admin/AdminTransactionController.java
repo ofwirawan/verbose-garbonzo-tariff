@@ -17,6 +17,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.orm.jpa.JpaSystemException;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.http.HttpStatus;
 
 import java.util.NoSuchElementException;
 
@@ -86,6 +88,10 @@ public class AdminTransactionController {
 
     @PostMapping
     public ResponseEntity<TransactionDTO> createTransaction(@Valid @RequestBody TransactionDTO dto) {
+        if (dto.getTid() != null && transactionRepository.existsById(dto.getTid())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "A transaction with ID '" + dto.getTid() + "' already exists.");
+        }
         Transaction transaction = toEntity(dto);
         Transaction created = transactionRepository.save(transaction);
         return ResponseEntity.status(201).body(toDTO(created));
