@@ -68,6 +68,29 @@ public class TariffService {
         Optional<Suspension> suspOpt = suspensionRepo.findActiveSuspension(
                 req.getImporterCode(), req.getHs6(), date);
 
+        // Check preference (if exporter provided) - preference can override suspension
+        Optional<Preference> prefOpt = (req.getExporterCode() != null && !req.getExporterCode().isBlank())
+                ? preferenceRepo.findValidRate(req.getImporterCode(), req.getExporterCode(), req.getHs6(), date)
+                : Optional.empty();
+
+        // If both suspension and preference exist, preference takes precedence (FTA overrides suspension)
+        if (prefOpt.isPresent()) {
+            List<String> rateErrors = new ArrayList<>();
+            Preference pref = prefOpt.get();
+
+            BigDecimal ratePref = pref.getPrefAdvalRate();
+
+            if (ratePref.compareTo(BigDecimal.ZERO) < 0) {
+                rateErrors.add("Invalid preferential rate: " + ratePref);
+            }
+
+            BigDecimal ratePrefCalc = ratePref.multiply(BigDecimal.valueOf(0.01));
+
+            BigDecimal duty = req.getTradeOriginal().multiply(ratePrefCalc);
+            return buildResponse(req, TEMP_USER_ID, duty, null, null, ratePref, null);
+        }
+
+        // Apply suspension only if no preference was found
         if (suspOpt.isPresent()) {
             Suspension susp = suspOpt.get();
 
@@ -85,27 +108,6 @@ public class TariffService {
             BigDecimal duty = req.getTradeOriginal().multiply(rateSuspCalc);
             // tariff suspended
             return buildResponse(req, TEMP_USER_ID, duty, null, null, null, rateSusp);
-        }
-
-        // Check preference (if exporter provided)
-        Optional<Preference> prefOpt = (req.getExporterCode() != null && !req.getExporterCode().isBlank())
-                ? preferenceRepo.findValidRate(req.getImporterCode(), req.getExporterCode(), req.getHs6(), date)
-                : Optional.empty();
-
-        if (prefOpt.isPresent()) {
-            List<String> rateErrors = new ArrayList<>();
-            Preference pref = prefOpt.get();
-
-            BigDecimal ratePref = pref.getPrefAdvalRate();
-
-            if (ratePref.compareTo(BigDecimal.ZERO) < 0) {
-                rateErrors.add("Invalid preferential rate: " + ratePref);
-            }
-
-            BigDecimal ratePrefCalc = ratePref.multiply(BigDecimal.valueOf(0.01));
-
-            BigDecimal duty = req.getTradeOriginal().multiply(ratePrefCalc);
-            return buildResponse(req, TEMP_USER_ID, duty, null, null, ratePref, null);
         }
 
         // Otherwise, check measure

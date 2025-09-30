@@ -1417,6 +1417,463 @@ async function main() {
     });
   }
   console.log(`Seeded ${suspensions.length} suspension records.`);
+
+  // Seed preferences (trade agreements and preferential tariffs)
+  console.log("Seeding preferences...");
+  const preferences = [
+    // USMCA (US-Mexico-Canada Agreement) - Reduced rates
+    {
+      importer_code: "USA",
+      exporter_code: "CAN",
+      product_code: "290110",
+      valid_from: new Date("2020-07-01"),
+      valid_to: null,
+      pref_adval_rate: 0.0, // Duty-free under USMCA
+    },
+    {
+      importer_code: "USA",
+      exporter_code: "MEX",
+      product_code: "290110",
+      valid_from: new Date("2020-07-01"),
+      valid_to: null,
+      pref_adval_rate: 0.0,
+    },
+    {
+      importer_code: "USA",
+      exporter_code: "CAN",
+      product_code: "290220",
+      valid_from: new Date("2020-07-01"),
+      valid_to: null,
+      pref_adval_rate: 0.0,
+    },
+    {
+      importer_code: "USA",
+      exporter_code: "MEX",
+      product_code: "290121",
+      valid_from: new Date("2020-07-01"),
+      valid_to: null,
+      pref_adval_rate: 0.0,
+    },
+    {
+      importer_code: "CAN",
+      exporter_code: "USA",
+      product_code: "290110",
+      valid_from: new Date("2020-07-01"),
+      valid_to: null,
+      pref_adval_rate: 0.0,
+    },
+    {
+      importer_code: "MEX",
+      exporter_code: "USA",
+      product_code: "290122",
+      valid_from: new Date("2020-07-01"),
+      valid_to: null,
+      pref_adval_rate: 0.0,
+    },
+
+    // EU-UK Trade and Cooperation Agreement
+    {
+      importer_code: "GBR",
+      exporter_code: "AUT",
+      product_code: "290220",
+      valid_from: new Date("2021-01-01"),
+      valid_to: null,
+      pref_adval_rate: 0.0,
+    },
+    {
+      importer_code: "GBR",
+      exporter_code: "POL",
+      product_code: "290230",
+      valid_from: new Date("2021-01-01"),
+      valid_to: null,
+      pref_adval_rate: 0.0,
+    },
+    {
+      importer_code: "AUT",
+      exporter_code: "GBR",
+      product_code: "290121",
+      valid_from: new Date("2021-01-01"),
+      valid_to: null,
+      pref_adval_rate: 0.0,
+    },
+
+    // ASEAN Free Trade Area (AFTA)
+    {
+      importer_code: "SGP",
+      exporter_code: "THA",
+      product_code: "290110",
+      valid_from: new Date("2023-01-01"),
+      valid_to: null,
+      pref_adval_rate: 0.0,
+    },
+    {
+      importer_code: "SGP",
+      exporter_code: "IDN",
+      product_code: "290122",
+      valid_from: new Date("2023-01-01"),
+      valid_to: null,
+      pref_adval_rate: 0.0,
+    },
+    {
+      importer_code: "THA",
+      exporter_code: "SGP",
+      product_code: "290121",
+      valid_from: new Date("2023-01-01"),
+      valid_to: null,
+      pref_adval_rate: 0.0,
+    },
+    {
+      importer_code: "THA",
+      exporter_code: "VNM",
+      product_code: "290220",
+      valid_from: new Date("2023-01-01"),
+      valid_to: null,
+      pref_adval_rate: 0.0,
+    },
+
+    // Japan-Australia EPA (Economic Partnership Agreement)
+    {
+      importer_code: "JPN",
+      exporter_code: "AUS",
+      product_code: "290110",
+      valid_from: new Date("2015-01-15"),
+      valid_to: null,
+      pref_adval_rate: 0.5,
+    },
+    {
+      importer_code: "JPN",
+      exporter_code: "AUS",
+      product_code: "290220",
+      valid_from: new Date("2015-01-15"),
+      valid_to: null,
+      pref_adval_rate: 1.0,
+    },
+    {
+      importer_code: "AUS",
+      exporter_code: "JPN",
+      product_code: "290123",
+      valid_from: new Date("2015-01-15"),
+      valid_to: null,
+      pref_adval_rate: 0.0,
+    },
+
+    // EU internal market preferences (intra-EU trade)
+    {
+      importer_code: "AUT",
+      exporter_code: "POL",
+      product_code: "290110",
+      valid_from: new Date("2004-05-01"),
+      valid_to: null,
+      pref_adval_rate: 0.0,
+    },
+    {
+      importer_code: "POL",
+      exporter_code: "AUT",
+      product_code: "290220",
+      valid_from: new Date("2004-05-01"),
+      valid_to: null,
+      pref_adval_rate: 0.0,
+    },
+    {
+      importer_code: "AUT",
+      exporter_code: "CZE",
+      product_code: "290122",
+      valid_from: new Date("2004-05-01"),
+      valid_to: null,
+      pref_adval_rate: 0.0,
+    },
+
+    // CPTPP (Comprehensive and Progressive Trans-Pacific Partnership)
+    {
+      importer_code: "CAN",
+      exporter_code: "AUS",
+      product_code: "290110",
+      valid_from: new Date("2018-12-30"),
+      valid_to: null,
+      pref_adval_rate: 0.0,
+    },
+    {
+      importer_code: "CAN",
+      exporter_code: "JPN",
+      product_code: "290122",
+      valid_from: new Date("2018-12-30"),
+      valid_to: null,
+      pref_adval_rate: 0.0,
+    },
+    {
+      importer_code: "JPN",
+      exporter_code: "CAN",
+      product_code: "290230",
+      valid_from: new Date("2018-12-30"),
+      valid_to: null,
+      pref_adval_rate: 0.5,
+    },
+
+    // MERCOSUR (South American trade bloc)
+    {
+      importer_code: "BRA",
+      exporter_code: "ARG",
+      product_code: "290110",
+      valid_from: new Date("1991-01-01"),
+      valid_to: null,
+      pref_adval_rate: 0.0,
+    },
+    {
+      importer_code: "ARG",
+      exporter_code: "BRA",
+      product_code: "290220",
+      valid_from: new Date("1991-01-01"),
+      valid_to: null,
+      pref_adval_rate: 0.0,
+    },
+    {
+      importer_code: "BRA",
+      exporter_code: "URY",
+      product_code: "290121",
+      valid_from: new Date("1991-01-01"),
+      valid_to: null,
+      pref_adval_rate: 0.0,
+    },
+
+    // Korea-US Free Trade Agreement (KORUS)
+    {
+      importer_code: "USA",
+      exporter_code: "KOR",
+      product_code: "290110",
+      valid_from: new Date("2012-03-15"),
+      valid_to: null,
+      pref_adval_rate: 0.0,
+    },
+    {
+      importer_code: "USA",
+      exporter_code: "KOR",
+      product_code: "290220",
+      valid_from: new Date("2012-03-15"),
+      valid_to: null,
+      pref_adval_rate: 0.0,
+    },
+    {
+      importer_code: "KOR",
+      exporter_code: "USA",
+      product_code: "290121",
+      valid_from: new Date("2012-03-15"),
+      valid_to: null,
+      pref_adval_rate: 0.0,
+    },
+
+    // China-ASEAN FTA
+    {
+      importer_code: "CHN",
+      exporter_code: "THA",
+      product_code: "290110",
+      valid_from: new Date("2010-01-01"),
+      valid_to: null,
+      pref_adval_rate: 0.0,
+    },
+    {
+      importer_code: "CHN",
+      exporter_code: "SGP",
+      product_code: "290220",
+      valid_from: new Date("2010-01-01"),
+      valid_to: null,
+      pref_adval_rate: 0.0,
+    },
+    {
+      importer_code: "THA",
+      exporter_code: "CHN",
+      product_code: "290122",
+      valid_from: new Date("2010-01-01"),
+      valid_to: null,
+      pref_adval_rate: 1.5,
+    },
+
+    // EFTA (European Free Trade Association)
+    {
+      importer_code: "CHE",
+      exporter_code: "ISL",
+      product_code: "290110",
+      valid_from: new Date("1960-01-01"),
+      valid_to: null,
+      pref_adval_rate: 0.0,
+    },
+    {
+      importer_code: "CHE",
+      exporter_code: "NOR",
+      product_code: "290220",
+      valid_from: new Date("1960-01-01"),
+      valid_to: null,
+      pref_adval_rate: 0.0,
+    },
+    {
+      importer_code: "NOR",
+      exporter_code: "CHE",
+      product_code: "290121",
+      valid_from: new Date("1960-01-01"),
+      valid_to: null,
+      pref_adval_rate: 0.0,
+    },
+
+    // Generalized System of Preferences (GSP) - USA to developing countries
+    {
+      importer_code: "USA",
+      exporter_code: "IND",
+      product_code: "290122",
+      valid_from: new Date("2020-01-01"),
+      valid_to: null,
+      pref_adval_rate: 2.5,
+    },
+    {
+      importer_code: "USA",
+      exporter_code: "BRA",
+      product_code: "290123",
+      valid_from: new Date("2020-01-01"),
+      valid_to: null,
+      pref_adval_rate: 2.0,
+    },
+    {
+      importer_code: "USA",
+      exporter_code: "THA",
+      product_code: "290230",
+      valid_from: new Date("2020-01-01"),
+      valid_to: null,
+      pref_adval_rate: 1.5,
+    },
+
+    // EU GSP schemes
+    {
+      importer_code: "GBR",
+      exporter_code: "BGD",
+      product_code: "290110",
+      valid_from: new Date("2021-01-01"),
+      valid_to: null,
+      pref_adval_rate: 0.0,
+    },
+    {
+      importer_code: "AUT",
+      exporter_code: "PAK",
+      product_code: "290220",
+      valid_from: new Date("2014-01-01"),
+      valid_to: null,
+      pref_adval_rate: 0.5,
+    },
+
+    // African Continental Free Trade Area (AfCFTA)
+    {
+      importer_code: "ZAF",
+      exporter_code: "KEN",
+      product_code: "290110",
+      valid_from: new Date("2021-01-01"),
+      valid_to: null,
+      pref_adval_rate: 1.0,
+    },
+    {
+      importer_code: "KEN",
+      exporter_code: "ZAF",
+      product_code: "290220",
+      valid_from: new Date("2021-01-01"),
+      valid_to: null,
+      pref_adval_rate: 1.0,
+    },
+
+    // Australia-Singapore FTA
+    {
+      importer_code: "AUS",
+      exporter_code: "SGP",
+      product_code: "290110",
+      valid_from: new Date("2003-07-28"),
+      valid_to: null,
+      pref_adval_rate: 0.0,
+    },
+    {
+      importer_code: "SGP",
+      exporter_code: "AUS",
+      product_code: "290121",
+      valid_from: new Date("2003-07-28"),
+      valid_to: null,
+      pref_adval_rate: 0.0,
+    },
+
+    // Historical preferences (expired/revised)
+    {
+      importer_code: "USA",
+      exporter_code: "CHN",
+      product_code: "290110",
+      valid_from: new Date("2015-01-01"),
+      valid_to: new Date("2018-12-31"),
+      pref_adval_rate: 3.5,
+    },
+    {
+      importer_code: "GBR",
+      exporter_code: "IND",
+      product_code: "290122",
+      valid_from: new Date("2019-01-01"),
+      valid_to: new Date("2022-12-31"),
+      pref_adval_rate: 2.5,
+    },
+
+    // Bilateral agreements with reduced but non-zero rates
+    {
+      importer_code: "JPN",
+      exporter_code: "IND",
+      product_code: "290110",
+      valid_from: new Date("2011-08-01"),
+      valid_to: null,
+      pref_adval_rate: 2.5,
+    },
+    {
+      importer_code: "IND",
+      exporter_code: "JPN",
+      product_code: "290220",
+      valid_from: new Date("2011-08-01"),
+      valid_to: null,
+      pref_adval_rate: 3.0,
+    },
+
+    // Chile's extensive FTA network
+    {
+      importer_code: "CHL",
+      exporter_code: "USA",
+      product_code: "290110",
+      valid_from: new Date("2004-01-01"),
+      valid_to: null,
+      pref_adval_rate: 0.0,
+    },
+    {
+      importer_code: "CHL",
+      exporter_code: "CHN",
+      product_code: "290220",
+      valid_from: new Date("2006-10-01"),
+      valid_to: null,
+      pref_adval_rate: 0.0,
+    },
+    {
+      importer_code: "USA",
+      exporter_code: "CHL",
+      product_code: "290121",
+      valid_from: new Date("2004-01-01"),
+      valid_to: null,
+      pref_adval_rate: 0.0,
+    },
+  ];
+
+  for (const preference of preferences) {
+    await prisma.preference.upsert({
+      where: {
+        importer_code_exporter_code_product_code_valid_from: {
+          importer_code: preference.importer_code,
+          exporter_code: preference.exporter_code,
+          product_code: preference.product_code,
+          valid_from: preference.valid_from,
+        },
+      },
+      update: {
+        valid_to: preference.valid_to,
+        pref_adval_rate: preference.pref_adval_rate,
+      },
+      create: preference,
+    });
+  }
+  console.log(`Seeded ${preferences.length} preference records.`);
 }
 
 main()

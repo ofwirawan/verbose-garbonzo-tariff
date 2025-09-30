@@ -10,6 +10,7 @@ import java.util.Optional;
 
 public interface SuspensionRepository extends JpaRepository<Suspension, Integer> {
 
+    // Find suspension - no exporter means to-the-world
     @Query("""
         SELECT s FROM Suspension s
         WHERE s.importerCode = :importer
