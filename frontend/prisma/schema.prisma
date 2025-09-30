@@ -8,52 +8,48 @@ datasource db {
 }
 
 model user {
-  uid          String         @id @default(dbgenerated("auth.uid()")) @db.Uuid
-  email        String         @unique
-  pw_hash      String
-  created_at   DateTime       @default(now()) @db.Timestamptz(6)
-  transactions transactions[]
+  uid         String        @id @default(dbgenerated("auth.uid()")) @db.Uuid
+  email       String        @unique
+  pw_hash     String
+  created_at  DateTime      @default(now()) @db.Timestamptz(6)
+  transaction transaction[]
 }
 
 model country {
-  country_code    String  @id @db.VarChar(3)
-  numeric_code String  @unique @db.VarChar(3)
-  name         String  @default("")
-  importer_transactions transactions[] @relation("importer_transactions")
-  exporter_transactions transactions[] @relation("exporter_transactions")
+  country_code          String        @id @db.VarChar(3)
+  numeric_code          String        @unique @db.VarChar(3)
+  name                  String        @default("")
   measures              measure[]
-  importer_preferences  preference[]   @relation("importer_preferences")
-  exporter_preferences  preference[]   @relation("exporter_preferences")
+  exporter_preferences  preference[]  @relation("exporter_preferences")
+  importer_preferences  preference[]  @relation("importer_preferences")
   suspensions           suspension[]
-  exporter_suspensions  suspension[]   @relation("exporter_suspensions")
+  exporter_transactions transaction[] @relation("exporter_transactions")
+  importer_transactions transaction[] @relation("importer_transactions")
 }
 
 model product {
-  hs6code      String  @id @db.Char(6)
-  description  String? @default("")
-  transactions transactions[]
-  measures     measure[]
-  preferences  preference[]
-  suspensions  suspension[]
+  hs6code     String        @id @db.Char(6)
+  description String?       @default("")
+  measures    measure[]
+  preferences preference[]
+  transaction transaction[]
 }
 
-model transactions {
-  tid              BigInt    @id
-  uid              String    @db.Uuid
-  t_date           DateTime  @db.Date
-  importer_code    String    @db.VarChar(3)
-  exporter_code    String    @db.VarChar(3)
-  hs6code          String?   @db.Char(6)
-  trade_original   Decimal   @db.Decimal
-  net_weight       Float?    @db.Real
-  rate_adval       Decimal?  @db.Decimal
-  trade_final      Decimal   @db.Decimal
-  rate_specific    Decimal?  @db.Decimal
-  rate_pref        Decimal?  @db.Decimal
-  importer         country   @relation("importer_transactions", fields: [importer_code], references: [country_code], onDelete: NoAction)
-  exporter         country   @relation("exporter_transactions", fields: [exporter_code], references: [country_code], onDelete: NoAction)
-  product          product?  @relation(fields: [hs6code], references: [hs6code], onDelete: Cascade)
-  user             user      @relation(fields: [uid], references: [uid], onDelete: NoAction, onUpdate: NoAction)
+model transaction {
+  tid            BigInt   @id
+  uid            String   @db.Uuid
+  t_date         DateTime @db.Date
+  importer_code  String   @db.VarChar(3)
+  exporter_code  String?  @db.VarChar(3)
+  hs6code        String   @db.Char(6)
+  trade_original Decimal  @db.Decimal
+  net_weight     Decimal? @db.Decimal
+  trade_final    Decimal  @db.Decimal
+  applied_rate   Json
+  importer       country  @relation("importer_transactions", fields: [importer_code], references: [country_code], onDelete: NoAction)
+  exporter       country? @relation("exporter_transactions", fields: [exporter_code], references: [country_code], onDelete: NoAction)
+  product        product? @relation(fields: [hs6code], references: [hs6code], onDelete: Cascade)
+  user           user     @relation(fields: [uid], references: [uid], onDelete: NoAction, onUpdate: NoAction)
 }
 
 model measure {
@@ -62,7 +58,7 @@ model measure {
   product_code         String    @db.Char(6)
   valid_from           DateTime  @db.Date
   valid_to             DateTime? @db.Date
-  mfn_adval_rate       Decimal?   @db.Decimal(8, 6)
+  mfn_adval_rate       Decimal?  @db.Decimal(8, 6)
   specific_rate_per_kg Decimal?  @db.Decimal(8, 6)
   importer             country   @relation(fields: [importer_code], references: [country_code])
   product              product   @relation(fields: [product_code], references: [hs6code])
@@ -71,16 +67,16 @@ model measure {
 }
 
 model preference {
-  preference_id   Int      @id @default(autoincrement())
-  importer_code   String   @db.VarChar(3)
-  exporter_code   String   @db.VarChar(3)
-  product_code    String   @db.Char(6)
-  valid_from      DateTime @db.Date
+  preference_id   Int       @id @default(autoincrement())
+  importer_code   String    @db.VarChar(3)
+  exporter_code   String    @db.VarChar(3)
+  product_code    String    @db.Char(6)
+  valid_from      DateTime  @db.Date
   valid_to        DateTime? @db.Date
-  pref_adval_rate Decimal  @db.Decimal(8, 6)
-  importer        country  @relation("importer_preferences", fields: [importer_code], references: [country_code])
-  exporter        country  @relation("exporter_preferences", fields: [exporter_code], references: [country_code])
-  product         product  @relation(fields: [product_code], references: [hs6code])
+  pref_adval_rate Decimal   @db.Decimal(8, 6)
+  exporter        country   @relation("exporter_preferences", fields: [exporter_code], references: [country_code])
+  importer        country   @relation("importer_preferences", fields: [importer_code], references: [country_code])
+  product         product   @relation(fields: [product_code], references: [hs6code])
 
   @@unique([importer_code, exporter_code, product_code, valid_from], map: "preferences_unique")
 }
@@ -88,15 +84,13 @@ model preference {
 model suspension {
   suspension_id   Int       @id @default(autoincrement())
   importer_code   String    @db.VarChar(3)
-  exporter_code   String?   @db.VarChar(3)
   product_code    String    @db.Char(6)
   valid_from      DateTime  @db.Date
   valid_to        DateTime? @db.Date
   suspension_flag Boolean
-  suspension_note String?   @db.Text
+  suspension_note String
+  suspension_rate String?
   importer        country   @relation(fields: [importer_code], references: [country_code])
-  exporter        country?  @relation("exporter_suspensions", fields: [exporter_code], references: [country_code])
-  product         product   @relation(fields: [product_code], references: [hs6code])
 
   @@unique([importer_code, product_code, valid_from], map: "suspension_unique")
 }

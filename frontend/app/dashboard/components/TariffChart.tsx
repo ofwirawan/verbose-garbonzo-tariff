@@ -110,7 +110,7 @@ export function TariffChart({
   );
   const [productCode, setProductCode] = useState(initialProductCode);
   const [timeRange, setTimeRange] = useState("all");
-  const [tradeValue, setTradeValue] = useState("");
+  const [tradeValue, setTradeValue] = useState("10000");
 
   // State for tariffs and countries
   const [tariffs, setTariffs] = useState<Tariff[]>([]);
@@ -127,7 +127,9 @@ export function TariffChart({
   const [, setSimCountryModifier] = useState<number | undefined>(undefined);
   const [, setSimTrend] = useState<number | undefined>(undefined);
 
+  const currentYear = new Date().getFullYear().toString();
   const [selectedYear, setSelectedYear] = useState<string>("2020");
+  const [selectedEndYear, setSelectedEndYear] = useState<string>(currentYear);
   const [isCalculating, setIsCalculating] = useState(false);
 
   const [calculationResult, setCalculationResult] =
@@ -169,7 +171,7 @@ export function TariffChart({
   console.log("Product options:", productOptions);
   console.log("Number of product options:", productOptions.length);
 
-  // Set default product if current selection is not available
+  // Set default product if current selection is not available and trigger initial calculation
   useEffect(() => {
     if (productOptions.length > 0) {
       const currentProductExists = productOptions.find(
@@ -184,6 +186,23 @@ export function TariffChart({
       }
     }
   }, [productOptions, productCode]);
+
+  // Auto-calculate on initial load when all data is ready
+  useEffect(() => {
+    if (
+      countries.length > 0 &&
+      product.length > 0 &&
+      importingCountry &&
+      exportingCountry &&
+      productCode &&
+      tradeValue &&
+      !data.length &&
+      !isCalculating
+    ) {
+      console.log("Auto-calculating tariff on initial load");
+      calculateTariff();
+    }
+  }, [countries, product, importingCountry, exportingCountry, productCode, tradeValue]);
 
   // Function to get HS6 code from product selection
   const getHS6Code = (productValue: string): string => {
@@ -240,109 +259,104 @@ export function TariffChart({
     setIsCalculating(true);
     const hs6Code = getHS6Code(productCode);
 
+    const startYear = Number(selectedYear);
+    const endYear = Number(selectedEndYear);
+
     console.log("Starting tariff calculation with:", {
       importerCode: importingCountry,
       exporterCode: exportingCountry,
       hs6: hs6Code,
       tradeOriginal: Number(tradeValue),
+      yearRange: `${startYear} to ${endYear}`,
     });
 
     try {
-      setHasError(false); // Clear previous errors
-      setErrorMessage(""); // Clear previous error message
-      setCalculationResult(null); // Clear previous results
+      setHasError(false);
+      setErrorMessage("");
+      setCalculationResult(null);
 
-      const requestBody = {
-        importerCode: importingCountry,
-        exporterCode: exportingCountry,
-        hs6: hs6Code,
-        tradeOriginal: Number(tradeValue),
-        transactionDate: `${selectedYear}-01-01`, // Use selected year
-        netWeight: null, // Optional field
-      };
+      const allChartData = [];
+      let lastResult = null;
 
-      console.log("Request body:", JSON.stringify(requestBody, null, 2));
+      // Calculate tariff for each year in the range
+      for (let year = startYear; year <= endYear; year++) {
+        const requestBody = {
+          importerCode: importingCountry,
+          exporterCode: exportingCountry,
+          hs6: hs6Code,
+          tradeOriginal: Number(tradeValue),
+          transactionDate: `${year}-01-01`,
+          netWeight: null,
+        };
 
-      const response = await fetch("http://localhost:8080/api/calculate", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-        body: JSON.stringify(requestBody),
-      });
+        const response = await fetch("http://localhost:8080/api/calculate", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+          body: JSON.stringify(requestBody),
+        });
 
-      console.log("Response status:", response.status);
-      console.log(
-        "Response headers:",
-        Object.fromEntries(response.headers.entries())
-      );
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => null);
+          const errorMsg = errorData?.message || errorData?.error || `HTTP ${response.status}`;
+          console.error(`Response error for year ${year}:`, errorMsg);
+          // Continue to next year instead of failing completely
+          continue;
+        }
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => null);
-        const errorMsg = errorData?.message || errorData?.error || `HTTP ${response.status}`;
-        console.error("Response error:", errorMsg);
-        setErrorMessage(errorMsg);
-        throw new Error(errorMsg);
-      }
+        const result = await response.json();
+        lastResult = result; // Store the last successful result
 
-      const result = await response.json();
-      console.log("Tariff calculation result:", result);
+        // Calculate effective rate and rate type
+        const dutyAmount = Number(result.tradeFinal) - Number(result.tradeOriginal);
+        const isSuspended =
+          (dutyAmount === 0 &&
+          !result.ratePref &&
+          !result.rateAdval &&
+          !result.rateSpecific) || result.suspensionActive === true || result.suspensionActive === false;
 
-      // Store the full calculation result
-      setCalculationResult(result);
+        let effectiveRate = 0;
+        let rateType = "No Rate";
 
-      // Determine if this is a suspension case (all rates are null/undefined and duty is 0)
-      const dutyAmount =
-        Number(result.tradeFinal) - Number(result.tradeOriginal);
-      const isSuspended =
-        (dutyAmount === 0 &&
-        !result.ratePref &&
-        !result.rateAdval &&
-        !result.rateSpecific) || result.suspensionActive === true || result.suspensionActive === false;
+        if (result.suspensionActive === true) {
+          effectiveRate = 0;
+          rateType = "Suspended (Active)";
+        } else if (result.suspensionActive === false) {
+          effectiveRate = 0;
+          rateType = "Suspended (Inactive)";
+        } else if (isSuspended) {
+          effectiveRate = 0;
+          rateType = "Suspended";
+        } else if (result.ratePref) {
+          effectiveRate = Number(result.ratePref);
+          rateType = "Preferential";
+        } else if (result.rateAdval) {
+          effectiveRate = Number(result.rateAdval);
+          rateType = "Ad-valorem";
+        } else if (result.rateSpecific) {
+          const specificDuty = Number(result.rateSpecific) * (Number(result.netWeight) || 1);
+          effectiveRate = (specificDuty / Number(result.tradeOriginal)) * 100;
+          rateType = "Specific";
+        }
 
-      // Calculate the effective tariff rate and determine rate type
-      let effectiveRate = 0;
-      let rateType = "No Rate";
-
-      if (result.suspensionActive === true) {
-        effectiveRate = 0;
-        rateType = "Suspended (Active)";
-      } else if (result.suspensionActive === false) {
-        effectiveRate = 0;
-        rateType = "Suspended (Inactive)";
-      } else if (isSuspended) {
-        effectiveRate = 0;
-        rateType = "Suspended";
-      } else if (result.ratePref) {
-        effectiveRate = Number(result.ratePref);
-        rateType = "Preferential";
-      } else if (result.rateAdval) {
-        effectiveRate = Number(result.rateAdval);
-        rateType = "Ad-valorem";
-      } else if (result.rateSpecific) {
-        // For specific rates, calculate equivalent percentage
-        const specificDuty =
-          Number(result.rateSpecific) * (Number(result.netWeight) || 1);
-        effectiveRate = (specificDuty / Number(result.tradeOriginal)) * 100;
-        rateType = "Specific";
-      }
-
-      // Update chart data with enhanced information
-      const chartData = [
-        {
-          date: selectedYear,
+        allChartData.push({
+          date: year.toString(),
           value: effectiveRate,
           rateType: rateType,
           isSuspended: isSuspended,
           dutyAmount: dutyAmount,
-        },
-      ];
+        });
+      }
 
-      setData(chartData);
-      console.log("Chart data updated:", chartData);
+      // Store the last calculation result for display
+      if (lastResult) {
+        setCalculationResult(lastResult);
+      }
 
-      // Clear any previous errors since we got a successful response
+      setData(allChartData);
+      console.log("Chart data updated:", allChartData);
       setHasError(false);
     } catch (error) {
       console.error("Error calculating tariff:", error);
@@ -629,7 +643,7 @@ export function TariffChart({
             <div className="w-full h-full flex flex-col gap-4">
               {isCalculating && (
                 <div className="text-center mb-4">
-                  <p className="text-gray-600">Calculating tariff data...</p>
+                  <p className="text-muted-foreground">Calculating tariff data...</p>
                 </div>
               )}
               <div className="flex gap-2 mb-2">
@@ -643,6 +657,15 @@ export function TariffChart({
                 <Skeleton className="h-4 w-24" />
                 <Skeleton className="h-4 w-20" />
               </div>
+            </div>
+          </div>
+        ) : !data.length ? (
+          <div className="h-[300px] w-full rounded-xl shadow-lg bg-white p-4 flex items-center justify-center">
+            <div className="text-center">
+              <p className="text-muted-foreground mb-2">No data available</p>
+              <p className="text-sm text-muted-foreground">
+                Select countries, product, and trade value, then click Calculate Tariff
+              </p>
             </div>
           </div>
         ) : (
@@ -749,14 +772,32 @@ export function TariffChart({
         <div className="mb-8 w-full">
           <div className="flex flex-col lg:flex-row justify-between items-stretch gap-8 w-full">
             <div className="flex-1 min-w-0">
-              <Label className="mb-2 font-medium block">Year</Label>
+              <Label className="mb-2 font-medium block">Start Year</Label>
               <Select value={selectedYear} onValueChange={setSelectedYear}>
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select year" />
+                  <SelectValue placeholder="Select start year" />
                 </SelectTrigger>
                 <SelectContent className="max-h-60 overflow-y-auto">
                   {Array.from({ length: 25 }, (_, i) => {
-                    const year = (2024 - i).toString();
+                    const year = (Number(currentYear) - i).toString();
+                    return (
+                      <SelectItem key={year} value={year}>
+                        {year}
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex-1 min-w-0">
+              <Label className="mb-2 font-medium block">End Year</Label>
+              <Select value={selectedEndYear} onValueChange={setSelectedEndYear}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select end year" />
+                </SelectTrigger>
+                <SelectContent className="max-h-60 overflow-y-auto">
+                  {Array.from({ length: 25 }, (_, i) => {
+                    const year = (Number(currentYear) - i).toString();
                     return (
                       <SelectItem key={year} value={year}>
                         {year}
