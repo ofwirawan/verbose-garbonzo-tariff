@@ -12,10 +12,9 @@ import lombok.*;
 public class Product {
 
     @Id
-    @Column(name = "hs6code", length = 6)
+    @Column(name = "hs6code")
     private String hs6Code;
 
-    @Column(name = "description", nullable = false, columnDefinition = "TEXT")
+    @Column(name = "description")
     private String description;
 }
-

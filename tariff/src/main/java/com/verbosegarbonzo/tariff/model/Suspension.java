@@ -5,9 +5,7 @@ import lombok.*;
 import java.time.LocalDate;
 
 @Entity
-@Table(name = "suspension", uniqueConstraints = {
-    @UniqueConstraint(columnNames = {"importer", "product", "validfrom"})
-})
+@Table(name = "suspension")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -16,25 +14,29 @@ public class Suspension {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "suspension_id")
     private Long suspensionId;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "importer", referencedColumnName = "numericcode", nullable = false)
+    @JoinColumn(name = "importer_code", referencedColumnName = "country_code", nullable = false)
     private Country importer;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "product", referencedColumnName = "hs6code", nullable = false)
+    @JoinColumn(name = "product_code", referencedColumnName = "hs6code", nullable = false)
     private Product product;
 
-    @Column(name = "validfrom", nullable = false)
+    @Column(name = "valid_from", nullable = false)
     private LocalDate validFrom;
 
-    @Column(name = "validto")
+    @Column(name = "valid_to")
     private LocalDate validTo;
 
-    @Column(name = "suspensionflag", nullable = false)
+    @Column(name = "suspension_flag", nullable = false)
     private Boolean suspensionFlag;
 
-    @Column(name = "suspensionnote")
+    @Column(name = "suspension_note", nullable = false)
     private String suspensionNote;
+
+    @Column(name = "suspension_rate")
+    private String suspensionRate;
 }

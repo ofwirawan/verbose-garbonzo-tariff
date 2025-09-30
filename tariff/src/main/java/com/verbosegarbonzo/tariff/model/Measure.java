@@ -6,9 +6,7 @@ import java.time.LocalDate;
 import java.math.BigDecimal;
 
 @Entity
-@Table(name = "measure", uniqueConstraints = {
-    @UniqueConstraint(columnNames = {"importer", "product", "validfrom"})
-})
+@Table(name = "measure")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -17,30 +15,26 @@ public class Measure {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "measure_id")
     private Long measureId;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "importer", referencedColumnName = "numericcode", nullable = false)
+    @JoinColumn(name = "importer_code", referencedColumnName = "country_code", nullable = false)
     private Country importer;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "product", referencedColumnName = "hs6code", nullable = false)
+    @JoinColumn(name = "product_code", referencedColumnName = "hs6code", nullable = false)
     private Product product;
 
-    @Column(name = "validfrom", nullable = false)
+    @Column(name = "valid_from", nullable = false)
     private LocalDate validFrom;
 
-    @Column(name = "validto")
+    @Column(name = "valid_to")
     private LocalDate validTo;
 
-    @Column(name = "mfnadvalrate", nullable = false, precision = 8, scale = 6)
-    private BigDecimal mfnAdValRate;
+    @Column(name = "mfn_adval_rate")
+    private BigDecimal mfnAdvalRate;
 
-    @Column(name = "specificrateperkg", precision = 8, scale = 6)
+    @Column(name = "specific_rate_per_kg")
     private BigDecimal specificRatePerKg;
-
-    @Column(name = "compoundflag")
-    private Boolean compoundFlag;
 }
-
-
