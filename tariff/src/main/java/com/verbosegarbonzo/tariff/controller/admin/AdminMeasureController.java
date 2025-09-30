@@ -7,11 +7,13 @@ import com.verbosegarbonzo.tariff.model.Product;
 import com.verbosegarbonzo.tariff.repository.MeasureRepository;
 import com.verbosegarbonzo.tariff.repository.CountryRepository;
 import com.verbosegarbonzo.tariff.repository.ProductRepository;
+import com.verbosegarbonzo.tariff.exception.InvalidRequestException;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 
 import java.time.LocalDate;
 import java.util.Optional;
@@ -46,8 +48,13 @@ public class AdminMeasureController {
 
     // Helper to map DTO to entity
     private Measure toEntity(MeasureDTO dto) {
-        Country importer = countryRepository.findById(dto.getImporterCode()).orElse(null);
-        Product product = productRepository.findById(dto.getProductCode()).orElse(null);
+        if (dto.getImporterCode() == null || dto.getProductCode() == null) {
+            throw new InvalidRequestException("Importer code and product code must not be null.");
+        }
+        Country importer = countryRepository.findById(dto.getImporterCode())
+                .orElseThrow(() -> new InvalidRequestException("Importer country not found: " + dto.getImporterCode()));
+        Product product = productRepository.findById(dto.getProductCode())
+                .orElseThrow(() -> new InvalidRequestException("Product not found: " + dto.getProductCode()));
         Measure measure = new Measure();
         measure.setImporter(importer);
         measure.setProduct(product);
@@ -79,7 +86,7 @@ public class AdminMeasureController {
         return measureRepository.findById(id)
                 .map(this::toDTO)
                 .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+                .orElseThrow(() -> new InvalidRequestException("Measure not found: " + id));
     }
 
     // Update Measure by ID
@@ -88,8 +95,11 @@ public class AdminMeasureController {
         Optional<Measure> optionalMeasure = measureRepository.findById(id);
         if (optionalMeasure.isPresent()) {
             Measure measure = optionalMeasure.get();
-            Country importer = countryRepository.findById(dto.getImporterCode()).orElse(null);
-            Product product = productRepository.findById(dto.getProductCode()).orElse(null);
+            Country importer = countryRepository.findById(dto.getImporterCode())
+                    .orElseThrow(
+                            () -> new InvalidRequestException("Importer country not found: " + dto.getImporterCode()));
+            Product product = productRepository.findById(dto.getProductCode())
+                    .orElseThrow(() -> new InvalidRequestException("Product not found: " + dto.getProductCode()));
             measure.setImporter(importer);
             measure.setProduct(product);
             measure.setValidFrom(dto.getValidFrom());
@@ -99,7 +109,7 @@ public class AdminMeasureController {
             Measure saved = measureRepository.save(measure);
             return ResponseEntity.ok(toDTO(saved));
         }
-        return ResponseEntity.notFound().build();
+        throw new InvalidRequestException("Measure not found: " + id);
     }
 
     // Delete Measure by ID
@@ -109,7 +119,7 @@ public class AdminMeasureController {
             measureRepository.deleteById(id);
             return ResponseEntity.noContent().build();
         }
-        return ResponseEntity.notFound().build();
+        throw new InvalidRequestException("Measure not found: " + id);
     }
 
     // Get Measure by importerCode, productCode, and validFrom
@@ -118,13 +128,26 @@ public class AdminMeasureController {
             @RequestParam String importerCode,
             @RequestParam String productCode,
             @RequestParam LocalDate validFrom) {
-        Country importer = countryRepository.findById(importerCode).orElse(null);
-        Product product = productRepository.findById(productCode).orElse(null);
-        if (importer == null || product == null) {
-            return ResponseEntity.badRequest().build();
-        }
+        Country importer = countryRepository.findById(importerCode)
+                .orElseThrow(() -> new InvalidRequestException("Importer country not found: " + importerCode));
+        Product product = productRepository.findById(productCode)
+                .orElseThrow(() -> new InvalidRequestException("Product not found: " + productCode));
         return measureRepository.findByImporterAndProductAndValidFrom(importer, product, validFrom)
                 .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+                .orElseThrow(() -> new InvalidRequestException("Measure not found for given parameters"));
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<String> handleValidationException(MethodArgumentNotValidException ex) {
+        String errorMsg = ex.getBindingResult().getFieldErrors().stream()
+                .map(e -> e.getField() + ": " + e.getDefaultMessage())
+                .findFirst()
+                .orElse("Invalid request");
+        return ResponseEntity.badRequest().body(errorMsg);
+    }
+
+    @ExceptionHandler(InvalidRequestException.class)
+    public ResponseEntity<String> handleInvalidRequest(InvalidRequestException ex) {
+        return ResponseEntity.badRequest().body(ex.getMessage());
     }
 }

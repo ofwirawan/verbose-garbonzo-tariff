@@ -9,11 +9,14 @@ import com.verbosegarbonzo.tariff.repository.TransactionRepository;
 import com.verbosegarbonzo.tariff.repository.UserRepository;
 import com.verbosegarbonzo.tariff.repository.CountryRepository;
 import com.verbosegarbonzo.tariff.repository.ProductRepository;
+import com.verbosegarbonzo.tariff.exception.InvalidRequestException;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.orm.jpa.JpaSystemException;
 
 import java.util.NoSuchElementException;
 
@@ -54,17 +57,19 @@ public class AdminTransactionController {
 
     // Helper: DTO to entity
     private Transaction toEntity(TransactionDTO dto) {
+        if (dto.getUser() == null || dto.getImporter() == null || dto.getProduct() == null || dto.getTDate() == null) {
+            throw new InvalidRequestException("User, importer, product, and tDate must not be null.");
+        }
         User user = userRepository.findById(dto.getUser())
-                .orElseThrow(() -> new NoSuchElementException("User not found: " + dto.getUser()));
+                .orElseThrow(() -> new InvalidRequestException("User not found: " + dto.getUser()));
         Country importer = countryRepository.findById(dto.getImporter())
-                .orElseThrow(() -> new NoSuchElementException("Importer not found: " + dto.getImporter()));
+                .orElseThrow(() -> new InvalidRequestException("Importer not found: " + dto.getImporter()));
         Country exporter = dto.getExporter() != null
                 ? countryRepository.findById(dto.getExporter())
-                        .orElseThrow(() -> new NoSuchElementException("Exporter not found: " + dto.getExporter()))
+                        .orElseThrow(() -> new InvalidRequestException("Exporter not found: " + dto.getExporter()))
                 : null;
         Product product = productRepository.findById(dto.getProduct())
-                .orElseThrow(() -> new NoSuchElementException("Product not found: " + dto.getProduct()));
-
+                .orElseThrow(() -> new InvalidRequestException("Product not found: " + dto.getProduct()));
         Transaction transaction = new Transaction();
         transaction.setTid(dto.getTid());
         transaction.setUser(user);
@@ -76,11 +81,9 @@ public class AdminTransactionController {
         transaction.setNetWeight(dto.getNetWeight());
         transaction.setTradeFinal(dto.getTradeFinal());
         transaction.setAppliedRate(dto.getAppliedRate());
-
         return transaction;
     }
 
-    // Create new Transaction
     @PostMapping
     public ResponseEntity<TransactionDTO> createTransaction(@Valid @RequestBody TransactionDTO dto) {
         Transaction transaction = toEntity(dto);
@@ -88,42 +91,62 @@ public class AdminTransactionController {
         return ResponseEntity.status(201).body(toDTO(created));
     }
 
-    // Get all Transactions (paginated)
     @GetMapping
     public Page<TransactionDTO> getAllTransactions(Pageable pageable) {
         return transactionRepository.findAll(pageable).map(this::toDTO);
     }
 
-    // Get Transaction by ID
     @GetMapping("/{id}")
     public ResponseEntity<TransactionDTO> getTransactionById(@PathVariable Integer id) {
         return transactionRepository.findById(id)
                 .map(this::toDTO)
                 .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+                .orElseThrow(() -> new InvalidRequestException("Transaction not found: " + id));
     }
 
-    // Update Transaction by ID
     @PutMapping("/{id}")
     public ResponseEntity<TransactionDTO> updateTransaction(@PathVariable Integer id,
             @Valid @RequestBody TransactionDTO dto) {
-        return transactionRepository.findById(id)
-                .map(existing -> {
-                    Transaction updated = toEntity(dto);
-                    updated.setTid(id);
-                    Transaction saved = transactionRepository.save(updated);
-                    return ResponseEntity.ok(toDTO(saved));
-                })
-                .orElse(ResponseEntity.notFound().build());
+        if (!transactionRepository.existsById(id)) {
+            throw new InvalidRequestException("Transaction not found: " + id);
+        }
+        Transaction updated = toEntity(dto);
+        updated.setTid(id);
+        Transaction saved = transactionRepository.save(updated);
+        return ResponseEntity.ok(toDTO(saved));
     }
 
-    // Delete Transaction by ID
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteTransactionById(@PathVariable Integer id) {
         if (!transactionRepository.existsById(id)) {
-            return ResponseEntity.notFound().build();
+            throw new InvalidRequestException("Transaction not found: " + id);
         }
         transactionRepository.deleteById(id);
         return ResponseEntity.noContent().build();
+    }
+
+    // Exception handlers for clear error messages
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<String> handleValidationException(MethodArgumentNotValidException ex) {
+        String errorMsg = ex.getBindingResult().getFieldErrors().stream()
+                .map(e -> e.getField() + ": " + e.getDefaultMessage())
+                .findFirst()
+                .orElse("Invalid request");
+        return ResponseEntity.badRequest().body(errorMsg);
+    }
+
+    @ExceptionHandler(InvalidRequestException.class)
+    public ResponseEntity<String> handleInvalidRequest(InvalidRequestException ex) {
+        return ResponseEntity.badRequest().body(ex.getMessage());
+    }
+
+    @ExceptionHandler(NoSuchElementException.class)
+    public ResponseEntity<String> handleNoSuchElement(NoSuchElementException ex) {
+        return ResponseEntity.badRequest().body(ex.getMessage());
+    }
+
+    @ExceptionHandler(JpaSystemException.class)
+    public ResponseEntity<String> handleJpaSystem(JpaSystemException ex) {
+        return ResponseEntity.badRequest().body("JPA error: " + ex.getMostSpecificCause().getMessage());
     }
 }

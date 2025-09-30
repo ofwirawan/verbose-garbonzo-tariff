@@ -7,11 +7,13 @@ import com.verbosegarbonzo.tariff.model.Product;
 import com.verbosegarbonzo.tariff.repository.PreferenceRepository;
 import com.verbosegarbonzo.tariff.repository.CountryRepository;
 import com.verbosegarbonzo.tariff.repository.ProductRepository;
+import com.verbosegarbonzo.tariff.exception.InvalidRequestException;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 
 import java.util.Optional;
 
@@ -45,9 +47,15 @@ public class AdminPreferenceController {
 
     // Helper to map DTO to entity
     private Preference toEntity(PreferenceDTO dto) {
-        Country importer = countryRepository.findById(dto.getImporterCode()).orElse(null);
-        Country exporter = countryRepository.findById(dto.getExporterCode()).orElse(null);
-        Product product = productRepository.findById(dto.getProductCode()).orElse(null);
+        if (dto.getImporterCode() == null || dto.getExporterCode() == null || dto.getProductCode() == null) {
+            throw new InvalidRequestException("Importer code, exporter code, and product code must not be null.");
+        }
+        Country importer = countryRepository.findById(dto.getImporterCode())
+                .orElseThrow(() -> new InvalidRequestException("Importer country not found: " + dto.getImporterCode()));
+        Country exporter = countryRepository.findById(dto.getExporterCode())
+                .orElseThrow(() -> new InvalidRequestException("Exporter country not found: " + dto.getExporterCode()));
+        Product product = productRepository.findById(dto.getProductCode())
+                .orElseThrow(() -> new InvalidRequestException("Product not found: " + dto.getProductCode()));
         Preference preference = new Preference();
         preference.setImporter(importer);
         preference.setExporter(exporter);
@@ -79,39 +87,39 @@ public class AdminPreferenceController {
         return preferenceRepository.findById(id)
                 .map(this::toDTO)
                 .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+                .orElseThrow(() -> new InvalidRequestException("Preference not found: " + id));
     }
 
     // Update Preference by ID
     @PutMapping("/{id}")
     public ResponseEntity<PreferenceDTO> updatePreference(@PathVariable Integer id,
             @Valid @RequestBody PreferenceDTO dto) {
-        Optional<Preference> optionalPreference = preferenceRepository.findById(id);
-        if (optionalPreference.isPresent()) {
-            Preference preference = optionalPreference.get();
-            Country importer = countryRepository.findById(dto.getImporterCode()).orElse(null);
-            Country exporter = countryRepository.findById(dto.getExporterCode()).orElse(null);
-            Product product = productRepository.findById(dto.getProductCode()).orElse(null);
-            preference.setImporter(importer);
-            preference.setExporter(exporter);
-            preference.setProduct(product);
-            preference.setValidFrom(dto.getValidFrom());
-            preference.setValidTo(dto.getValidTo());
-            preference.setPrefAdValRate(dto.getPrefAdValRate());
-            Preference saved = preferenceRepository.save(preference);
-            return ResponseEntity.ok(toDTO(saved));
-        }
-        return ResponseEntity.notFound().build();
+        Preference preference = preferenceRepository.findById(id)
+                .orElseThrow(() -> new InvalidRequestException("Preference not found: " + id));
+        Country importer = countryRepository.findById(dto.getImporterCode())
+                .orElseThrow(() -> new InvalidRequestException("Importer country not found: " + dto.getImporterCode()));
+        Country exporter = countryRepository.findById(dto.getExporterCode())
+                .orElseThrow(() -> new InvalidRequestException("Exporter country not found: " + dto.getExporterCode()));
+        Product product = productRepository.findById(dto.getProductCode())
+                .orElseThrow(() -> new InvalidRequestException("Product not found: " + dto.getProductCode()));
+        preference.setImporter(importer);
+        preference.setExporter(exporter);
+        preference.setProduct(product);
+        preference.setValidFrom(dto.getValidFrom());
+        preference.setValidTo(dto.getValidTo());
+        preference.setPrefAdValRate(dto.getPrefAdValRate());
+        Preference saved = preferenceRepository.save(preference);
+        return ResponseEntity.ok(toDTO(saved));
     }
 
     // Delete Preference by ID
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deletePreferenceById(@PathVariable Integer id) {
-        if (preferenceRepository.existsById(id)) {
-            preferenceRepository.deleteById(id);
-            return ResponseEntity.noContent().build();
+        if (!preferenceRepository.existsById(id)) {
+            throw new InvalidRequestException("Preference not found: " + id);
         }
-        return ResponseEntity.notFound().build();
+        preferenceRepository.deleteById(id);
+        return ResponseEntity.noContent().build();
     }
 
     // Search Preference by importer, exporter, product, and validFrom date
@@ -121,16 +129,30 @@ public class AdminPreferenceController {
             @RequestParam String exporterCode,
             @RequestParam String productCode,
             @RequestParam java.time.LocalDate validFrom) {
-        Country importer = countryRepository.findById(importerCode).orElse(null);
-        Country exporter = countryRepository.findById(exporterCode).orElse(null);
-        Product product = productRepository.findById(productCode).orElse(null);
-        if (importer == null || exporter == null || product == null) {
-            return ResponseEntity.badRequest().build();
-        }
+        Country importer = countryRepository.findById(importerCode)
+                .orElseThrow(() -> new InvalidRequestException("Importer country not found: " + importerCode));
+        Country exporter = countryRepository.findById(exporterCode)
+                .orElseThrow(() -> new InvalidRequestException("Exporter country not found: " + exporterCode));
+        Product product = productRepository.findById(productCode)
+                .orElseThrow(() -> new InvalidRequestException("Product not found: " + productCode));
         return preferenceRepository
                 .findByImporterAndExporterAndProductAndValidFrom(importer, exporter, product, validFrom)
                 .map(this::toDTO)
                 .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+                .orElseThrow(() -> new InvalidRequestException("Preference not found for given parameters"));
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<String> handleValidationException(MethodArgumentNotValidException ex) {
+        String errorMsg = ex.getBindingResult().getFieldErrors().stream()
+                .map(e -> e.getField() + ": " + e.getDefaultMessage())
+                .findFirst()
+                .orElse("Invalid request");
+        return ResponseEntity.badRequest().body(errorMsg);
+    }
+
+    @ExceptionHandler(InvalidRequestException.class)
+    public ResponseEntity<String> handleInvalidRequest(InvalidRequestException ex) {
+        return ResponseEntity.badRequest().body(ex.getMessage());
     }
 }

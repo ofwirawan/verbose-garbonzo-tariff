@@ -3,11 +3,14 @@ package com.verbosegarbonzo.tariff.controller.admin;
 import com.verbosegarbonzo.tariff.model.Country;
 import com.verbosegarbonzo.tariff.repository.CountryRepository;
 import jakarta.validation.Valid;
-
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.data.domain.Pageable;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import com.verbosegarbonzo.tariff.exception.InvalidRequestException;
 
 @RestController
 @RequestMapping("/api/admin/countries")
@@ -21,12 +24,12 @@ public class AdminCountryController {
 
     // Create a new country
     @PostMapping
-    public ResponseEntity<?> createCountry(@Valid @RequestBody Country country) {
+    public ResponseEntity<Country> createCountry(@Valid @RequestBody Country country) {
         boolean exists = countryRepository.findAll().stream()
                 .anyMatch(c -> c.getNumericCode().equals(country.getNumericCode()));
-        if (exists) { // If a country with the same numeric code exists
-            String message = "A country with numeric code '" + country.getNumericCode() + "' already exists.";
-            return ResponseEntity.status(409).body(message);
+        if (exists) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "A country with numeric code '" + country.getNumericCode() + "' already exists.");
         }
         Country created = countryRepository.save(country);
         return ResponseEntity.status(201).body(created);
@@ -43,38 +46,50 @@ public class AdminCountryController {
     public ResponseEntity<Country> getCountryById(@PathVariable String countryCode) {
         return countryRepository.findById(countryCode)
                 .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Country not found"));
     }
 
     // Update country by countryCode
     @PutMapping("/{countryCode}")
-    public ResponseEntity<?> updateCountry(@PathVariable String countryCode,
+    public ResponseEntity<Country> updateCountry(@PathVariable String countryCode,
             @Valid @RequestBody Country updatedCountry) {
-        return countryRepository.findById(countryCode)
-                .map(existingCountry -> {
-                    boolean exists = countryRepository.findAll().stream()
-                            .anyMatch(c -> c.getNumericCode().equals(updatedCountry.getNumericCode())
-                                    && !c.getCountryCode().equals(countryCode));
-                    if (exists) {
-                        String message = "A country with numeric code '" + updatedCountry.getNumericCode()
-                                + "' already exists.";
-                        return ResponseEntity.status(409).body(message);
-                    }
-                    existingCountry.setNumericCode(updatedCountry.getNumericCode());
-                    existingCountry.setName(updatedCountry.getName());
-                    Country saved = countryRepository.save(existingCountry);
-                    return ResponseEntity.ok(saved);
-                })
-                .orElse(ResponseEntity.notFound().build());
+        Country existingCountry = countryRepository.findById(countryCode)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Country not found"));
+
+        boolean exists = countryRepository.findAll().stream()
+                .anyMatch(c -> c.getNumericCode().equals(updatedCountry.getNumericCode())
+                        && !c.getCountryCode().equals(countryCode));
+        if (exists) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "A country with numeric code '" + updatedCountry.getNumericCode() + "' already exists.");
+        }
+        existingCountry.setNumericCode(updatedCountry.getNumericCode());
+        existingCountry.setName(updatedCountry.getName());
+        Country saved = countryRepository.save(existingCountry);
+        return ResponseEntity.ok(saved);
     }
 
     // Delete country by countryCode
     @DeleteMapping("/{countryCode}")
     public ResponseEntity<Void> deleteCountry(@PathVariable String countryCode) {
-        if (countryRepository.existsById(countryCode)) {
-            countryRepository.deleteById(countryCode);
-            return ResponseEntity.noContent().build();
+        if (!countryRepository.existsById(countryCode)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Country not found");
         }
-        return ResponseEntity.notFound().build();
+        countryRepository.deleteById(countryCode);
+        return ResponseEntity.noContent().build();
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<String> handleValidationException(MethodArgumentNotValidException ex) {
+        String errorMsg = ex.getBindingResult().getFieldErrors().stream()
+                .map(e -> e.getField() + ": " + e.getDefaultMessage())
+                .findFirst()
+                .orElse("Invalid request");
+        return ResponseEntity.badRequest().body(errorMsg);
+    }
+
+    @ExceptionHandler(InvalidRequestException.class)
+    public ResponseEntity<String> handleInvalidRequest(InvalidRequestException ex) {
+        return ResponseEntity.badRequest().body(ex.getMessage());
     }
 }

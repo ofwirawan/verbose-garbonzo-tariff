@@ -7,11 +7,13 @@ import com.verbosegarbonzo.tariff.model.Product;
 import com.verbosegarbonzo.tariff.repository.SuspensionRepository;
 import com.verbosegarbonzo.tariff.repository.CountryRepository;
 import com.verbosegarbonzo.tariff.repository.ProductRepository;
+import com.verbosegarbonzo.tariff.exception.InvalidRequestException;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 
 import java.util.Optional;
 
@@ -46,8 +48,13 @@ public class AdminSuspensionController {
 
     // Helper: DTO to entity
     private Suspension toEntity(SuspensionDTO dto) {
-        Country importer = countryRepository.findById(dto.getImporterCode()).orElse(null);
-        Product product = productRepository.findById(dto.getProductCode()).orElse(null);
+        if (dto.getImporterCode() == null || dto.getProductCode() == null) {
+            throw new InvalidRequestException("Importer code and product code must not be null.");
+        }
+        Country importer = countryRepository.findById(dto.getImporterCode())
+                .orElseThrow(() -> new InvalidRequestException("Importer country not found: " + dto.getImporterCode()));
+        Product product = productRepository.findById(dto.getProductCode())
+                .orElseThrow(() -> new InvalidRequestException("Product not found: " + dto.getProductCode()));
         Suspension suspension = new Suspension();
         suspension.setImporter(importer);
         suspension.setProduct(product);
@@ -80,39 +87,38 @@ public class AdminSuspensionController {
         return suspensionRepository.findById(id)
                 .map(this::toDTO)
                 .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+                .orElseThrow(() -> new InvalidRequestException("Suspension not found: " + id));
     }
 
     // Update Suspension by ID
     @PutMapping("/{id}")
     public ResponseEntity<SuspensionDTO> updateSuspension(@PathVariable Integer id,
             @Valid @RequestBody SuspensionDTO dto) {
-        Optional<Suspension> optionalSuspension = suspensionRepository.findById(id);
-        if (optionalSuspension.isPresent()) {
-            Suspension suspension = optionalSuspension.get();
-            Country importer = countryRepository.findById(dto.getImporterCode()).orElse(null);
-            Product product = productRepository.findById(dto.getProductCode()).orElse(null);
-            suspension.setImporter(importer);
-            suspension.setProduct(product);
-            suspension.setValidFrom(dto.getValidFrom());
-            suspension.setValidTo(dto.getValidTo());
-            suspension.setSuspensionFlag(dto.isSuspensionFlag());
-            suspension.setSuspensionNote(dto.getSuspensionNote());
-            suspension.setSuspensionRate(dto.getSuspensionRate());
-            Suspension saved = suspensionRepository.save(suspension);
-            return ResponseEntity.ok(toDTO(saved));
-        }
-        return ResponseEntity.notFound().build();
+        Suspension suspension = suspensionRepository.findById(id)
+                .orElseThrow(() -> new InvalidRequestException("Suspension not found: " + id));
+        Country importer = countryRepository.findById(dto.getImporterCode())
+                .orElseThrow(() -> new InvalidRequestException("Importer country not found: " + dto.getImporterCode()));
+        Product product = productRepository.findById(dto.getProductCode())
+                .orElseThrow(() -> new InvalidRequestException("Product not found: " + dto.getProductCode()));
+        suspension.setImporter(importer);
+        suspension.setProduct(product);
+        suspension.setValidFrom(dto.getValidFrom());
+        suspension.setValidTo(dto.getValidTo());
+        suspension.setSuspensionFlag(dto.isSuspensionFlag());
+        suspension.setSuspensionNote(dto.getSuspensionNote());
+        suspension.setSuspensionRate(dto.getSuspensionRate());
+        Suspension saved = suspensionRepository.save(suspension);
+        return ResponseEntity.ok(toDTO(saved));
     }
 
     // Delete Suspension by ID
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteSuspensionById(@PathVariable Integer id) {
-        if (suspensionRepository.existsById(id)) {
-            suspensionRepository.deleteById(id);
-            return ResponseEntity.noContent().build();
+        if (!suspensionRepository.existsById(id)) {
+            throw new InvalidRequestException("Suspension not found: " + id);
         }
-        return ResponseEntity.notFound().build();
+        suspensionRepository.deleteById(id);
+        return ResponseEntity.noContent().build();
     }
 
     // Search Suspension by importer, product, and validFrom date
@@ -121,14 +127,27 @@ public class AdminSuspensionController {
             @RequestParam String importerCode,
             @RequestParam String productCode,
             @RequestParam java.time.LocalDate validFrom) {
-        Country importer = countryRepository.findById(importerCode).orElse(null);
-        Product product = productRepository.findById(productCode).orElse(null);
-        if (importer == null || product == null) {
-            return ResponseEntity.badRequest().build();
-        }
+        Country importer = countryRepository.findById(importerCode)
+                .orElseThrow(() -> new InvalidRequestException("Importer country not found: " + importerCode));
+        Product product = productRepository.findById(productCode)
+                .orElseThrow(() -> new InvalidRequestException("Product not found: " + productCode));
         return suspensionRepository.findByImporterAndProductAndValidFrom(importer, product, validFrom)
                 .map(this::toDTO)
                 .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+                .orElseThrow(() -> new InvalidRequestException("Suspension not found for given parameters"));
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<String> handleValidationException(MethodArgumentNotValidException ex) {
+        String errorMsg = ex.getBindingResult().getFieldErrors().stream()
+                .map(e -> e.getField() + ": " + e.getDefaultMessage())
+                .findFirst()
+                .orElse("Invalid request");
+        return ResponseEntity.badRequest().body(errorMsg);
+    }
+
+    @ExceptionHandler(InvalidRequestException.class)
+    public ResponseEntity<String> handleInvalidRequest(InvalidRequestException ex) {
+        return ResponseEntity.badRequest().body(ex.getMessage());
     }
 }
