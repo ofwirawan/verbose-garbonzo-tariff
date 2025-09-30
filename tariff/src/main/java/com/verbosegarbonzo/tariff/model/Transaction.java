@@ -16,7 +16,7 @@ public class Transaction {
 
     @Id
     @Column(name = "tid")
-    private Long tid;
+    private Integer tid;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "uid", referencedColumnName = "uid", nullable = false)

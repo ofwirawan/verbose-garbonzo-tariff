@@ -17,7 +17,7 @@ public class Suspension {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "suspension_id")
-    private Long suspensionId;
+    private Integer suspensionId;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "importer_code", referencedColumnName = "country_code", nullable = false)

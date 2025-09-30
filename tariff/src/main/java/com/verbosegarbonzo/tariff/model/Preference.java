@@ -16,7 +16,7 @@ public class Preference {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "preference_id")
-    private Long preferenceId;
+    private Integer preferenceId;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "importer_code", referencedColumnName = "country_code", nullable = false)

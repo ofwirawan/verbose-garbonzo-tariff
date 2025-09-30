@@ -48,7 +48,6 @@ public class AdminMeasureController {
         Country importer = countryRepository.findById(dto.getImporterCode()).orElse(null);
         Product product = productRepository.findById(dto.getProductCode()).orElse(null);
         Measure measure = new Measure();
-        measure.setMeasureId(dto.getMeasureId());
         measure.setImporter(importer);
         measure.setProduct(product);
         measure.setValidFrom(dto.getValidFrom());

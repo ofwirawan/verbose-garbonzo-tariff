@@ -3,13 +3,18 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 
 import java.util.UUID;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonProperty.Access;
+
 import lombok.*;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class TransactionDTO {
-    private Long tid;
+    @JsonProperty(access = Access.READ_ONLY)
+    private Integer tid;
     private UUID user;
     private LocalDate tDate;
     private String importer;

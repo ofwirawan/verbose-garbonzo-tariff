@@ -49,7 +49,6 @@ public class AdminSuspensionController {
         Country importer = countryRepository.findById(dto.getImporterCode()).orElse(null);
         Product product = productRepository.findById(dto.getProductCode()).orElse(null);
         Suspension suspension = new Suspension();
-        suspension.setSuspensionId(dto.getSuspensionId());
         suspension.setImporter(importer);
         suspension.setProduct(product);
         suspension.setValidFrom(dto.getValidFrom());

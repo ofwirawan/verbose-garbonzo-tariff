@@ -1,4 +1,4 @@
-package com.verbosegarbonzo.tariff.controller.admin;
+package com.verbosegarbonzo.tariff.service.admin;
 
 import com.verbosegarbonzo.tariff.dto.TransactionDTO;
 import com.verbosegarbonzo.tariff.model.Transaction;
@@ -9,24 +9,23 @@ import com.verbosegarbonzo.tariff.repository.TransactionRepository;
 import com.verbosegarbonzo.tariff.repository.UserRepository;
 import com.verbosegarbonzo.tariff.repository.CountryRepository;
 import com.verbosegarbonzo.tariff.repository.ProductRepository;
-import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Optional;
+import java.util.NoSuchElementException;
+import java.util.UUID;
 
-@RestController
-@RequestMapping("/api/admin/transactions")
-public class AdminTransactionController {
+@Service
+public class TransactionService {
 
     private final TransactionRepository transactionRepository;
     private final UserRepository userRepository;
     private final CountryRepository countryRepository;
     private final ProductRepository productRepository;
 
-    public AdminTransactionController(TransactionRepository transactionRepository,
+    public TransactionService(TransactionRepository transactionRepository,
             UserRepository userRepository,
             CountryRepository countryRepository,
             ProductRepository productRepository) {
@@ -55,11 +54,11 @@ public class AdminTransactionController {
     private Transaction toEntity(TransactionDTO dto) {
         User user = userRepository.findById(dto.getUser()).orElse(null);
         Country importer = countryRepository.findById(dto.getImporter()).orElse(null);
-        Country exporter = dto.getExporter() != null
-                ? countryRepository.findById(dto.getExporter()).orElse(null)
+        Country exporter = dto.getExporter() != null ? countryRepository.findById(dto.getExporter()).orElse(null)
                 : null;
         Product product = productRepository.findById(dto.getProduct()).orElse(null);
         Transaction transaction = new Transaction();
+        transaction.setTid(dto.getTid());
         transaction.setUser(user);
         transaction.setTDate(dto.getTDate());
         transaction.setImporter(importer);
@@ -73,64 +72,57 @@ public class AdminTransactionController {
     }
 
     // Create new Transaction
-    @PostMapping
-    public ResponseEntity<TransactionDTO> createTransaction(@Valid @RequestBody TransactionDTO dto) {
+    @Transactional
+    public TransactionDTO create(TransactionDTO dto) {
         Transaction transaction = toEntity(dto);
         Transaction created = transactionRepository.save(transaction);
-        return ResponseEntity.status(201).body(toDTO(created));
+        return toDTO(created);
     }
 
     // Get all Transactions (paginated)
-    @GetMapping
-    public Page<TransactionDTO> getAllTransactions(Pageable pageable) {
+    @Transactional(readOnly = true)
+    public Page<TransactionDTO> getAll(Pageable pageable) {
         return transactionRepository.findAll(pageable)
                 .map(this::toDTO);
     }
 
     // Get Transaction by ID
-    @GetMapping("/{id}")
-    public ResponseEntity<TransactionDTO> getTransactionById(@PathVariable Long id) {
-        return transactionRepository.findById(id)
-                .map(this::toDTO)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+    @Transactional(readOnly = true)
+    public TransactionDTO getById(Long id) {
+        Transaction transaction = transactionRepository.findById(id)
+                .orElseThrow(() -> new NoSuchElementException("Transaction not found with id " + id));
+        return toDTO(transaction);
     }
 
     // Update Transaction by ID
-    @PutMapping("/{id}")
-    public ResponseEntity<TransactionDTO> updateTransaction(@PathVariable Long id,
-            @Valid @RequestBody TransactionDTO dto) {
-        Optional<Transaction> optionaltransaction = transactionRepository.findById(id);
-        if (optionaltransaction.isPresent()) {
-            Transaction transaction = optionaltransaction.get();
-            User user = userRepository.findById(dto.getUser()).orElse(null);
-            Country importer = countryRepository.findById(dto.getImporter()).orElse(null);
-            Country exporter = dto.getExporter() != null
-                    ? countryRepository.findById(dto.getExporter()).orElse(null)
-                    : null;
-            Product product = productRepository.findById(dto.getProduct()).orElse(null);
-            transaction.setUser(user);
-            transaction.setTDate(dto.getTDate());
-            transaction.setImporter(importer);
-            transaction.setExporter(exporter);
-            transaction.setProduct(product);
-            transaction.setTradeOriginal(dto.getTradeOriginal());
-            transaction.setNetWeight(dto.getNetWeight());
-            transaction.setTradeFinal(dto.getTradeFinal());
-            transaction.setAppliedRate(dto.getAppliedRate());
-            Transaction saved = transactionRepository.save(transaction);
-            return ResponseEntity.ok(toDTO(saved));
-        }
-        return ResponseEntity.notFound().build();
+    @Transactional
+    public TransactionDTO update(Long id, TransactionDTO dto) {
+        Transaction transaction = transactionRepository.findById(id)
+                .orElseThrow(() -> new NoSuchElementException("Transaction not found with id " + id));
+        User user = userRepository.findById(dto.getUser()).orElse(null);
+        Country importer = countryRepository.findById(dto.getImporter()).orElse(null);
+        Country exporter = dto.getExporter() != null ? countryRepository.findById(dto.getExporter()).orElse(null)
+                : null;
+        Product product = productRepository.findById(dto.getProduct()).orElse(null);
+        transaction.setUser(user);
+        transaction.setTDate(dto.getTDate());
+        transaction.setImporter(importer);
+        transaction.setExporter(exporter);
+        transaction.setProduct(product);
+        transaction.setTradeOriginal(dto.getTradeOriginal());
+        transaction.setNetWeight(dto.getNetWeight());
+        transaction.setTradeFinal(dto.getTradeFinal());
+        transaction.setAppliedRate(dto.getAppliedRate());
+        Transaction saved = transactionRepository.save(transaction);
+        return toDTO(saved);
     }
 
     // Delete Transaction by ID
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteTransactionById(@PathVariable Long id) {
-        if (transactionRepository.existsById(id)) {
-            transactionRepository.deleteById(id);
-            return ResponseEntity.noContent().build();
+    @Transactional
+    public void deleteById(Long id) {
+        if (!transactionRepository.existsById(id)) {
+            throw new NoSuchElementException("Transaction not found with id " + id);
         }
-        return ResponseEntity.notFound().build();
+        transactionRepository.deleteById(id);
     }
 }

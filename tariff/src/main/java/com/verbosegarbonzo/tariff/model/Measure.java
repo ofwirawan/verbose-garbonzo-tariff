@@ -16,7 +16,7 @@ public class Measure {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "measure_id")
-    private Long measureId;
+    private Integer measureId;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "importer_code", referencedColumnName = "country_code", nullable = false)

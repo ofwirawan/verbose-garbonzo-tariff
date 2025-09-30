@@ -1,6 +1,10 @@
 package com.verbosegarbonzo.tariff.dto;
 
 import java.time.LocalDate;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonProperty.Access;
+
 import java.math.BigDecimal;
 
 import lombok.*;
@@ -9,7 +13,8 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 public class SuspensionDTO {
-    private Long suspensionId;
+    @JsonProperty(access = Access.READ_ONLY)
+    private Integer suspensionId;
     private String importerCode;
     private String productCode;
     private LocalDate validFrom;

@@ -24,8 +24,9 @@ public class AdminCountryController {
 
     // Create a new country
     @PostMapping
-    public Country createCountry(@Valid @RequestBody Country country) {
-        return countryRepository.save(country);
+    public ResponseEntity<Country> createCountry(@Valid @RequestBody Country country) {
+        Country created = countryRepository.save(country);
+        return ResponseEntity.status(201).body(created);
     }
 
     // Get all countries
