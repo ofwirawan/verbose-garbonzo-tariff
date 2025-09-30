@@ -1,5 +1,6 @@
 /mnt/c/SMU/CS-203/verbose-garbonzo-tariff/tariff/src/main/java/com/verbosegarbonzo/tariff/TariffApplication.java
 /mnt/c/SMU/CS-203/verbose-garbonzo-tariff/tariff/src/main/java/com/verbosegarbonzo/tariff/client/WitsMetadataClient.java
+/mnt/c/SMU/CS-203/verbose-garbonzo-tariff/tariff/src/main/java/com/verbosegarbonzo/tariff/config/CoreSecurityBeans.java
 /mnt/c/SMU/CS-203/verbose-garbonzo-tariff/tariff/src/main/java/com/verbosegarbonzo/tariff/config/SecurityConfig.java
 /mnt/c/SMU/CS-203/verbose-garbonzo-tariff/tariff/src/main/java/com/verbosegarbonzo/tariff/config/WebClientConfig.java
 /mnt/c/SMU/CS-203/verbose-garbonzo-tariff/tariff/src/main/java/com/verbosegarbonzo/tariff/config/WitsProperties.java

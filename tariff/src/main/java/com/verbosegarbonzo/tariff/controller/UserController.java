@@ -8,6 +8,7 @@ import com.verbosegarbonzo.tariff.service.UserInfoService;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.*;
 import lombok.RequiredArgsConstructor;
@@ -17,15 +18,20 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class UserController {
 
-    private UserInfoService service;
+    private final UserInfoService service;
 
-    private JwtService jwtService;
+    private final JwtService jwtService;
 
-    private AuthenticationManager authenticationManager;
+    private final AuthenticationManager authenticationManager;
 
     @GetMapping("/welcome")
     public String welcome() {
         return "Welcome this endpoint is not secure";
+    }
+
+    @GetMapping("/user/userProfile")
+    public String userProfile(@AuthenticationPrincipal org.springframework.security.core.userdetails.User principal){
+        return principal.getUsername();
     }
 
     @PostMapping("/addNewUser")
