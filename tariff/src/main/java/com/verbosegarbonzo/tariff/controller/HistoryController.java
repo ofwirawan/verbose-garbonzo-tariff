@@ -3,6 +3,7 @@ package com.verbosegarbonzo.tariff.controller;
 import com.verbosegarbonzo.tariff.model.History;
 import org.springframework.web.bind.annotation.*;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 @RestController
@@ -14,14 +15,28 @@ public class HistoryController {
 
     @GetMapping
     public List<History> getAllHistory() {
-        return historyList; // NO toString() anywhere
+        return historyList; 
     }
 
     @PostMapping
     public History addHistory(@RequestBody History history) {
         history.setId(counter++);
         historyList.add(history);
-        return history; // NO toString()
+        return history; 
     }
 
+    @DeleteMapping("/{id}")
+    public History deleteHistory(@PathVariable Long id){
+        Iterator<History> iterator = historyList.iterator();
+        History removedHistory = null;
+        while (iterator.hasNext()){
+            History nextHistory = iterator.next();
+            if (nextHistory.getId().equals(id)){
+                removedHistory = nextHistory;
+                iterator.remove();
+                break;
+            }
+        }
+        return removedHistory;
+    }
 }

@@ -247,6 +247,12 @@ const productOptions = [
 	{ label: "Services & Intangibles", value: "98_Services" },
 ];
 
+// Type for calculation result
+interface CalculationResult {
+	ratePercent: number;
+	duty: string;
+	totalPayable: string;
+}
 
 const inputClass =
 	"w-full min-w-[200px] h-12 min-h-[48px] border rounded px-3 py-2 focus:outline-none focus:ring-2 transition-all";
@@ -368,7 +374,8 @@ export function ViewCalculation() {
 	// Added a transaction date for users & router
 	const [transactionDate, setTransactionDate] = useState<string>("");
 	const router = useRouter();
-
+	// Added for the save history button
+	const [canSaveHistory, setCanSaveHistory] = useState(false);
 
 	const [productCode, setProductCode] = useState("01-05_Animals");
 	const [productCost, setProductCost] = useState("");
@@ -413,7 +420,8 @@ export function ViewCalculation() {
 		);
 		return match ? match.value : null;
 	}
-	// Added a POST to history Java API 
+
+	// Handle Calculation only
 	async function handleSubmit() {
 		if (!importingCountryInput || !exportingCountryInput) {
 			setError("Please enter valid countries.");
@@ -433,9 +441,10 @@ export function ViewCalculation() {
 		setResult(null);
 
 		try {
+			// Mock delay
 			await new Promise((resolve) => setTimeout(resolve, 1000));
 
-			const mockData = {
+			const mockData: CalculationResult = {
 				ratePercent: 5.25,
 				duty: (Number(productCost) * 0.0525).toFixed(2),
 				totalPayable: (Number(productCost) * 1.0525).toFixed(2),
@@ -443,18 +452,31 @@ export function ViewCalculation() {
 
 			setResult(mockData);
 
+			// Enable Save button after calculation
+			setCanSaveHistory(true);
+
+		} catch (err: any) {
+			console.error(err);
+			setError("Calculation failed.");
+		} finally {
+			setIsLoading(false);
+		}
+	}
+
+	// Separate Save History
+	async function handleSaveHistory() {
+		if (!result) return;
+
+		try {
 			const formattedDate = new Date(transactionDate).toISOString().split("T")[0];
-			// Create the request body
 			const requestBody = {
 				date: formattedDate,
 				product: productOptions.find(p => p.value === productCode)?.label || "Your Product",
 				route: `${exportingCountryInput} → ${importingCountryInput}`,
 				tradeValue: Number(productCost),
-				tariffRate: mockData.ratePercent,
-				tariffCost: Number(mockData.duty),
+				tariffRate: result.ratePercent,
+				tariffCost: Number(result.duty),
 			};
-
-			console.log("Sending request:", JSON.stringify(requestBody, null, 2));
 
 			const response = await fetch("http://localhost:8080/api/history", {
 				method: "POST",
@@ -462,22 +484,17 @@ export function ViewCalculation() {
 				body: JSON.stringify(requestBody),
 			});
 
-			if (!response.ok) {
-				const errorText = await response.text();
-				console.error("Backend error:", errorText);
-				throw new Error(`Failed to save: ${response.status}`);
-			}
+			if (!response.ok) throw new Error("Failed to save history");
 
-			const savedData = await response.json();
-			console.log("Successfully saved:", savedData);
+			console.log("Saved history successfully:", await response.json());
+			setCanSaveHistory(false); // disable after save
 
-		} catch (err: any) {
-			console.error("Detailed error:", err);
-			setError("Calculation completed, but failed to save to history.");
-		} finally {
-			setIsLoading(false);
+		} catch (err) {
+			console.error(err);
+			setError("Calculation done but failed to save history.");
 		}
 	}
+
 
 
 	// async function handleSubmit() {
@@ -706,12 +723,23 @@ export function ViewCalculation() {
 											{totalPayableCount}
 										</span>
 									</div>
+									<div>
+										{/* Save History Button */}
+										<button
+											onClick={handleSaveHistory}
+											disabled={!result || isLoading}
+											className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 disabled:opacity-50 font-semibold text-base"
+										>
+											Save History
+										</button>
+									</div>
 								</div>
 							</div>
 						</CardContent>
 					)}
 				</CardContent>
 			</Card>
+
 			<button
 				onClick={() => router.push("/history")}
 				className="mt-4 bg-blue-600 text-white px-4 py-2 rounded"
