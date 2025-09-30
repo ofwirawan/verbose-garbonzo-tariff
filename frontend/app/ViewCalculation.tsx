@@ -19,6 +19,9 @@ import {
 
 import { useRouter } from "next/navigation";
 
+// notifications when history saved
+import { toast } from "sonner"
+
 // Country options
 const countryOptions = [
 	{ label: "Afghanistan", value: "AFG" },
@@ -384,6 +387,8 @@ export function ViewCalculation() {
 	const [error, setError] = useState<string>("");
 	const [showResult, setShowResult] = useState(false);
 	const resultRef = useRef<HTMLDivElement>(null);
+	const [productWeight, setProductWeight] = useState<number | ''>('');
+
 
 	const dutyCount = useCountUp(
 		result ? Number(result.duty) : 0,
@@ -472,6 +477,7 @@ export function ViewCalculation() {
 			const requestBody = {
 				date: formattedDate,
 				product: productOptions.find(p => p.value === productCode)?.label || "Your Product",
+				weight: Number(productWeight),
 				route: `${exportingCountryInput} → ${importingCountryInput}`,
 				tradeValue: Number(productCost),
 				tariffRate: result.ratePercent,
@@ -489,9 +495,11 @@ export function ViewCalculation() {
 			console.log("Saved history successfully:", await response.json());
 			setCanSaveHistory(false); // disable after save
 
+			// ✅ Show alert
+			toast.success("Saved Successfully!");
 		} catch (err) {
 			console.error(err);
-			setError("Calculation done but failed to save history.");
+			toast.error("Calculation done but failed to save history.");
 		}
 	}
 
@@ -679,6 +687,25 @@ export function ViewCalculation() {
 								value={transactionDate}
 								onChange={(e) => setTransactionDate(e.target.value)}
 								className={`${inputClass} border-gray-300 focus:ring-black`}
+							/>
+						</div>
+
+						<div className="flex flex-col">
+							<label
+								htmlFor="productWeight"
+								className="block text-sm font-medium mb-2"
+							>
+								Product Weight (in kg):
+							</label>
+							<input
+								id="productWeight"
+								type="number"
+								min="0"
+								step="0.01"
+								value={Number.isNaN(productWeight) ? "" : productWeight}
+								onChange={(e) => setProductWeight(parseFloat(e.target.value))}
+								className={`${inputClass} border-gray-300 focus:ring-black`}
+								placeholder="Enter weight"
 							/>
 						</div>
 					</div>

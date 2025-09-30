@@ -16,6 +16,7 @@ public class History {
     private LocalDate date;
     private String product;
     private String route;
+    private double weight;
     private double tradeValue;
     private double tariffRate;
     private double tariffCost;

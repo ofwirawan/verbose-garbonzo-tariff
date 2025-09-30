@@ -45,15 +45,15 @@ import {
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
-
 export interface HistoryItem {
     id: number
-    date: string
-    product: string
-    route: string
-    tradeValue: number
-    tariffRate: number
-    tariffCost: number
+    date: string | null
+    product: string | null
+    weight: number | null
+    route: string | null
+    tradeValue: number | null
+    tariffRate: number | null
+    tariffCost: number | null
 }
 
 interface HistoryTableProps {
@@ -61,7 +61,6 @@ interface HistoryTableProps {
     onDelete: (ids: number[]) => void
 }
 
-// Columns (no actions column)
 export const columns: ColumnDef<HistoryItem>[] = [
     {
         id: "select",
@@ -85,37 +84,63 @@ export const columns: ColumnDef<HistoryItem>[] = [
         enableSorting: false,
         enableHiding: false,
     },
-    { accessorKey: "date", header: "Date" },
-    { accessorKey: "product", header: "Product" },
-    { accessorKey: "route", header: "Route" },
+    {
+        accessorKey: "date",
+        header: "Date",
+        cell: ({ row }) => {
+            if (!row || !row.original) return "N/A";
+            const value = row.getValue<string | null>("date");
+            return value ? new Date(value).toLocaleDateString() : "N/A";
+        },
+    },
+    {
+        accessorKey: "product",
+        header: "Product",
+        cell: ({ row }) => row.original?.product ?? "N/A",
+    },
+    {
+        accessorKey: "route",
+        header: "Route",
+        cell: ({ row }) => row.original?.route ?? "N/A",
+    },
+    {
+        accessorKey: "weight",
+        header: "Weight (kg)",
+        cell: ({ row }) => {
+            const valueRaw = row.original?.weight;
+            const value = valueRaw === '' || valueRaw === null || valueRaw === undefined ? NaN : Number(valueRaw);
+            return <div>{isNaN(value) ? "N/A" : value.toFixed(2)} kg</div>;
+        },
+    },
     {
         accessorKey: "tradeValue",
         header: "Trade Value",
-        cell: ({ row }) => (
-            <div>${row.getValue<number>("tradeValue").toLocaleString()}</div>
-        ),
+        cell: ({ row }) => {
+            const value = row.original?.tradeValue ?? 0;
+            return <div>${value.toLocaleString()}</div>;
+        },
     },
-    { accessorKey: "tariffRate", header: "Tariff Rate (%)" },
+    {
+        accessorKey: "tariffRate",
+        header: "Tariff Rate (%)",
+        cell: ({ row }) => row.original?.tariffRate?.toString() ?? "N/A",
+    },
     {
         accessorKey: "tariffCost",
         header: "Tariff Cost",
-        cell: ({ row }) => (
-            <div>${row.getValue<number>("tariffCost").toLocaleString()}</div>
-        ),
+        cell: ({ row }) => {
+            const value = row.original?.tariffCost ?? 0;
+            return <div>${value.toLocaleString()}</div>;
+        },
     },
 ]
 
 export function HistoryTable({ data, onDelete }: HistoryTableProps) {
     const [sorting, setSorting] = React.useState<SortingState>([])
-    const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
-        []
-    )
-    const [columnVisibility, setColumnVisibility] =
-        React.useState<VisibilityState>({})
+    const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
+    const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
     const [rowSelection, setRowSelection] = React.useState({})
-    const [open, setOpen] = React.useState(false);
-    const [history, setHistory] = React.useState<HistoryItem[]>(data); // start with your fetched data
-
+    const [history, setHistory] = React.useState<HistoryItem[]>(data.filter(item => item != null))
 
     const table = useReactTable({
         data: history,
@@ -137,9 +162,7 @@ export function HistoryTable({ data, onDelete }: HistoryTableProps) {
     })
 
     const handleBulkDelete = () => {
-        const selectedIds = table
-            .getSelectedRowModel()
-            .rows.map((row) => row.original.id)
+        const selectedIds = table.getSelectedRowModel().rows.map((row) => row.original.id)
         if (selectedIds.length > 0) {
             onDelete(selectedIds)
             table.resetRowSelection()
@@ -189,7 +212,6 @@ export function HistoryTable({ data, onDelete }: HistoryTableProps) {
                                     const selected = table.getFilteredSelectedRowModel().rows
 
                                     try {
-                                        // call DELETE API for each selected item
                                         await Promise.all(
                                             selected.map((row) =>
                                                 fetch(`http://localhost:8080/api/history/${row.original.id}`, {
@@ -198,7 +220,6 @@ export function HistoryTable({ data, onDelete }: HistoryTableProps) {
                                             )
                                         )
 
-                                        // update frontend state to remove deleted rows
                                         setHistory((prev) =>
                                             prev.filter(
                                                 (item) => !selected.some((row) => row.original.id === item.id)
@@ -209,9 +230,6 @@ export function HistoryTable({ data, onDelete }: HistoryTableProps) {
                                     } catch (err) {
                                         console.error("Failed to delete selected items:", err)
                                     }
-
-                                    // close the dialog
-                                    setOpen(false)
                                 }}
                             >
                                 Confirm Delete
@@ -219,8 +237,6 @@ export function HistoryTable({ data, onDelete }: HistoryTableProps) {
                         </AlertDialogFooter>
                     </AlertDialogContent>
                 </AlertDialog>
-
-
 
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
