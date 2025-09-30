@@ -13,7 +13,6 @@ public interface SuspensionRepository extends JpaRepository<Suspension, Integer>
     @Query("""
         SELECT s FROM Suspension s
         WHERE s.importerCode = :importer
-          AND (:exporter IS NULL OR s.exporterCode = :exporter OR s.exporterCode IS NULL)
           AND s.productCode = :hs6
           AND s.suspensionFlag = true
           AND s.validFrom <= :date
@@ -21,7 +20,6 @@ public interface SuspensionRepository extends JpaRepository<Suspension, Integer>
         """)
     Optional<Suspension> findActiveSuspension(
         @Param("importer") String importer,
-        @Param("exporter") String exporter,
         @Param("hs6") String hs6,
         @Param("date") LocalDate date
     );
