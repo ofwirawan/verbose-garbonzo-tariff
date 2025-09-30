@@ -1874,6 +1874,218 @@ async function main() {
     });
   }
   console.log(`Seeded ${preferences.length} preference records.`);
+
+  // Seed measures (tariff rates with three calculation types)
+  console.log("Seeding measures...");
+  const measures = [
+    // TYPE 1: COMPOUND - Both MFN ad-valorem AND specific duty (requires weight)
+    // These apply both percentage and per-kg charges
+    {
+      importer_code: "USA",
+      product_code: "290110", // Acyclic hydrocarbons
+      valid_from: new Date("2020-01-01"),
+      valid_to: null,
+      mfn_adval_rate: 5.5, // 5.5% of trade value
+      specific_rate_per_kg: 0.25, // $0.25 per kg
+    },
+    {
+      importer_code: "GBR",
+      product_code: "290220", // Benzene
+      valid_from: new Date("2021-01-01"),
+      valid_to: null,
+      mfn_adval_rate: 3.7,
+      specific_rate_per_kg: 0.15,
+    },
+    {
+      importer_code: "ARG",
+      product_code: "290241", // o-Xylene
+      valid_from: new Date("2020-01-01"),
+      valid_to: null,
+      mfn_adval_rate: 4.2,
+      specific_rate_per_kg: 0.18,
+    },
+    {
+      importer_code: "NZL",
+      product_code: "290121", // Ethylene
+      valid_from: new Date("2019-01-01"),
+      valid_to: null,
+      mfn_adval_rate: 6.0,
+      specific_rate_per_kg: 0.30,
+    },
+    {
+      importer_code: "JPN",
+      product_code: "290122", // Propene (Propylene)
+      valid_from: new Date("2020-06-01"),
+      valid_to: null,
+      mfn_adval_rate: 4.8,
+      specific_rate_per_kg: 0.22,
+    },
+
+    // TYPE 2: SPECIFIC ONLY - Per-kg charge only (requires weight)
+    // No percentage, just flat rate per kilogram
+    {
+      importer_code: "AUS",
+      product_code: "290110",
+      valid_from: new Date("2020-01-01"),
+      valid_to: null,
+      mfn_adval_rate: null,
+      specific_rate_per_kg: 0.35, // Only per-kg rate
+    },
+    {
+      importer_code: "CHN",
+      product_code: "290220",
+      valid_from: new Date("2021-01-01"),
+      valid_to: null,
+      mfn_adval_rate: null,
+      specific_rate_per_kg: 0.40,
+    },
+    {
+      importer_code: "IND",
+      product_code: "290121",
+      valid_from: new Date("2019-06-01"),
+      valid_to: null,
+      mfn_adval_rate: null,
+      specific_rate_per_kg: 0.28,
+    },
+    {
+      importer_code: "BRA",
+      product_code: "290122",
+      valid_from: new Date("2020-03-01"),
+      valid_to: null,
+      mfn_adval_rate: null,
+      specific_rate_per_kg: 0.32,
+    },
+    {
+      importer_code: "CAN",
+      product_code: "290241",
+      valid_from: new Date("2021-01-01"),
+      valid_to: null,
+      mfn_adval_rate: null,
+      specific_rate_per_kg: 0.20,
+    },
+
+    // TYPE 3: MFN AD-VALOREM ONLY - Percentage of trade value only (no weight needed)
+    // Standard percentage-based tariff
+    {
+      importer_code: "SGP",
+      product_code: "290110",
+      valid_from: new Date("2020-01-01"),
+      valid_to: null,
+      mfn_adval_rate: 2.5, // Only percentage rate
+      specific_rate_per_kg: null,
+    },
+    {
+      importer_code: "KOR",
+      product_code: "290220",
+      valid_from: new Date("2021-01-01"),
+      valid_to: null,
+      mfn_adval_rate: 8.0,
+      specific_rate_per_kg: null,
+    },
+    {
+      importer_code: "VNM",
+      product_code: "290121",
+      valid_from: new Date("2020-01-01"),
+      valid_to: null,
+      mfn_adval_rate: 5.0,
+      specific_rate_per_kg: null,
+    },
+    {
+      importer_code: "THA",
+      product_code: "290122",
+      valid_from: new Date("2019-01-01"),
+      valid_to: null,
+      mfn_adval_rate: 10.0,
+      specific_rate_per_kg: null,
+    },
+    {
+      importer_code: "ZAF",
+      product_code: "290241",
+      valid_from: new Date("2020-01-01"),
+      valid_to: null,
+      mfn_adval_rate: 7.5,
+      specific_rate_per_kg: null,
+    },
+    {
+      importer_code: "RUS",
+      product_code: "290123", // Butene and isomers
+      valid_from: new Date("2020-01-01"),
+      valid_to: null,
+      mfn_adval_rate: 6.5,
+      specific_rate_per_kg: null,
+    },
+    {
+      importer_code: "CHE",
+      product_code: "290124", // Buta-1,3-diene
+      valid_from: new Date("2020-01-01"),
+      valid_to: null,
+      mfn_adval_rate: 4.5,
+      specific_rate_per_kg: null,
+    },
+
+    // Additional variations for testing different countries and products
+    {
+      importer_code: "NOR",
+      product_code: "290211", // Cyclohexane
+      valid_from: new Date("2020-01-01"),
+      valid_to: null,
+      mfn_adval_rate: 3.2,
+      specific_rate_per_kg: 0.12,
+    },
+    {
+      importer_code: "TUR",
+      product_code: "290211",
+      valid_from: new Date("2021-01-01"),
+      valid_to: null,
+      mfn_adval_rate: 4.0,
+      specific_rate_per_kg: null,
+    },
+    {
+      importer_code: "SWE",
+      product_code: "290211",
+      valid_from: new Date("2020-01-01"),
+      valid_to: null,
+      mfn_adval_rate: null,
+      specific_rate_per_kg: 0.25,
+    },
+
+    // Historical rates (expired)
+    {
+      importer_code: "USA",
+      product_code: "290123",
+      valid_from: new Date("2015-01-01"),
+      valid_to: new Date("2019-12-31"),
+      mfn_adval_rate: 7.0,
+      specific_rate_per_kg: 0.35,
+    },
+    {
+      importer_code: "GBR",
+      product_code: "290124",
+      valid_from: new Date("2016-01-01"),
+      valid_to: new Date("2020-12-31"),
+      mfn_adval_rate: 5.5,
+      specific_rate_per_kg: null,
+    },
+  ];
+
+  for (const measure of measures) {
+    await prisma.measure.upsert({
+      where: {
+        importer_code_product_code_valid_from: {
+          importer_code: measure.importer_code,
+          product_code: measure.product_code,
+          valid_from: measure.valid_from,
+        },
+      },
+      update: {
+        valid_to: measure.valid_to,
+        mfn_adval_rate: measure.mfn_adval_rate,
+        specific_rate_per_kg: measure.specific_rate_per_kg,
+      },
+      create: measure,
+    });
+  }
+  console.log(`Seeded ${measures.length} measure records.`);
 }
 
 main()

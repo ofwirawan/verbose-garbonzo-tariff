@@ -48,13 +48,15 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, CalendarIcon } from "lucide-react";
 
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { format } from "date-fns";
 
 interface Country {
   country_code: string;
@@ -129,6 +131,7 @@ export function TariffChart({
   const [productCode, setProductCode] = useState(initialProductCode);
   const [timeRange, setTimeRange] = useState("all");
   const [tradeValue, setTradeValue] = useState("10000");
+  const [netWeight, setNetWeight] = useState("");
 
   // State for tariffs and countries
   const [tariffs, setTariffs] = useState<Tariff[]>([]);
@@ -145,9 +148,8 @@ export function TariffChart({
   const [, setSimCountryModifier] = useState<number | undefined>(undefined);
   const [, setSimTrend] = useState<number | undefined>(undefined);
 
-  const currentYear = new Date().getFullYear().toString();
-  const [selectedYear, setSelectedYear] = useState<string>("2020");
-  const [selectedEndYear, setSelectedEndYear] = useState<string>(currentYear);
+  const [startDate, setStartDate] = useState<Date>(new Date("2020-01-01"));
+  const [endDate, setEndDate] = useState<Date>(new Date());
   const [isCalculating, setIsCalculating] = useState(false);
 
   const [calculationResult, setCalculationResult] =
@@ -265,15 +267,16 @@ export function TariffChart({
           setImportingCountry(importer_code);
           setProductCode(product_code);
 
-          // Set start and end years from valid_from and valid_to
+          // Set start and end dates from valid_from and valid_to
           if (valid_from) {
-            const startYear = new Date(valid_from).getFullYear().toString();
-            setSelectedYear(startYear);
+            setStartDate(new Date(valid_from));
           }
 
           if (valid_to) {
-            const endYear = new Date(valid_to).getFullYear().toString();
-            setSelectedEndYear(endYear);
+            setEndDate(new Date(valid_to));
+          } else {
+            // If no end date, use current date
+            setEndDate(new Date());
           }
         }
       } catch (error) {
@@ -309,15 +312,15 @@ export function TariffChart({
     setIsCalculating(true);
     const hs6Code = getHS6Code(productCode);
 
-    const startYear = Number(selectedYear);
-    const endYear = Number(selectedEndYear);
+    const startYear = startDate.getFullYear();
+    const endYear = endDate.getFullYear();
 
     console.log("Starting tariff calculation with:", {
       importerCode: importingCountry,
       exporterCode: exportingCountry,
       hs6: hs6Code,
       tradeOriginal: Number(tradeValue),
-      yearRange: `${startYear} to ${endYear}`,
+      dateRange: `${startDate.toISOString().split('T')[0]} to ${endDate.toISOString().split('T')[0]}`,
     });
 
     try {
@@ -393,7 +396,7 @@ export function TariffChart({
           hs6: hs6Code,
           tradeOriginal: Number(tradeValue),
           transactionDate: transactionDate,
-          netWeight: null,
+          netWeight: netWeight ? Number(netWeight) : null,
         };
 
         const response = await fetch("http://localhost:8080/api/calculate", {
@@ -935,43 +938,54 @@ export function TariffChart({
         <div className="mb-8 w-full">
           <div className="flex flex-col lg:flex-row justify-between items-stretch gap-8 w-full">
             <div className="flex-1 min-w-0">
-              <Label className="mb-2 font-medium block">Start Year</Label>
-              <Select value={selectedYear} onValueChange={setSelectedYear}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select start year" />
-                </SelectTrigger>
-                <SelectContent className="max-h-60 overflow-y-auto">
-                  {Array.from({ length: 25 }, (_, i) => {
-                    const year = (Number(currentYear) - i).toString();
-                    return (
-                      <SelectItem key={year} value={year}>
-                        {year}
-                      </SelectItem>
-                    );
-                  })}
-                </SelectContent>
-              </Select>
+              <Label className="mb-2 font-medium block">Start Date</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !startDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {startDate ? format(startDate, "PPP") : <span>Pick a date</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={startDate}
+                    onSelect={(date) => date && setStartDate(date)}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
             <div className="flex-1 min-w-0">
-              <Label className="mb-2 font-medium block">End Year</Label>
-              <Select
-                value={selectedEndYear}
-                onValueChange={setSelectedEndYear}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select end year" />
-                </SelectTrigger>
-                <SelectContent className="max-h-60 overflow-y-auto">
-                  {Array.from({ length: 25 }, (_, i) => {
-                    const year = (Number(currentYear) - i).toString();
-                    return (
-                      <SelectItem key={year} value={year}>
-                        {year}
-                      </SelectItem>
-                    );
-                  })}
-                </SelectContent>
-              </Select>
+              <Label className="mb-2 font-medium block">End Date</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !endDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {endDate ? format(endDate, "PPP") : <span>Pick a date</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={endDate}
+                    onSelect={(date) => date && setEndDate(date)}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
             <div className="flex-1 min-w-0">
               <Label htmlFor="importingCountry" className="mb-2">
@@ -1020,6 +1034,24 @@ export function TariffChart({
                 placeholder="Enter trade value"
                 className="w-full"
               />
+            </div>
+            <div className="flex-1 min-w-0">
+              <Label htmlFor="netWeight" className="mb-2">
+                Net Weight (kg):
+              </Label>
+              <Input
+                id="netWeight"
+                type="number"
+                min="0"
+                step="0.01"
+                value={netWeight}
+                onChange={(e) => setNetWeight(e.target.value)}
+                placeholder="Optional - for specific duties"
+                className="w-full"
+              />
+              <span className="text-xs text-gray-500 mt-1">
+                Required for specific duty calculations
+              </span>
             </div>
           </div>
           <div className="flex justify-center mt-6">
@@ -1124,66 +1156,62 @@ export function TariffChart({
                 </div>
               </div>
             )}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="bg-white p-4 rounded shadow">
-                <div className="text-sm text-gray-500">Applied Rate</div>
-                <div
-                  className={`text-xl font-bold ${(() => {
-                    const appliedRate = calculationResult.appliedRate || {};
-                    if (appliedRate.suspension !== undefined)
-                      return "text-green-600";
-                    if (appliedRate.prefAdval !== undefined)
-                      return "text-purple-600";
-                    return "text-blue-600";
-                  })()}`}
-                >
-                  {(() => {
-                    const appliedRate = calculationResult.appliedRate || {};
-
-                    if (appliedRate.suspension !== undefined) {
-                      return Number(appliedRate.suspension).toFixed(2);
-                    }
-                    if (appliedRate.prefAdval !== undefined) {
-                      return Number(appliedRate.prefAdval).toFixed(2);
-                    }
-                    if (appliedRate.mfnAdval !== undefined) {
-                      return Number(appliedRate.mfnAdval).toFixed(2);
-                    }
-                    if (appliedRate.specific !== undefined) {
-                      const specificDuty =
-                        Number(appliedRate.specific) *
-                        (Number(calculationResult.netWeight) || 1);
-                      return (
-                        (specificDuty /
-                          Number(calculationResult.tradeOriginal)) *
-                        100
-                      ).toFixed(2);
-                    }
-                    return "0.00";
-                  })()}
-                  %
-                </div>
-                <div className="text-xs text-gray-400 mt-1">
-                  {(() => {
-                    const appliedRate = calculationResult.appliedRate || {};
-
-                    if (appliedRate.suspension !== undefined)
-                      return "Suspended";
-                    if (appliedRate.prefAdval !== undefined)
-                      return "Preferential (FTA)";
-                    if (
-                      appliedRate.mfnAdval !== undefined &&
-                      appliedRate.specific !== undefined
-                    )
-                      return "📊 Compound (MFN+Specific)";
-                    if (appliedRate.mfnAdval !== undefined)
-                      return "🌐 MFN (Standard)";
-                    if (appliedRate.specific !== undefined)
-                      return "⚖️ Specific Duty";
-                    return "No Rate";
-                  })()}
-                </div>
-              </div>
+            <div className={`grid gap-4 ${(() => {
+              const appliedRate = calculationResult.appliedRate || {};
+              const hasAppliedRateCard = !(appliedRate.specific !== undefined && appliedRate.mfnAdval === undefined);
+              return hasAppliedRateCard ? "grid-cols-2 md:grid-cols-4" : "grid-cols-1 md:grid-cols-3";
+            })()}`}>
+              {(() => {
+                const appliedRate = calculationResult.appliedRate || {};
+                // Hide Applied Rate card for specific-only duties
+                if (appliedRate.specific !== undefined && appliedRate.mfnAdval === undefined) {
+                  return null;
+                }
+                return (
+                  <div className="bg-white p-4 rounded shadow">
+                    <div className="text-sm text-gray-500">Applied Rate</div>
+                    <div
+                      className={`text-xl font-bold ${(() => {
+                        if (appliedRate.suspension !== undefined)
+                          return "text-green-600";
+                        if (appliedRate.prefAdval !== undefined)
+                          return "text-purple-600";
+                        return "text-blue-600";
+                      })()}`}
+                    >
+                      {(() => {
+                        if (appliedRate.suspension !== undefined) {
+                          return Number(appliedRate.suspension).toFixed(2);
+                        }
+                        if (appliedRate.prefAdval !== undefined) {
+                          return Number(appliedRate.prefAdval).toFixed(2);
+                        }
+                        if (appliedRate.mfnAdval !== undefined) {
+                          return Number(appliedRate.mfnAdval).toFixed(2);
+                        }
+                        return "0.00";
+                      })()}
+                      %
+                    </div>
+                    <div className="text-xs text-gray-400 mt-1">
+                      {(() => {
+                        if (appliedRate.suspension !== undefined)
+                          return "Suspended";
+                        if (appliedRate.prefAdval !== undefined)
+                          return "Preferential (FTA)";
+                        if (
+                          appliedRate.mfnAdval !== undefined &&
+                          appliedRate.specific !== undefined
+                        )
+                          return "📊 Compound (MFN+Specific)";
+                        if (appliedRate.mfnAdval !== undefined)
+                          return "🌐 MFN (Standard)";
+                        return "No Rate";
+                      })()}
+                    </div>
+                  </div>
+                );
+              })()}
               <div className="bg-white p-4 rounded shadow">
                 <div className="text-sm text-gray-500">
                   Original Trade Value
