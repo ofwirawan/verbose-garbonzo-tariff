@@ -9,9 +9,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.data.domain.Pageable;
 
-import java.util.List;
-
-
 @RestController
 @RequestMapping("/api/admin/countries")
 public class AdminCountryController {
@@ -24,7 +21,13 @@ public class AdminCountryController {
 
     // Create a new country
     @PostMapping
-    public ResponseEntity<Country> createCountry(@Valid @RequestBody Country country) {
+    public ResponseEntity<?> createCountry(@Valid @RequestBody Country country) {
+        boolean exists = countryRepository.findAll().stream()
+                .anyMatch(c -> c.getNumericCode().equals(country.getNumericCode()));
+        if (exists) { // If a country with the same numeric code exists
+            String message = "A country with numeric code '" + country.getNumericCode() + "' already exists.";
+            return ResponseEntity.status(409).body(message);
+        }
         Country created = countryRepository.save(country);
         return ResponseEntity.status(201).body(created);
     }
@@ -45,10 +48,18 @@ public class AdminCountryController {
 
     // Update country by countryCode
     @PutMapping("/{countryCode}")
-    public ResponseEntity<Country> updateCountry(@PathVariable String countryCode,
+    public ResponseEntity<?> updateCountry(@PathVariable String countryCode,
             @Valid @RequestBody Country updatedCountry) {
         return countryRepository.findById(countryCode)
                 .map(existingCountry -> {
+                    boolean exists = countryRepository.findAll().stream()
+                            .anyMatch(c -> c.getNumericCode().equals(updatedCountry.getNumericCode())
+                                    && !c.getCountryCode().equals(countryCode));
+                    if (exists) {
+                        String message = "A country with numeric code '" + updatedCountry.getNumericCode()
+                                + "' already exists.";
+                        return ResponseEntity.status(409).body(message);
+                    }
                     existingCountry.setNumericCode(updatedCountry.getNumericCode());
                     existingCountry.setName(updatedCountry.getName());
                     Country saved = countryRepository.save(existingCountry);

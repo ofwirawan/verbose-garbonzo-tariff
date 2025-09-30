@@ -1,11 +1,11 @@
 package com.verbosegarbonzo.tariff.dto;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
-
 import java.util.UUID;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonProperty.Access;
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.databind.JsonNode;
 
 import lombok.*;
 
@@ -13,9 +13,9 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 public class TransactionDTO {
-    @JsonProperty(access = Access.READ_ONLY)
     private Integer tid;
     private UUID user;
+    @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate tDate;
     private String importer;
     private String exporter;
@@ -23,5 +23,5 @@ public class TransactionDTO {
     private BigDecimal tradeOriginal;
     private BigDecimal netWeight;
     private BigDecimal tradeFinal;
-    private String appliedRate;
+    private JsonNode appliedRate;
 }

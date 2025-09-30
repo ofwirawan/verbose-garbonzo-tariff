@@ -76,7 +76,7 @@ public class AdminSuspensionController {
 
     // Get Suspension by ID
     @GetMapping("/{id}")
-    public ResponseEntity<SuspensionDTO> getSuspensionById(@PathVariable Long id) {
+    public ResponseEntity<SuspensionDTO> getSuspensionById(@PathVariable Integer id) {
         return suspensionRepository.findById(id)
                 .map(this::toDTO)
                 .map(ResponseEntity::ok)
@@ -85,7 +85,7 @@ public class AdminSuspensionController {
 
     // Update Suspension by ID
     @PutMapping("/{id}")
-    public ResponseEntity<SuspensionDTO> updateSuspension(@PathVariable Long id,
+    public ResponseEntity<SuspensionDTO> updateSuspension(@PathVariable Integer id,
             @Valid @RequestBody SuspensionDTO dto) {
         Optional<Suspension> optionalSuspension = suspensionRepository.findById(id);
         if (optionalSuspension.isPresent()) {
@@ -107,11 +107,28 @@ public class AdminSuspensionController {
 
     // Delete Suspension by ID
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteSuspensionById(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteSuspensionById(@PathVariable Integer id) {
         if (suspensionRepository.existsById(id)) {
             suspensionRepository.deleteById(id);
             return ResponseEntity.noContent().build();
         }
         return ResponseEntity.notFound().build();
+    }
+
+    // Search Suspension by importer, product, and validFrom date
+    @GetMapping("/search")
+    public ResponseEntity<SuspensionDTO> searchSuspension(
+            @RequestParam String importerCode,
+            @RequestParam String productCode,
+            @RequestParam java.time.LocalDate validFrom) {
+        Country importer = countryRepository.findById(importerCode).orElse(null);
+        Product product = productRepository.findById(productCode).orElse(null);
+        if (importer == null || product == null) {
+            return ResponseEntity.badRequest().build();
+        }
+        return suspensionRepository.findByImporterAndProductAndValidFrom(importer, product, validFrom)
+                .map(this::toDTO)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 }

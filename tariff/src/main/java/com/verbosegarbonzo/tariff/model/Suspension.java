@@ -1,13 +1,17 @@
 package com.verbosegarbonzo.tariff.model;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
 @Entity
-@Table(name = "suspension")
+@Table(name = "suspension", uniqueConstraints = @UniqueConstraint(columnNames = { "importer_code", "product_code",
+        "valid_from" }))
 @Getter
 @Setter
 @NoArgsConstructor
@@ -21,13 +25,16 @@ public class Suspension {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "importer_code", referencedColumnName = "country_code", nullable = false)
+    @NotNull
     private Country importer;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "product_code", referencedColumnName = "hs6code", nullable = false)
+    @NotNull
     private Product product;
 
     @Column(name = "valid_from", nullable = false)
+    @NotNull
     private LocalDate validFrom;
 
     @Column(name = "valid_to")
@@ -37,8 +44,10 @@ public class Suspension {
     private boolean suspensionFlag;
 
     @Column(name = "suspension_note", nullable = false)
+    @NotBlank(message = "Suspension note is required")
     private String suspensionNote;
 
     @Column(name = "suspension_rate")
+    @DecimalMin(value = "0.0", inclusive = true, message = "Suspension rate must be zero or positive")
     private BigDecimal suspensionRate;
 }

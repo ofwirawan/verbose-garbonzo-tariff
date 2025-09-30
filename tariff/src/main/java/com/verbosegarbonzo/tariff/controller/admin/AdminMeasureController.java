@@ -13,6 +13,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.Optional;
 
 @RestController
@@ -74,7 +75,7 @@ public class AdminMeasureController {
 
     // Get a Measure by ID
     @GetMapping("/{id}")
-    public ResponseEntity<MeasureDTO> getMeasureById(@PathVariable Long id) {
+    public ResponseEntity<MeasureDTO> getMeasureById(@PathVariable Integer id) {
         return measureRepository.findById(id)
                 .map(this::toDTO)
                 .map(ResponseEntity::ok)
@@ -83,7 +84,7 @@ public class AdminMeasureController {
 
     // Update Measure by ID
     @PutMapping("/{id}")
-    public ResponseEntity<MeasureDTO> updateMeasure(@PathVariable Long id, @Valid @RequestBody MeasureDTO dto) {
+    public ResponseEntity<MeasureDTO> updateMeasure(@PathVariable Integer id, @Valid @RequestBody MeasureDTO dto) {
         Optional<Measure> optionalMeasure = measureRepository.findById(id);
         if (optionalMeasure.isPresent()) {
             Measure measure = optionalMeasure.get();
@@ -103,11 +104,27 @@ public class AdminMeasureController {
 
     // Delete Measure by ID
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteMeasureById(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteMeasureById(@PathVariable Integer id) {
         if (measureRepository.existsById(id)) {
             measureRepository.deleteById(id);
             return ResponseEntity.noContent().build();
         }
         return ResponseEntity.notFound().build();
+    }
+
+    // Get Measure by importerCode, productCode, and validFrom
+    @GetMapping("/search")
+    public ResponseEntity<Measure> searchMeasure(
+            @RequestParam String importerCode,
+            @RequestParam String productCode,
+            @RequestParam LocalDate validFrom) {
+        Country importer = countryRepository.findById(importerCode).orElse(null);
+        Product product = productRepository.findById(productCode).orElse(null);
+        if (importer == null || product == null) {
+            return ResponseEntity.badRequest().build();
+        }
+        return measureRepository.findByImporterAndProductAndValidFrom(importer, product, validFrom)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 }

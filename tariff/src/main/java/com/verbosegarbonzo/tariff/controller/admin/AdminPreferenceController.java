@@ -75,7 +75,7 @@ public class AdminPreferenceController {
 
     // Get Preference by ID
     @GetMapping("/{id}")
-    public ResponseEntity<PreferenceDTO> getPreferenceById(@PathVariable Long id) {
+    public ResponseEntity<PreferenceDTO> getPreferenceById(@PathVariable Integer id) {
         return preferenceRepository.findById(id)
                 .map(this::toDTO)
                 .map(ResponseEntity::ok)
@@ -84,7 +84,7 @@ public class AdminPreferenceController {
 
     // Update Preference by ID
     @PutMapping("/{id}")
-    public ResponseEntity<PreferenceDTO> updatePreference(@PathVariable Long id,
+    public ResponseEntity<PreferenceDTO> updatePreference(@PathVariable Integer id,
             @Valid @RequestBody PreferenceDTO dto) {
         Optional<Preference> optionalPreference = preferenceRepository.findById(id);
         if (optionalPreference.isPresent()) {
@@ -106,11 +106,31 @@ public class AdminPreferenceController {
 
     // Delete Preference by ID
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deletePreferenceById(@PathVariable Long id) {
+    public ResponseEntity<Void> deletePreferenceById(@PathVariable Integer id) {
         if (preferenceRepository.existsById(id)) {
             preferenceRepository.deleteById(id);
             return ResponseEntity.noContent().build();
         }
         return ResponseEntity.notFound().build();
+    }
+
+    // Search Preference by importer, exporter, product, and validFrom date
+    @GetMapping("/search")
+    public ResponseEntity<PreferenceDTO> searchPreference(
+            @RequestParam String importerCode,
+            @RequestParam String exporterCode,
+            @RequestParam String productCode,
+            @RequestParam java.time.LocalDate validFrom) {
+        Country importer = countryRepository.findById(importerCode).orElse(null);
+        Country exporter = countryRepository.findById(exporterCode).orElse(null);
+        Product product = productRepository.findById(productCode).orElse(null);
+        if (importer == null || exporter == null || product == null) {
+            return ResponseEntity.badRequest().build();
+        }
+        return preferenceRepository
+                .findByImporterAndExporterAndProductAndValidFrom(importer, exporter, product, validFrom)
+                .map(this::toDTO)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 }
