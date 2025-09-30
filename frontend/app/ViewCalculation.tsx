@@ -1,5 +1,8 @@
 "use client";
 
+import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog"
+import { Button } from "@/components/ui/button"
+
 import { useEffect, useRef, useState } from "react";
 import {
 	Card,
@@ -379,6 +382,9 @@ export function ViewCalculation() {
 	const router = useRouter();
 	// Added for the save history button
 	const [canSaveHistory, setCanSaveHistory] = useState(false);
+	// Added for dialog after saving
+	const [isDialogOpen, setIsDialogOpen] = useState(false);
+
 
 	const [productCode, setProductCode] = useState("01-05_Animals");
 	const [productCost, setProductCost] = useState("");
@@ -750,16 +756,39 @@ export function ViewCalculation() {
 											{totalPayableCount}
 										</span>
 									</div>
-									<div>
-										{/* Save History Button */}
-										<button
-											onClick={handleSaveHistory}
-											disabled={!result || isLoading}
-											className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 disabled:opacity-50 font-semibold text-base"
-										>
-											Save History
-										</button>
-									</div>
+
+									<AlertDialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+										<AlertDialogTrigger asChild>
+											<Button
+												disabled={!canSaveHistory}
+												variant="default"
+											>
+												Save History
+											</Button>
+										</AlertDialogTrigger>
+										<AlertDialogContent>
+											<AlertDialogHeader>
+												<AlertDialogTitle>Confirm Save</AlertDialogTitle>
+												<AlertDialogDescription>
+													You are about to save this calculation to history.
+													Are you sure you want to continue?
+												</AlertDialogDescription>
+											</AlertDialogHeader>
+											<AlertDialogFooter className="flex gap-2">
+												<AlertDialogCancel>Cancel</AlertDialogCancel>
+												<Button
+													variant="default"
+													onClick={async () => {
+														await handleSaveHistory();
+														setIsDialogOpen(false); // manually close the dialog
+													}}
+												>
+													Yes, Save it
+												</Button>
+											</AlertDialogFooter>
+										</AlertDialogContent>
+									</AlertDialog>
+
 								</div>
 							</div>
 						</CardContent>

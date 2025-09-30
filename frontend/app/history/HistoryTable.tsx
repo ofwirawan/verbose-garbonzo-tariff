@@ -45,6 +45,8 @@ import {
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
+import { toast } from "sonner"
+
 export interface HistoryItem {
     id: number
     date: string | null
@@ -108,7 +110,7 @@ export const columns: ColumnDef<HistoryItem>[] = [
         header: "Weight (kg)",
         cell: ({ row }) => {
             const valueRaw = row.original?.weight;
-            const value = valueRaw === '' || valueRaw === null || valueRaw === undefined ? NaN : Number(valueRaw);
+            const value = valueRaw === null || valueRaw === undefined ? NaN : Number(valueRaw);
             return <div>{isNaN(value) ? "N/A" : value.toFixed(2)} kg</div>;
         },
     },
@@ -167,6 +169,7 @@ export function HistoryTable({ data, onDelete }: HistoryTableProps) {
             onDelete(selectedIds)
             table.resetRowSelection()
         }
+        toast.success("History Deleted Successfully!");
     }
 
     return (
@@ -212,6 +215,7 @@ export function HistoryTable({ data, onDelete }: HistoryTableProps) {
                                     const selected = table.getFilteredSelectedRowModel().rows
 
                                     try {
+                                        // Call backend DELETE for each row
                                         await Promise.all(
                                             selected.map((row) =>
                                                 fetch(`http://localhost:8080/api/history/${row.original.id}`, {
@@ -220,15 +224,25 @@ export function HistoryTable({ data, onDelete }: HistoryTableProps) {
                                             )
                                         )
 
+                                        // Update frontend state
                                         setHistory((prev) =>
                                             prev.filter(
                                                 (item) => !selected.some((row) => row.original.id === item.id)
                                             )
                                         )
 
+                                        // ✅ Reset checkbox selection
+                                        table.resetRowSelection()
+
+                                        // ✅ Show toast notification
+                                        toast.success(
+                                            `${selected.length} item${selected.length > 1 ? "s" : ""} deleted successfully!`
+                                        )
+
                                         console.log("Deleted items:", selected.map((row) => row.original.id))
                                     } catch (err) {
                                         console.error("Failed to delete selected items:", err)
+                                        toast.error("Failed to delete items. Please try again.")
                                     }
                                 }}
                             >
@@ -237,6 +251,7 @@ export function HistoryTable({ data, onDelete }: HistoryTableProps) {
                         </AlertDialogFooter>
                     </AlertDialogContent>
                 </AlertDialog>
+
 
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
