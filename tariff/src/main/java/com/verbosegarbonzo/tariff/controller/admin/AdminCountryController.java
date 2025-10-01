@@ -10,7 +10,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.MethodArgumentNotValidException;
-import com.verbosegarbonzo.tariff.exception.InvalidRequestException;
+import org.springframework.dao.DataIntegrityViolationException;
 
 @RestController
 @RequestMapping("/api/admin/countries")
@@ -80,16 +80,30 @@ public class AdminCountryController {
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<String> handleValidationException(MethodArgumentNotValidException ex) {
+    public ResponseEntity<ErrorPayload> handleValidationException(MethodArgumentNotValidException ex) {
         String errorMsg = ex.getBindingResult().getFieldErrors().stream()
                 .map(e -> e.getField() + ": " + e.getDefaultMessage())
                 .findFirst()
                 .orElse("Invalid request");
-        return ResponseEntity.badRequest().body(errorMsg);
+        return ResponseEntity.badRequest().body(new ErrorPayload("BAD_REQUEST", errorMsg));
     }
 
-    @ExceptionHandler(InvalidRequestException.class)
-    public ResponseEntity<String> handleInvalidRequest(InvalidRequestException ex) {
-        return ResponseEntity.badRequest().body(ex.getMessage());
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<ErrorPayload> handleResponseStatusException(ResponseStatusException ex) {
+        String errorType = ex.getStatusCode() == HttpStatus.CONFLICT ? "CONFLICT_ERROR"
+                : ex.getStatusCode() == HttpStatus.NOT_FOUND ? "NOT_FOUND_ERROR"
+                        : "REQUEST_ERROR";
+        return ResponseEntity.status(ex.getStatusCode())
+                .body(new ErrorPayload(errorType, ex.getReason()));
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ErrorPayload> handleDataIntegrityViolation(DataIntegrityViolationException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(new ErrorPayload("DATA_INTEGRITY_ERROR",
+                        "Country cannot be deleted because it is referenced by other records."));
+    }
+
+    record ErrorPayload(String error, String message) {
     }
 }

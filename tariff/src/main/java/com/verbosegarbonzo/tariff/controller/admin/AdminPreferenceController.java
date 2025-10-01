@@ -7,7 +7,6 @@ import com.verbosegarbonzo.tariff.model.Product;
 import com.verbosegarbonzo.tariff.repository.PreferenceRepository;
 import com.verbosegarbonzo.tariff.repository.CountryRepository;
 import com.verbosegarbonzo.tariff.repository.ProductRepository;
-import com.verbosegarbonzo.tariff.exception.InvalidRequestException;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -17,6 +16,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.http.HttpStatus;
 
+import java.time.LocalDate;
 import java.util.Optional;
 
 @RestController
@@ -47,17 +47,30 @@ public class AdminPreferenceController {
                 preference.getPrefAdValRate());
     }
 
+    // Helper to validate required fields
+    private void validateRequiredFields(String importerCode, String exporterCode, String productCode,
+            LocalDate validFrom) {
+        if (importerCode == null || importerCode.isBlank() ||
+                exporterCode == null || exporterCode.isBlank() ||
+                productCode == null || productCode.isBlank() ||
+                validFrom == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Importer code, exporter code, product code, and validFrom must not be null or blank.");
+        }
+    }
+
     // Helper to map DTO to entity
     private Preference toEntity(PreferenceDTO dto) {
-        if (dto.getImporterCode() == null || dto.getExporterCode() == null || dto.getProductCode() == null) {
-            throw new InvalidRequestException("Importer code, exporter code, and product code must not be null.");
-        }
+        validateRequiredFields(dto.getImporterCode(), dto.getExporterCode(), dto.getProductCode(), dto.getValidFrom());
         Country importer = countryRepository.findById(dto.getImporterCode())
-                .orElseThrow(() -> new InvalidRequestException("Importer country not found: " + dto.getImporterCode()));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Importer country not found: " + dto.getImporterCode()));
         Country exporter = countryRepository.findById(dto.getExporterCode())
-                .orElseThrow(() -> new InvalidRequestException("Exporter country not found: " + dto.getExporterCode()));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Exporter country not found: " + dto.getExporterCode()));
         Product product = productRepository.findById(dto.getProductCode())
-                .orElseThrow(() -> new InvalidRequestException("Product not found: " + dto.getProductCode()));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Product not found: " + dto.getProductCode()));
         Preference preference = new Preference();
         preference.setImporter(importer);
         preference.setExporter(exporter);
@@ -70,15 +83,16 @@ public class AdminPreferenceController {
 
     // Create new Preference
     @PostMapping
-    public ResponseEntity<PreferenceDTO> createPreference(@Valid @RequestBody PreferenceDTO dto) {
+    public ResponseEntity<?> createPreference(@Valid @RequestBody PreferenceDTO dto) {
+        validateRequiredFields(dto.getImporterCode(), dto.getExporterCode(), dto.getProductCode(), dto.getValidFrom());
         Country importer = countryRepository.findById(dto.getImporterCode())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "Importer country not found: " + dto.getImporterCode()));
         Country exporter = countryRepository.findById(dto.getExporterCode())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "Exporter country not found: " + dto.getExporterCode()));
         Product product = productRepository.findById(dto.getProductCode())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "Product not found: " + dto.getProductCode()));
         boolean exists = preferenceRepository
                 .findByImporterAndExporterAndProductAndValidFrom(importer, exporter, product, dto.getValidFrom())
@@ -101,27 +115,30 @@ public class AdminPreferenceController {
 
     // Get Preference by ID
     @GetMapping("/{id}")
-    public ResponseEntity<PreferenceDTO> getPreferenceById(@PathVariable Integer id) {
+    public ResponseEntity<?> getPreferenceById(@PathVariable Integer id) {
         return preferenceRepository.findById(id)
                 .map(this::toDTO)
                 .map(ResponseEntity::ok)
-                .orElseThrow(() -> new InvalidRequestException("Preference not found: " + id));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Preference not found: " + id));
     }
 
     // Update Preference by ID
     @PutMapping("/{id}")
-    public ResponseEntity<PreferenceDTO> updatePreference(@PathVariable Integer id,
+    public ResponseEntity<?> updatePreference(@PathVariable Integer id,
             @Valid @RequestBody PreferenceDTO dto) {
+        validateRequiredFields(dto.getImporterCode(), dto.getExporterCode(), dto.getProductCode(), dto.getValidFrom());
         Preference preference = preferenceRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Preference not found: " + id));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Preference not found: " + id));
         Country importer = countryRepository.findById(dto.getImporterCode())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "Importer country not found: " + dto.getImporterCode()));
         Country exporter = countryRepository.findById(dto.getExporterCode())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "Exporter country not found: " + dto.getExporterCode()));
         Product product = productRepository.findById(dto.getProductCode())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "Product not found: " + dto.getProductCode()));
 
         boolean exists = preferenceRepository
@@ -145,9 +162,10 @@ public class AdminPreferenceController {
 
     // Delete Preference by ID
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deletePreferenceById(@PathVariable Integer id) {
+    public ResponseEntity<?> deletePreferenceById(@PathVariable Integer id) {
         if (!preferenceRepository.existsById(id)) {
-            throw new InvalidRequestException("Preference not found: " + id);
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+                    "Preference not found: " + id);
         }
         preferenceRepository.deleteById(id);
         return ResponseEntity.noContent().build();
@@ -155,35 +173,48 @@ public class AdminPreferenceController {
 
     // Search Preference by importer, exporter, product, and validFrom date
     @GetMapping("/search")
-    public ResponseEntity<PreferenceDTO> searchPreference(
+    public ResponseEntity<?> searchPreference(
             @RequestParam String importerCode,
             @RequestParam String exporterCode,
             @RequestParam String productCode,
-            @RequestParam java.time.LocalDate validFrom) {
+            @RequestParam LocalDate validFrom) {
+        validateRequiredFields(importerCode, exporterCode, productCode, validFrom);
         Country importer = countryRepository.findById(importerCode)
-                .orElseThrow(() -> new InvalidRequestException("Importer country not found: " + importerCode));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Importer country not found: " + importerCode));
         Country exporter = countryRepository.findById(exporterCode)
-                .orElseThrow(() -> new InvalidRequestException("Exporter country not found: " + exporterCode));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Exporter country not found: " + exporterCode));
         Product product = productRepository.findById(productCode)
-                .orElseThrow(() -> new InvalidRequestException("Product not found: " + productCode));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Product not found: " + productCode));
         return preferenceRepository
                 .findByImporterAndExporterAndProductAndValidFrom(importer, exporter, product, validFrom)
                 .map(this::toDTO)
                 .map(ResponseEntity::ok)
-                .orElseThrow(() -> new InvalidRequestException("Preference not found for given parameters"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Preference not found for given parameters"));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<String> handleValidationException(MethodArgumentNotValidException ex) {
+    public ResponseEntity<ErrorPayload> handleValidationException(MethodArgumentNotValidException ex) {
         String errorMsg = ex.getBindingResult().getFieldErrors().stream()
                 .map(e -> e.getField() + ": " + e.getDefaultMessage())
                 .findFirst()
                 .orElse("Invalid request");
-        return ResponseEntity.badRequest().body(errorMsg);
+        return ResponseEntity.badRequest().body(new ErrorPayload("BAD_REQUEST", errorMsg));
     }
 
-    @ExceptionHandler(InvalidRequestException.class)
-    public ResponseEntity<String> handleInvalidRequest(InvalidRequestException ex) {
-        return ResponseEntity.badRequest().body(ex.getMessage());
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<ErrorPayload> handleResponseStatusException(ResponseStatusException ex) {
+        String errorType = ex.getStatusCode() == HttpStatus.CONFLICT ? "CONFLICT_ERROR"
+                : ex.getStatusCode() == HttpStatus.NOT_FOUND ? "NOT_FOUND_ERROR"
+                        : ex.getStatusCode() == HttpStatus.BAD_REQUEST ? "BAD_REQUEST"
+                                : "REQUEST_ERROR";
+        return ResponseEntity.status(ex.getStatusCode())
+                .body(new ErrorPayload(errorType, ex.getReason()));
+    }
+
+    record ErrorPayload(String error, String message) {
     }
 }

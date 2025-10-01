@@ -7,8 +7,6 @@ import com.verbosegarbonzo.tariff.model.Product;
 import com.verbosegarbonzo.tariff.repository.MeasureRepository;
 import com.verbosegarbonzo.tariff.repository.CountryRepository;
 import com.verbosegarbonzo.tariff.repository.ProductRepository;
-import com.verbosegarbonzo.tariff.exception.InvalidRequestException;
-import com.verbosegarbonzo.tariff.exception.AlreadyExistsException;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -37,6 +35,15 @@ public class AdminMeasureController {
         this.productRepository = productRepository;
     }
 
+    private void validateRequiredFields(String importerCode, String productCode, LocalDate validFrom) {
+        if (importerCode == null || importerCode.isBlank() ||
+                productCode == null || productCode.isBlank() ||
+                validFrom == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Importer code, product code, and validFrom must not be null or blank.");
+        }
+    }
+
     // Helper to map entity to DTO
     private MeasureDTO toDTO(Measure measure) {
         return new MeasureDTO(
@@ -51,13 +58,13 @@ public class AdminMeasureController {
 
     // Helper to map DTO to entity
     private Measure toEntity(MeasureDTO dto) {
-        if (dto.getImporterCode() == null || dto.getProductCode() == null) {
-            throw new InvalidRequestException("Importer code and product code must not be null.");
-        }
+        validateRequiredFields(dto.getImporterCode(), dto.getProductCode(), dto.getValidFrom());
         Country importer = countryRepository.findById(dto.getImporterCode())
-                .orElseThrow(() -> new InvalidRequestException("Importer country not found: " + dto.getImporterCode()));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Importer country not found: " + dto.getImporterCode()));
         Product product = productRepository.findById(dto.getProductCode())
-                .orElseThrow(() -> new InvalidRequestException("Product not found: " + dto.getProductCode()));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Product not found: " + dto.getProductCode()));
         Measure measure = new Measure();
         measure.setImporter(importer);
         measure.setProduct(product);
@@ -71,13 +78,15 @@ public class AdminMeasureController {
     // Create new Measure
     @PostMapping
     public ResponseEntity<?> createMeasure(@Valid @RequestBody MeasureDTO dto) {
+        validateRequiredFields(dto.getImporterCode(), dto.getProductCode(), dto.getValidFrom());
         Country importer = countryRepository.findById(dto.getImporterCode())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "Importer country not found: " + dto.getImporterCode()));
         Product product = productRepository.findById(dto.getProductCode())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "Product not found: " + dto.getProductCode()));
-        boolean exists = measureRepository.findByImporterAndProductAndValidFrom(importer, product, dto.getValidFrom())
+        boolean exists = measureRepository
+                .findByImporterAndProductAndValidFrom(importer, product, dto.getValidFrom())
                 .isPresent();
         if (exists) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
@@ -101,20 +110,24 @@ public class AdminMeasureController {
         return measureRepository.findById(id)
                 .map(this::toDTO)
                 .map(ResponseEntity::ok)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Measure not found: " + id));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Measure not found: " + id));
     }
 
     // Update Measure by ID
     @PutMapping("/{id}")
-    public ResponseEntity<MeasureDTO> updateMeasure(@PathVariable Integer id, @Valid @RequestBody MeasureDTO dto) {
+    public ResponseEntity<?> updateMeasure(@PathVariable Integer id, @Valid @RequestBody MeasureDTO dto) {
+        validateRequiredFields(dto.getImporterCode(), dto.getProductCode(), dto.getValidFrom());
         Optional<Measure> optionalMeasure = measureRepository.findById(id);
         if (optionalMeasure.isPresent()) {
             Measure measure = optionalMeasure.get();
             Country importer = countryRepository.findById(dto.getImporterCode())
                     .orElseThrow(
-                            () -> new InvalidRequestException("Importer country not found: " + dto.getImporterCode()));
+                            () -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                                    "Importer country not found: " + dto.getImporterCode()));
             Product product = productRepository.findById(dto.getProductCode())
-                    .orElseThrow(() -> new InvalidRequestException("Product not found: " + dto.getProductCode()));
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                            "Product not found: " + dto.getProductCode()));
 
             // Duplicate check for update
             boolean exists = measureRepository
@@ -135,46 +148,57 @@ public class AdminMeasureController {
             Measure saved = measureRepository.save(measure);
             return ResponseEntity.ok(toDTO(saved));
         }
-        throw new InvalidRequestException("Measure not found: " + id);
+        throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Measure not found: " + id);
     }
 
     // Delete Measure by ID
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteMeasureById(@PathVariable Integer id) {
+    public ResponseEntity<?> deleteMeasureById(@PathVariable Integer id) {
         if (measureRepository.existsById(id)) {
             measureRepository.deleteById(id);
             return ResponseEntity.noContent().build();
         }
-        throw new InvalidRequestException("Measure not found: " + id);
+        throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Measure not found: " + id);
     }
 
     // Get Measure by importerCode, productCode, and validFrom
     @GetMapping("/search")
-    public ResponseEntity<Measure> searchMeasure(
+    public ResponseEntity<?> searchMeasure(
             @RequestParam String importerCode,
             @RequestParam String productCode,
             @RequestParam LocalDate validFrom) {
+        validateRequiredFields(importerCode, productCode, validFrom);
         Country importer = countryRepository.findById(importerCode)
-                .orElseThrow(() -> new InvalidRequestException("Importer country not found: " + importerCode));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Importer country not found: " + importerCode));
         Product product = productRepository.findById(productCode)
-                .orElseThrow(() -> new InvalidRequestException("Product not found: " + productCode));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Product not found: " + productCode));
         return measureRepository.findByImporterAndProductAndValidFrom(importer, product, validFrom)
                 .map(ResponseEntity::ok)
-                .orElseThrow(() -> new InvalidRequestException("Measure not found for given parameters"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Measure not found for given parameters"));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<String> handleValidationException(MethodArgumentNotValidException ex) {
+    public ResponseEntity<ErrorPayload> handleValidationException(MethodArgumentNotValidException ex) {
         String errorMsg = ex.getBindingResult().getFieldErrors().stream()
                 .map(e -> e.getField() + ": " + e.getDefaultMessage())
                 .findFirst()
                 .orElse("Invalid request");
-        return ResponseEntity.badRequest().body(errorMsg);
+        return ResponseEntity.badRequest().body(new ErrorPayload("BAD_REQUEST", errorMsg));
     }
 
-    @ExceptionHandler(InvalidRequestException.class)
-    public ResponseEntity<String> handleInvalidRequest(InvalidRequestException ex) {
-        return ResponseEntity.badRequest().body(ex.getMessage());
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<ErrorPayload> handleResponseStatusException(ResponseStatusException ex) {
+        String errorType = ex.getStatusCode() == HttpStatus.CONFLICT ? "CONFLICT_ERROR"
+                : ex.getStatusCode() == HttpStatus.NOT_FOUND ? "NOT_FOUND_ERROR"
+                        : ex.getStatusCode() == HttpStatus.BAD_REQUEST ? "BAD_REQUEST"
+                                : "REQUEST_ERROR";
+        return ResponseEntity.status(ex.getStatusCode())
+                .body(new ErrorPayload(errorType, ex.getReason()));
     }
 
+    record ErrorPayload(String error, String message) {
+    }
 }

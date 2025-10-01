@@ -9,18 +9,15 @@ import com.verbosegarbonzo.tariff.repository.TransactionRepository;
 import com.verbosegarbonzo.tariff.repository.UserRepository;
 import com.verbosegarbonzo.tariff.repository.CountryRepository;
 import com.verbosegarbonzo.tariff.repository.ProductRepository;
-import com.verbosegarbonzo.tariff.exception.InvalidRequestException;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.bind.MethodArgumentNotValidException;
-import org.springframework.orm.jpa.JpaSystemException;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.http.HttpStatus;
-
-import java.util.NoSuchElementException;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/admin/transactions")
@@ -42,7 +39,6 @@ public class AdminTransactionController {
         this.productRepository = productRepository;
     }
 
-    // Helper: entity to DTO
     private TransactionDTO toDTO(Transaction transaction) {
         return new TransactionDTO(
                 transaction.getTid(),
@@ -57,21 +53,31 @@ public class AdminTransactionController {
                 transaction.getAppliedRate());
     }
 
-    // Helper: DTO to entity
-    private Transaction toEntity(TransactionDTO dto) {
-        if (dto.getUser() == null || dto.getImporter() == null || dto.getProduct() == null || dto.getTDate() == null) {
-            throw new InvalidRequestException("User, importer, product, and tDate must not be null.");
+    // Helper to validate required fields
+    private void validateRequiredFields(UUID user, String importer, String product, java.time.LocalDate tDate) {
+        if (user == null || importer == null || importer.isBlank() ||
+                product == null || product.isBlank() || tDate == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "User, importer, product, and tDate must not be null or blank.");
         }
+    }
+
+    private Transaction toEntity(TransactionDTO dto) {
+        validateRequiredFields(dto.getUser(), dto.getImporter(), dto.getProduct(), dto.getTDate());
         User user = userRepository.findById(dto.getUser())
-                .orElseThrow(() -> new InvalidRequestException("User not found: " + dto.getUser()));
+                .orElseThrow(
+                        () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found: " + dto.getUser()));
         Country importer = countryRepository.findById(dto.getImporter())
-                .orElseThrow(() -> new InvalidRequestException("Importer not found: " + dto.getImporter()));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Importer not found: " + dto.getImporter()));
         Country exporter = dto.getExporter() != null
                 ? countryRepository.findById(dto.getExporter())
-                        .orElseThrow(() -> new InvalidRequestException("Exporter not found: " + dto.getExporter()))
+                        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                                "Exporter not found: " + dto.getExporter()))
                 : null;
         Product product = productRepository.findById(dto.getProduct())
-                .orElseThrow(() -> new InvalidRequestException("Product not found: " + dto.getProduct()));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Product not found: " + dto.getProduct()));
         Transaction transaction = new Transaction();
         transaction.setTid(dto.getTid());
         transaction.setUser(user);
@@ -88,6 +94,7 @@ public class AdminTransactionController {
 
     @PostMapping
     public ResponseEntity<TransactionDTO> createTransaction(@Valid @RequestBody TransactionDTO dto) {
+        validateRequiredFields(dto.getUser(), dto.getImporter(), dto.getProduct(), dto.getTDate());
         if (dto.getTid() != null && transactionRepository.existsById(dto.getTid())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "A transaction with ID '" + dto.getTid() + "' already exists.");
@@ -107,14 +114,15 @@ public class AdminTransactionController {
         return transactionRepository.findById(id)
                 .map(this::toDTO)
                 .map(ResponseEntity::ok)
-                .orElseThrow(() -> new InvalidRequestException("Transaction not found: " + id));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Transaction not found: " + id));
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<TransactionDTO> updateTransaction(@PathVariable Integer id,
             @Valid @RequestBody TransactionDTO dto) {
+        validateRequiredFields(dto.getUser(), dto.getImporter(), dto.getProduct(), dto.getTDate());
         if (!transactionRepository.existsById(id)) {
-            throw new InvalidRequestException("Transaction not found: " + id);
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Transaction not found: " + id);
         }
         Transaction updated = toEntity(dto);
         updated.setTid(id);
@@ -125,34 +133,31 @@ public class AdminTransactionController {
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteTransactionById(@PathVariable Integer id) {
         if (!transactionRepository.existsById(id)) {
-            throw new InvalidRequestException("Transaction not found: " + id);
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Transaction not found: " + id);
         }
         transactionRepository.deleteById(id);
         return ResponseEntity.noContent().build();
     }
 
-    // Exception handlers for clear error messages
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<String> handleValidationException(MethodArgumentNotValidException ex) {
+    public ResponseEntity<ErrorPayload> handleValidationException(MethodArgumentNotValidException ex) {
         String errorMsg = ex.getBindingResult().getFieldErrors().stream()
                 .map(e -> e.getField() + ": " + e.getDefaultMessage())
                 .findFirst()
                 .orElse("Invalid request");
-        return ResponseEntity.badRequest().body(errorMsg);
+        return ResponseEntity.badRequest().body(new ErrorPayload("BAD_REQUEST", errorMsg));
     }
 
-    @ExceptionHandler(InvalidRequestException.class)
-    public ResponseEntity<String> handleInvalidRequest(InvalidRequestException ex) {
-        return ResponseEntity.badRequest().body(ex.getMessage());
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<ErrorPayload> handleResponseStatusException(ResponseStatusException ex) {
+        String errorType = ex.getStatusCode() == HttpStatus.CONFLICT ? "CONFLICT_ERROR"
+                : ex.getStatusCode() == HttpStatus.NOT_FOUND ? "NOT_FOUND_ERROR"
+                        : ex.getStatusCode() == HttpStatus.BAD_REQUEST ? "BAD_REQUEST"
+                                : "REQUEST_ERROR";
+        return ResponseEntity.status(ex.getStatusCode())
+                .body(new ErrorPayload(errorType, ex.getReason()));
     }
 
-    @ExceptionHandler(NoSuchElementException.class)
-    public ResponseEntity<String> handleNoSuchElement(NoSuchElementException ex) {
-        return ResponseEntity.badRequest().body(ex.getMessage());
-    }
-
-    @ExceptionHandler(JpaSystemException.class)
-    public ResponseEntity<String> handleJpaSystem(JpaSystemException ex) {
-        return ResponseEntity.badRequest().body("JPA error: " + ex.getMostSpecificCause().getMessage());
+    record ErrorPayload(String error, String message) {
     }
 }

@@ -2,8 +2,8 @@ package com.verbosegarbonzo.tariff.controller.admin;
 
 import com.verbosegarbonzo.tariff.model.Product;
 import com.verbosegarbonzo.tariff.repository.ProductRepository;
-import com.verbosegarbonzo.tariff.exception.InvalidRequestException;
 import jakarta.validation.Valid;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
@@ -26,7 +26,7 @@ public class AdminProductController {
     @PostMapping
     public ResponseEntity<Product> createProduct(@Valid @RequestBody Product product) {
         if (product.getHs6Code() == null || product.getHs6Code().isEmpty()) {
-            throw new InvalidRequestException("HS6 code is required.");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "HS6 code is required.");
         }
         boolean exists = productRepository.existsById(product.getHs6Code());
         if (exists) {
@@ -48,7 +48,7 @@ public class AdminProductController {
     public ResponseEntity<Product> getProductById(@PathVariable String hs6Code) {
         return productRepository.findById(hs6Code)
                 .map(ResponseEntity::ok)
-                .orElseThrow(() -> new InvalidRequestException("Product not found: " + hs6Code));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found: " + hs6Code));
     }
 
     // Update product by hs6Code
@@ -56,7 +56,7 @@ public class AdminProductController {
     public ResponseEntity<Product> updateProduct(@PathVariable String hs6Code,
             @Valid @RequestBody Product updatedProduct) {
         Product existingProduct = productRepository.findById(hs6Code)
-                .orElseThrow(() -> new InvalidRequestException("Product not found: " + hs6Code));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found: " + hs6Code));
         // Check for duplicate HS6 code if updating the code itself (optional, if
         // allowed)
         if (updatedProduct.getHs6Code() != null && !updatedProduct.getHs6Code().equals(hs6Code)) {
@@ -76,23 +76,38 @@ public class AdminProductController {
     @DeleteMapping("/{hs6Code}")
     public ResponseEntity<Void> deleteProductById(@PathVariable String hs6Code) {
         if (!productRepository.existsById(hs6Code)) {
-            throw new InvalidRequestException("Product not found: " + hs6Code);
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found: " + hs6Code);
         }
         productRepository.deleteById(hs6Code);
         return ResponseEntity.noContent().build();
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<String> handleValidationException(MethodArgumentNotValidException ex) {
+    public ResponseEntity<ErrorPayload> handleValidationException(MethodArgumentNotValidException ex) {
         String errorMsg = ex.getBindingResult().getFieldErrors().stream()
                 .map(e -> e.getField() + ": " + e.getDefaultMessage())
                 .findFirst()
                 .orElse("Invalid request");
-        return ResponseEntity.badRequest().body(errorMsg);
+        return ResponseEntity.badRequest().body(new ErrorPayload("BAD_REQUEST", errorMsg));
     }
 
-    @ExceptionHandler(InvalidRequestException.class)
-    public ResponseEntity<String> handleInvalidRequest(InvalidRequestException ex) {
-        return ResponseEntity.badRequest().body(ex.getMessage());
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<ErrorPayload> handleResponseStatusException(ResponseStatusException ex) {
+        String errorType = ex.getStatusCode() == HttpStatus.CONFLICT ? "CONFLICT_ERROR"
+                : ex.getStatusCode() == HttpStatus.NOT_FOUND ? "NOT_FOUND_ERROR"
+                        : ex.getStatusCode() == HttpStatus.BAD_REQUEST ? "BAD_REQUEST"
+                                : "REQUEST_ERROR";
+        return ResponseEntity.status(ex.getStatusCode())
+                .body(new ErrorPayload(errorType, ex.getReason()));
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ErrorPayload> handleDataIntegrityViolation(DataIntegrityViolationException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(new ErrorPayload("DATA_INTEGRITY_ERROR",
+                        "Product cannot be deleted because it is referenced by other records."));
+    }
+
+    record ErrorPayload(String error, String message) {
     }
 }

@@ -7,7 +7,6 @@ import com.verbosegarbonzo.tariff.model.Product;
 import com.verbosegarbonzo.tariff.repository.SuspensionRepository;
 import com.verbosegarbonzo.tariff.repository.CountryRepository;
 import com.verbosegarbonzo.tariff.repository.ProductRepository;
-import com.verbosegarbonzo.tariff.exception.InvalidRequestException;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -17,6 +16,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.http.HttpStatus;
 
+import java.time.LocalDate;
 import java.util.Optional;
 
 @RestController
@@ -48,15 +48,25 @@ public class AdminSuspensionController {
                 suspension.getSuspensionRate());
     }
 
+    // Helper to validate required fields
+    private void validateRequiredFields(String importerCode, String productCode, LocalDate validFrom) {
+        if (importerCode == null || importerCode.isBlank() ||
+                productCode == null || productCode.isBlank() ||
+                validFrom == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Importer code, product code, and validFrom must not be null or blank.");
+        }
+    }
+
     // Helper: DTO to entity
     private Suspension toEntity(SuspensionDTO dto) {
-        if (dto.getImporterCode() == null || dto.getProductCode() == null) {
-            throw new InvalidRequestException("Importer code and product code must not be null.");
-        }
+        validateRequiredFields(dto.getImporterCode(), dto.getProductCode(), dto.getValidFrom());
         Country importer = countryRepository.findById(dto.getImporterCode())
-                .orElseThrow(() -> new InvalidRequestException("Importer country not found: " + dto.getImporterCode()));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Importer country not found: " + dto.getImporterCode()));
         Product product = productRepository.findById(dto.getProductCode())
-                .orElseThrow(() -> new InvalidRequestException("Product not found: " + dto.getProductCode()));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Product not found: " + dto.getProductCode()));
         Suspension suspension = new Suspension();
         suspension.setImporter(importer);
         suspension.setProduct(product);
@@ -70,11 +80,14 @@ public class AdminSuspensionController {
 
     // Create new Suspension
     @PostMapping
-    public ResponseEntity<SuspensionDTO> createSuspension(@Valid @RequestBody SuspensionDTO dto) {
+    public ResponseEntity<?> createSuspension(@Valid @RequestBody SuspensionDTO dto) {
+        validateRequiredFields(dto.getImporterCode(), dto.getProductCode(), dto.getValidFrom());
         Country importer = countryRepository.findById(dto.getImporterCode())
-                .orElseThrow(() -> new InvalidRequestException("Importer country not found: " + dto.getImporterCode()));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Importer country not found: " + dto.getImporterCode()));
         Product product = productRepository.findById(dto.getProductCode())
-                .orElseThrow(() -> new InvalidRequestException("Product not found: " + dto.getProductCode()));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Product not found: " + dto.getProductCode()));
         boolean exists = suspensionRepository
                 .findByImporterAndProductAndValidFrom(importer, product, dto.getValidFrom())
                 .isPresent();
@@ -96,23 +109,28 @@ public class AdminSuspensionController {
 
     // Get Suspension by ID
     @GetMapping("/{id}")
-    public ResponseEntity<SuspensionDTO> getSuspensionById(@PathVariable Integer id) {
+    public ResponseEntity<?> getSuspensionById(@PathVariable Integer id) {
         return suspensionRepository.findById(id)
                 .map(this::toDTO)
                 .map(ResponseEntity::ok)
-                .orElseThrow(() -> new InvalidRequestException("Suspension not found: " + id));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Suspension not found: " + id));
     }
 
     // Update Suspension by ID
     @PutMapping("/{id}")
-    public ResponseEntity<SuspensionDTO> updateSuspension(@PathVariable Integer id,
+    public ResponseEntity<?> updateSuspension(@PathVariable Integer id,
             @Valid @RequestBody SuspensionDTO dto) {
+        validateRequiredFields(dto.getImporterCode(), dto.getProductCode(), dto.getValidFrom());
         Suspension suspension = suspensionRepository.findById(id)
-                .orElseThrow(() -> new InvalidRequestException("Suspension not found: " + id));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Suspension not found: " + id));
         Country importer = countryRepository.findById(dto.getImporterCode())
-                .orElseThrow(() -> new InvalidRequestException("Importer country not found: " + dto.getImporterCode()));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Importer country not found: " + dto.getImporterCode()));
         Product product = productRepository.findById(dto.getProductCode())
-                .orElseThrow(() -> new InvalidRequestException("Product not found: " + dto.getProductCode()));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Product not found: " + dto.getProductCode()));
 
         boolean exists = suspensionRepository
                 .findByImporterAndProductAndValidFrom(importer, product, dto.getValidFrom())
@@ -136,9 +154,10 @@ public class AdminSuspensionController {
 
     // Delete Suspension by ID
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteSuspensionById(@PathVariable Integer id) {
+    public ResponseEntity<?> deleteSuspensionById(@PathVariable Integer id) {
         if (!suspensionRepository.existsById(id)) {
-            throw new InvalidRequestException("Suspension not found: " + id);
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+                    "Suspension not found: " + id);
         }
         suspensionRepository.deleteById(id);
         return ResponseEntity.noContent().build();
@@ -146,31 +165,43 @@ public class AdminSuspensionController {
 
     // Search Suspension by importer, product, and validFrom date
     @GetMapping("/search")
-    public ResponseEntity<SuspensionDTO> searchSuspension(
+    public ResponseEntity<?> searchSuspension(
             @RequestParam String importerCode,
             @RequestParam String productCode,
-            @RequestParam java.time.LocalDate validFrom) {
+            @RequestParam LocalDate validFrom) {
+        validateRequiredFields(importerCode, productCode, validFrom);
         Country importer = countryRepository.findById(importerCode)
-                .orElseThrow(() -> new InvalidRequestException("Importer country not found: " + importerCode));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Importer country not found: " + importerCode));
         Product product = productRepository.findById(productCode)
-                .orElseThrow(() -> new InvalidRequestException("Product not found: " + productCode));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Product not found: " + productCode));
         return suspensionRepository.findByImporterAndProductAndValidFrom(importer, product, validFrom)
                 .map(this::toDTO)
                 .map(ResponseEntity::ok)
-                .orElseThrow(() -> new InvalidRequestException("Suspension not found for given parameters"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Suspension not found for given parameters"));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<String> handleValidationException(MethodArgumentNotValidException ex) {
+    public ResponseEntity<ErrorPayload> handleValidationException(MethodArgumentNotValidException ex) {
         String errorMsg = ex.getBindingResult().getFieldErrors().stream()
                 .map(e -> e.getField() + ": " + e.getDefaultMessage())
                 .findFirst()
                 .orElse("Invalid request");
-        return ResponseEntity.badRequest().body(errorMsg);
+        return ResponseEntity.badRequest().body(new ErrorPayload("BAD_REQUEST", errorMsg));
     }
 
-    @ExceptionHandler(InvalidRequestException.class)
-    public ResponseEntity<String> handleInvalidRequest(InvalidRequestException ex) {
-        return ResponseEntity.badRequest().body(ex.getMessage());
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<ErrorPayload> handleResponseStatusException(ResponseStatusException ex) {
+        String errorType = ex.getStatusCode() == HttpStatus.CONFLICT ? "CONFLICT_ERROR"
+                : ex.getStatusCode() == HttpStatus.NOT_FOUND ? "NOT_FOUND_ERROR"
+                        : ex.getStatusCode() == HttpStatus.BAD_REQUEST ? "BAD_REQUEST"
+                                : "REQUEST_ERROR";
+        return ResponseEntity.status(ex.getStatusCode())
+                .body(new ErrorPayload(errorType, ex.getReason()));
+    }
+
+    record ErrorPayload(String error, String message) {
     }
 }
