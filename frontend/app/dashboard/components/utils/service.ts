@@ -23,12 +23,22 @@ export interface CalculateTariffRequest {
 export async function calculateTariff(
   request: CalculateTariffRequest
 ): Promise<TariffCalculationResult> {
+  // Get JWT token from localStorage
+  const token = typeof window !== "undefined" ? localStorage.getItem("jwt_token") : null;
+
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    Accept: "application/json",
+  };
+
+  // Add Authorization header if token exists
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
   const response = await fetch(`${API_BASE_URL}/api/calculate`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "application/json",
-    },
+    headers,
     body: JSON.stringify(request),
   });
 
