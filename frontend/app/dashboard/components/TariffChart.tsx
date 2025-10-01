@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Area, AreaChart, CartesianGrid, XAxis } from "recharts";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -23,19 +22,11 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import {
-  ChartConfig,
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-} from "@/components/ui/chart";
-import {
   TariffChartProps,
   DropdownOption,
-  ChartDataPoint,
 } from "@/app/dashboard/components/utils/types";
 import {
   LoadingSkeleton,
-  EmptyDataPlaceholder,
   MissingRateWarning,
   Combobox,
 } from "./SharedComponents";
@@ -44,8 +35,6 @@ import { useTariffData, useTariffCalculation } from "./utils/hooks";
 import {
   convertCountriesToOptions,
   convertProductsToOptions,
-  getChartColorScheme,
-  getTooltipBadgeClass,
 } from "./utils/service";
 
 interface TariffChartFormProps {
@@ -85,58 +74,88 @@ function TariffChartForm({
   onNetWeightChange,
   onCalculate,
 }: TariffChartFormProps) {
-  return (
-    <div className="mb-8 w-full space-y-6">
-      {/* Transaction Date Section */}
-      <div className="space-y-3">
-        <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
-          Transaction Date
-        </h3>
-        <div className="space-y-2">
-          <Label className="text-sm font-medium">Date</Label>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                className={cn(
-                  "w-full justify-start text-left font-normal h-11",
-                  !transactionDate && "text-muted-foreground"
-                )}
-              >
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {transactionDate ? (
-                  format(transactionDate, "PPP")
-                ) : (
-                  <span>Pick a date</span>
-                )}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <Calendar
-                mode="single"
-                selected={transactionDate}
-                onSelect={(date) => date && onTransactionDateChange(date)}
-                initialFocus
-                captionLayout="dropdown"
-                startMonth={new Date(1990, 0)}
-                endMonth={new Date(new Date().getFullYear() + 1, 11)}
-              />
-            </PopoverContent>
-          </Popover>
-        </div>
-      </div>
+  const [datePopoverOpen, setDatePopoverOpen] = useState(false);
 
-      {/* Trade Partners Section */}
-      <div className="space-y-3 pt-4 border-t">
-        <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
-          Trade Partners
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="importingCountry" className="text-sm font-medium">
+  return (
+    <div className="space-y-6">
+      {/* Single unified form container */}
+      <div className="bg-white rounded-lg p-8 border border-gray-200">
+        {/* Transaction Date & Product */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          <div className="space-y-3">
+            <Label
+              htmlFor="transactionDate"
+              className="text-sm font-bold text-black uppercase tracking-wide"
+            >
+              Transaction Date
+            </Label>
+            <Popover open={datePopoverOpen} onOpenChange={setDatePopoverOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  id="transactionDate"
+                  variant="outline"
+                  className={cn(
+                    "w-full justify-start text-left font-medium h-12 px-4 bg-white border border-gray-300 hover:bg-gray-50 transition-all",
+                    !transactionDate && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2.5 h-4 w-4" />
+                  {transactionDate ? (
+                    format(transactionDate, "MMM d, yyyy")
+                  ) : (
+                    <span>Select date</span>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={transactionDate}
+                  onSelect={(date) => {
+                    if (date) {
+                      onTransactionDateChange(date);
+                      setDatePopoverOpen(false);
+                    }
+                  }}
+                  initialFocus
+                  captionLayout="dropdown"
+                  startMonth={new Date(1990, 0)}
+                  endMonth={new Date(new Date().getFullYear() + 1, 11)}
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+
+          <div className="space-y-3">
+            <Label
+              htmlFor="productCode"
+              className="text-sm font-bold text-black uppercase tracking-wide flex items-center gap-2"
+            >
+              Product Code
+            </Label>
+            <Combobox
+              value={productCode}
+              onValueChange={onProductCodeChange}
+              placeholder="Select product code"
+              id="productCode"
+              options={productOptions}
+              searchPlaceholder="Search products..."
+              emptyText="No product found."
+              showSecondaryText={true}
+            />
+          </div>
+        </div>
+
+        {/* Trade Partners */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          <div className="space-y-3">
+            <Label
+              htmlFor="importingCountry"
+              className="text-sm font-bold text-black uppercase tracking-wide flex items-center gap-2"
+            >
               Importing Country
-              <span className="text-xs text-gray-500 ml-1 font-normal">
-                (Sets Tariffs)
+              <span className="text-xs bg-black text-white px-2 py-1 rounded font-medium ml-auto normal-case">
+                Sets Rate
               </span>
             </Label>
             <Combobox
@@ -145,16 +164,19 @@ function TariffChartForm({
               placeholder="Select importing country"
               id="importingCountry"
               options={countryOptions}
-              searchPlaceholder="Search importing country..."
+              searchPlaceholder="Search countries..."
               emptyText="No country found."
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="exportingCountry" className="text-sm font-medium">
+          <div className="space-y-3">
+            <Label
+              htmlFor="exportingCountry"
+              className="text-sm font-bold text-black uppercase tracking-wide flex items-center gap-2"
+            >
               Exporting Country
-              <span className="text-xs text-gray-500 ml-1 font-normal">
-                (Pays Tariffs)
+              <span className="text-xs bg-white text-black border border-gray-300 px-2 py-1 rounded font-medium ml-auto normal-case">
+                Pays Duty
               </span>
             </Label>
             <Combobox
@@ -163,199 +185,101 @@ function TariffChartForm({
               placeholder="Select exporting country"
               id="exportingCountry"
               options={countryOptions}
-              searchPlaceholder="Search exporting country..."
+              searchPlaceholder="Search countries..."
               emptyText="No country found."
             />
           </div>
         </div>
-      </div>
 
-      {/* Product & Trade Details Section */}
-      <div className="space-y-3 pt-4 border-t">
-        <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
-          Product & Trade Details
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="space-y-2 md:col-span-3 lg:col-span-1">
-            <Label htmlFor="productCode" className="text-sm font-medium">
-              Product (HS6 Code)
+        {/* Trade Values */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="space-y-3">
+            <Label
+              htmlFor="tradeValue"
+              className="text-sm font-bold text-black uppercase tracking-wide flex items-center gap-2"
+            >
+              Trade Value
             </Label>
-            <Combobox
-              value={productCode}
-              onValueChange={onProductCodeChange}
-              placeholder="Select product"
-              id="productCode"
-              options={productOptions}
-              searchPlaceholder="Search product..."
-              emptyText="No product found."
-              showSecondaryText={true}
-            />
+            <div className="relative">
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-black text-base font-bold">
+                $
+              </span>
+              <Input
+                id="tradeValue"
+                type="number"
+                min="0"
+                step="0.01"
+                value={tradeValue}
+                onChange={(e) => onTradeValueChange(e.target.value)}
+                placeholder="0.00"
+                className="h-12 pl-9 pr-4 bg-white border border-gray-300 hover:bg-gray-50 focus:ring-2 focus:ring-gray-400 focus:border-gray-400 transition-all font-semibold text-base"
+              />
+            </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="tradeValue" className="text-sm font-medium">
-              Trade Value (USD)
-            </Label>
-            <Input
-              id="tradeValue"
-              type="number"
-              min="0"
-              step="0.01"
-              value={tradeValue}
-              onChange={(e) => onTradeValueChange(e.target.value)}
-              placeholder="Enter trade value"
-              className="w-full h-11"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="netWeight" className="text-sm font-medium">
-              Net Weight (kg)
-              <span className="text-xs text-gray-500 ml-1 font-normal">
-                (Optional)
+          <div className="space-y-3">
+            <Label
+              htmlFor="netWeight"
+              className="text-sm font-bold text-black uppercase tracking-wide flex items-center gap-2"
+            >
+              Net Weight
+              <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded font-medium ml-auto normal-case">
+                Optional
               </span>
             </Label>
-            <Input
-              id="netWeight"
-              type="number"
-              min="0"
-              step="0.01"
-              value={netWeight}
-              onChange={(e) => onNetWeightChange(e.target.value)}
-              placeholder="For specific duties"
-              className="w-full h-11"
-            />
+            <div className="relative">
+              <Input
+                id="netWeight"
+                type="number"
+                min="0"
+                step="0.01"
+                value={netWeight}
+                onChange={(e) => onNetWeightChange(e.target.value)}
+                placeholder="0.00"
+                className="h-12 px-4 pr-12 bg-white border border-gray-300 hover:bg-gray-50 focus:ring-2 focus:ring-gray-400 focus:border-gray-400 transition-all"
+              />
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-600 text-sm font-medium">
+                kg
+              </span>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Action Button */}
-      <div className="flex justify-end pt-4">
+      {/* Calculate Button */}
+      <div className="flex justify-center sm:justify-end">
         <Button
           onClick={onCalculate}
           disabled={!importingCountry || !tradeValue || isCalculating}
           size="lg"
-          className="bg-black text-white px-8 hover:bg-gray-800 disabled:opacity-50 min-w-[180px]"
+          className="w-full sm:w-auto bg-black text-white hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed h-14 px-12 font-bold text-base uppercase tracking-wide border-2 border-black transition-all duration-200"
         >
-          {isCalculating ? "Calculating..." : "Calculate Tariff"}
+          {isCalculating ? (
+            <span className="flex items-center gap-3">
+              <span className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+              Calculating...
+            </span>
+          ) : (
+            <span className="flex items-center gap-3">
+              <svg
+                className="h-5 w-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2.5}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"
+                />
+              </svg>
+              Calculate Tariff
+            </span>
+          )}
         </Button>
       </div>
     </div>
-  );
-}
-
-interface TariffChartDisplayProps {
-  data: ChartDataPoint[];
-  chartConfig: ChartConfig;
-  chartColorScheme: {
-    fill: string;
-    stroke: string;
-  };
-}
-
-function TariffChartDisplay({
-  data,
-  chartConfig,
-  chartColorScheme,
-}: TariffChartDisplayProps) {
-  return (
-    <ChartContainer
-      config={chartConfig}
-      className="aspect-auto h-[300px] w-full rounded-xl shadow-lg bg-white p-4"
-    >
-      <AreaChart data={data}>
-        <defs>
-          <linearGradient id="fillTariff" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#000" stopOpacity={1} />
-            <stop offset="100%" stopColor="#000" stopOpacity={0.1} />
-          </linearGradient>
-          <linearGradient id="fillSuspended" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#10b981" stopOpacity={0.8} />
-            <stop offset="100%" stopColor="#10b981" stopOpacity={0.1} />
-          </linearGradient>
-          <linearGradient id="fillPreferential" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#9333ea" stopOpacity={0.8} />
-            <stop offset="100%" stopColor="#9333ea" stopOpacity={0.1} />
-          </linearGradient>
-          <linearGradient id="fillMFN" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.8} />
-            <stop offset="100%" stopColor="#3b82f6" stopOpacity={0.1} />
-          </linearGradient>
-        </defs>
-        <CartesianGrid
-          vertical={false}
-          strokeDasharray="4 4"
-          stroke="#e5e7eb"
-        />
-        <XAxis
-          dataKey="date"
-          tickLine={false}
-          axisLine={false}
-          tickMargin={16}
-          minTickGap={0}
-          interval={0}
-          padding={{ left: 16, right: 32 }}
-          tick={{ fontSize: 14, fill: "#000", fontWeight: 600 }}
-          tickFormatter={(value) => value}
-        />
-        <ChartTooltip
-          cursor={false}
-          content={
-            <ChartTooltipContent
-              labelFormatter={(value) => `Year: ${value}`}
-              indicator="dot"
-              formatter={(value, name, props) => {
-                const payload = props.payload;
-                const rateType = payload?.rateType || "Unknown";
-                const isSuspended = payload?.isSuspended;
-
-                const badgeClass = getTooltipBadgeClass(rateType, isSuspended);
-
-                return [
-                  <div key="rate" className="flex flex-col gap-1">
-                    <span className="text-sm font-medium">
-                      {Number(value).toFixed(2)}%
-                    </span>
-                    <span
-                      className={`text-xs px-2 py-1 rounded font-medium ${badgeClass}`}
-                    >
-                      {rateType}
-                    </span>
-                    {payload?.dutyAmount !== undefined && (
-                      <span className="text-xs text-gray-600">
-                        Duty: ${Number(payload.dutyAmount).toFixed(2)}
-                      </span>
-                    )}
-                  </div>,
-                  "Tariff Rate",
-                ];
-              }}
-            />
-          }
-        />
-        <Area
-          dataKey="value"
-          type="monotone"
-          fill={chartColorScheme.fill}
-          stroke={chartColorScheme.stroke}
-          strokeWidth={3}
-          dot={{
-            r: 5,
-            stroke: chartColorScheme.stroke,
-            strokeWidth: 2,
-            fill: "#fff",
-          }}
-          activeDot={{
-            r: 7,
-            fill: chartColorScheme.stroke,
-            stroke: "#fff",
-            strokeWidth: 2,
-          }}
-          isAnimationActive={true}
-          style={{ filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.15))" }}
-        />
-      </AreaChart>
-    </ChartContainer>
   );
 }
 
@@ -370,7 +294,6 @@ export default function TariffChart({
 
   // Calculation hook
   const {
-    data,
     isCalculating,
     calculationResult,
     suspensionNote,
@@ -395,14 +318,6 @@ export default function TariffChart({
   // Derived state
   const countryOptions = convertCountriesToOptions(countries);
   const productOptions = convertProductsToOptions(product);
-  const chartColorScheme = getChartColorScheme(data);
-
-  const chartConfig = {
-    value: {
-      label: "Tariff Rate (%)",
-      color: "var(--primary)",
-    },
-  } satisfies ChartConfig;
 
   // Initialize form with top suspension data
   useEffect(() => {
@@ -453,7 +368,6 @@ export default function TariffChart({
       importingCountry &&
       productCode &&
       tradeValue &&
-      !data.length &&
       !isCalculating &&
       !hasAutoCalculated
     ) {
@@ -483,76 +397,65 @@ export default function TariffChart({
   };
 
   return (
-    <Card className="@container/card">
-      <CardHeader>
-        <CardTitle>{chartTitle}</CardTitle>
-        <CardDescription>
-          <span>
-            Tariff rates applied by{" "}
-            <strong>
-              {countryOptions.find((c) => c.value === importingCountry)?.label}
-            </strong>{" "}
-            on imports from{" "}
-            <strong>
-              {countryOptions.find((c) => c.value === exportingCountry)?.label}
-            </strong>{" "}
-            for{" "}
-            <strong>
-              {productOptions.find((p) => p.value === productCode)?.label}
-            </strong>
-          </span>
+    <Card className="@container/card shadow-sm">
+      <CardHeader className="border-b bg-gradient-to-r from-gray-50 to-gray-100/50 pb-4">
+        <CardTitle className="text-lg font-semibold">{chartTitle}</CardTitle>
+        <CardDescription className="text-sm mt-1">
+          Calculate tariff duties for a specific transaction
         </CardDescription>
       </CardHeader>
 
-      <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
-        {isLoading || isCalculating ? (
-          <LoadingSkeleton isCalculating={isCalculating} />
-        ) : !data.length ? (
-          <EmptyDataPlaceholder />
+      <CardContent className="p-6">
+        {isLoading ? (
+          <LoadingSkeleton isCalculating={false} />
         ) : (
-          <TariffChartDisplay
-            data={data}
-            chartConfig={chartConfig}
-            chartColorScheme={chartColorScheme}
-          />
+          <>
+            <TariffChartForm
+              transactionDate={transactionDate}
+              importingCountry={importingCountry}
+              exportingCountry={exportingCountry}
+              productCode={productCode}
+              tradeValue={tradeValue}
+              netWeight={netWeight}
+              countryOptions={countryOptions}
+              productOptions={productOptions}
+              isCalculating={isCalculating}
+              onTransactionDateChange={setTransactionDate}
+              onImportingCountryChange={setImportingCountry}
+              onExportingCountryChange={setExportingCountry}
+              onProductCodeChange={setProductCode}
+              onTradeValueChange={setTradeValue}
+              onNetWeightChange={setNetWeight}
+              onCalculate={handleCalculate}
+            />
+
+            {missingRateYears.length > 0 && (
+              <div className="mt-6">
+                <MissingRateWarning missingYears={missingRateYears} />
+              </div>
+            )}
+
+            {calculationResult && (
+              <div className="mt-6 pt-6 border-t border-gray-200">
+                <CalculationResults
+                  result={calculationResult}
+                  suspensionNote={suspensionNote}
+                />
+              </div>
+            )}
+
+            {hasError && (
+              <div className="mt-6 pt-6 border-t border-gray-200">
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-center">
+                  <p className="text-red-600 text-sm font-medium">
+                    Failed to fetch tariff data. Please try again.
+                  </p>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </CardContent>
-
-      <CardContent>
-        <TariffChartForm
-          transactionDate={transactionDate}
-          importingCountry={importingCountry}
-          exportingCountry={exportingCountry}
-          productCode={productCode}
-          tradeValue={tradeValue}
-          netWeight={netWeight}
-          countryOptions={countryOptions}
-          productOptions={productOptions}
-          isCalculating={isCalculating}
-          onTransactionDateChange={setTransactionDate}
-          onImportingCountryChange={setImportingCountry}
-          onExportingCountryChange={setExportingCountry}
-          onProductCodeChange={setProductCode}
-          onTradeValueChange={setTradeValue}
-          onNetWeightChange={setNetWeight}
-          onCalculate={handleCalculate}
-        />
-
-        <MissingRateWarning missingYears={missingRateYears} />
-
-        {calculationResult && (
-          <CalculationResults
-            result={calculationResult}
-            suspensionNote={suspensionNote}
-          />
-        )}
-      </CardContent>
-
-      {hasError && (
-        <div className="text-red-500 text-center py-8">
-          Failed to fetch tariff data.
-        </div>
-      )}
     </Card>
   );
 }

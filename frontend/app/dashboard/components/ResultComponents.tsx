@@ -45,12 +45,12 @@ function ResultHeader({ result }: { result: TariffCalculationResult }) {
       <h3 className="text-lg font-semibold">Tariff Calculation Results</h3>
       {result.suspensionActive === true && (
         <span className="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
-          🚫 TARIFF SUSPENDED (ACTIVE)
+          TARIFF SUSPENDED (ACTIVE)
         </span>
       )}
       {result.suspensionActive === false && (
         <span className="bg-amber-100 text-amber-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
-          ⚠️ TARIFF SUSPENDED (INACTIVE)
+          TARIFF SUSPENDED (INACTIVE)
         </span>
       )}
     </div>
@@ -173,8 +173,8 @@ function AppliedRateCard({
       appliedRate?.mfnAdval !== undefined &&
       appliedRate?.specific !== undefined
     )
-      return "📊 Compound (MFN+Specific)";
-    if (appliedRate?.mfnAdval !== undefined) return "🌐 MFN (Standard)";
+      return "Compound (MFN+Specific)";
+    if (appliedRate?.mfnAdval !== undefined) return "MFN (Standard)";
     return "No Rate";
   };
 
@@ -250,9 +250,7 @@ function RateDetails({
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
         {appliedRate.suspension !== undefined && (
           <div className="bg-green-50 p-3 rounded">
-            <span className="text-gray-700 font-medium">
-              🚫 Suspension Rate:
-            </span>
+            <span className="text-gray-700 font-medium">Suspension Rate:</span>
             <span className="ml-2 font-bold text-green-700">
               {Number(appliedRate.suspension).toFixed(2)}%
             </span>
@@ -275,9 +273,7 @@ function RateDetails({
         )}
         {appliedRate.mfnAdval !== undefined && (
           <div className="bg-blue-50 p-3 rounded">
-            <span className="text-gray-700 font-medium">
-              🌐 MFN Ad-valorem:
-            </span>
+            <span className="text-gray-700 font-medium">MFN Ad-valorem:</span>
             <span className="ml-2 font-bold text-blue-700">
               {Number(appliedRate.mfnAdval).toFixed(2)}%
             </span>
