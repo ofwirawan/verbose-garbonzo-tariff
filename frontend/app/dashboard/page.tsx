@@ -4,11 +4,11 @@ import { SectionCards } from "@/components/section-cards";
 import { SiteHeader } from "@/components/site-header";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 
-import { TariffChart } from "./components/TariffChart";
-import { RecentCalculations } from "./components/RecentCalculations";
-import { TopProducts } from "./components/TopProducts";
-import { RegionalComparison } from "./components/RegionalComparison";
-import { TradeAgreements } from "./components/TradeAgreements";
+import TariffChart from "./components/TariffChart";
+import { RecentCalculations } from "./components/dataDisplay/RecentCalculations";
+import { TopProducts } from "./components/dataDisplay/TopProducts";
+import { RegionalComparison } from "./components/dataDisplay/RegionalComparison";
+import { TradeAgreements } from "./components/dataDisplay/TradeAgreements";
 
 export default function Page() {
   return (
