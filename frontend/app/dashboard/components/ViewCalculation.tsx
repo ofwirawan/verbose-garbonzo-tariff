@@ -1,5 +1,8 @@
 "use client";
 
+import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog"
+import { Button } from "@/components/ui/button"
+
 import { useEffect, useRef, useState } from "react";
 import {
 	Card,
@@ -16,6 +19,11 @@ import {
 	SelectItem,
 	SelectValue,
 } from "@/components/ui/select";
+
+import { useRouter } from "next/navigation";
+
+// notifications when history saved
+import { toast } from "sonner"
 
 // Country options
 const countryOptions = [
@@ -245,6 +253,13 @@ const productOptions = [
 	{ label: "Services & Intangibles", value: "98_Services" },
 ];
 
+// Type for calculation result
+interface CalculationResult {
+	ratePercent: number;
+	duty: string;
+	totalPayable: string;
+}
+
 const inputClass =
 	"w-full min-w-[200px] h-12 min-h-[48px] border rounded px-3 py-2 focus:outline-none focus:ring-2 transition-all";
 
@@ -297,11 +312,10 @@ function CountryAutocomplete({
 				onFocus={() => setFocused(true)}
 				onBlur={() => setTimeout(() => setFocused(false), 100)}
 				placeholder={placeholder}
-				className={`${inputClass} ${
-					error
-						? "border-red-500 focus:ring-red-500"
-						: "border-gray-300 focus:ring-black"
-				}`}
+				className={`${inputClass} ${error
+					? "border-red-500 focus:ring-red-500"
+					: "border-gray-300 focus:ring-black"
+					}`}
 				autoComplete="off"
 			/>
 			{focused && value && filtered.length > 0 && (
@@ -363,6 +377,14 @@ export function ViewCalculation() {
 	const [exportingCountryInput, setExportingCountryInput] = useState("");
 	const [importingCountryError, setImportingCountryError] = useState(false);
 	const [exportingCountryError, setExportingCountryError] = useState(false);
+	// Added a transaction date for users & router
+	const [transactionDate, setTransactionDate] = useState<string>("");
+	const router = useRouter();
+	// Added for the save history button
+	const [canSaveHistory, setCanSaveHistory] = useState(false);
+	// Added for dialog after saving
+	const [isDialogOpen, setIsDialogOpen] = useState(false);
+
 
 	const [productCode, setProductCode] = useState("01-05_Animals");
 	const [productCost, setProductCost] = useState("");
@@ -371,6 +393,8 @@ export function ViewCalculation() {
 	const [error, setError] = useState<string>("");
 	const [showResult, setShowResult] = useState(false);
 	const resultRef = useRef<HTMLDivElement>(null);
+	const [productWeight, setProductWeight] = useState<number | ''>('');
+
 
 	const dutyCount = useCountUp(
 		result ? Number(result.duty) : 0,
@@ -408,57 +432,7 @@ export function ViewCalculation() {
 		return match ? match.value : null;
 	}
 
-	async function handleSubmit() {
-		const importingCountry = findCountryValue(importingCountryInput);
-		const exportingCountry = findCountryValue(exportingCountryInput);
-
-		if (!importingCountry || !exportingCountry) {
-			setError("Please enter valid countries.");
-			return;
-		}
-		if (importingCountry === exportingCountry) {
-			setError("Importing and exporting countries cannot be the same.");
-			return;
-		}
-		if (!productCost || Number(productCost) <= 0) {
-			setError("Please enter a valid product cost.");
-			return;
-		}
-
-		setError(""); // Clear error only on successful validation
-		setIsLoading(true);
-		setResult(null);
-
-		try {
-			const res = await fetch("http://localhost:8080/api/calculate", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
-					reporter: importingCountry,
-					partner: exportingCountry,
-					hs6: productCode,
-					tradeValue: Number(productCost),
-					transactionDate: new Date().toISOString(),
-				}),
-			});
-			if (!res.ok) {
-				let errMsg = "Calculation failed";
-				try {
-					const json = await res.json();
-					errMsg = json.message || errMsg;
-				} catch {}
-				throw new Error(errMsg);
-			}
-			const data = await res.json();
-			setResult(data);
-		} catch (err: any) {
-			setError(err.message);
-		} finally {
-			setIsLoading(false);
-		}
-	}
-
-/* Mock function for testing without backend
+	// Handle Calculation only
 	async function handleSubmit() {
 		if (!importingCountryInput || !exportingCountryInput) {
 			setError("Please enter valid countries.");
@@ -468,30 +442,159 @@ export function ViewCalculation() {
 			setError("Please enter a valid product cost.");
 			return;
 		}
+		if (!transactionDate) {
+			setError("Please select a transaction date.");
+			return;
+		}
 
 		setError("");
 		setIsLoading(true);
 		setResult(null);
 
 		try {
-			// Simulated delay to mimic API call
+			// Mock delay
 			await new Promise((resolve) => setTimeout(resolve, 1000));
 
-			// Mock response data
-			const mockData = {
+			const mockData: CalculationResult = {
 				ratePercent: 5.25,
 				duty: (Number(productCost) * 0.0525).toFixed(2),
 				totalPayable: (Number(productCost) * 1.0525).toFixed(2),
 			};
 
 			setResult(mockData);
+
+			// Enable Save button after calculation
+			setCanSaveHistory(true);
+
 		} catch (err: any) {
-			setError("Mock calculation failed.");
+			console.error(err);
+			setError("Calculation failed.");
 		} finally {
 			setIsLoading(false);
 		}
 	}
-*/
+
+	// Separate Save History
+	async function handleSaveHistory() {
+		if (!result) return;
+
+		try {
+			const formattedDate = new Date(transactionDate).toISOString().split("T")[0];
+			const requestBody = {
+				date: formattedDate,
+				product: productOptions.find(p => p.value === productCode)?.label || "Your Product",
+				weight: Number(productWeight),
+				route: `${exportingCountryInput} → ${importingCountryInput}`,
+				tradeValue: Number(productCost),
+				tariffRate: result.ratePercent,
+				tariffCost: Number(result.duty),
+			};
+
+			const response = await fetch("http://localhost:8080/api/history", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify(requestBody),
+			});
+
+			if (!response.ok) throw new Error("Failed to save history");
+
+			console.log("Saved history successfully:", await response.json());
+			setCanSaveHistory(false); // disable after save
+
+			// ✅ Show alert
+			toast.success("Saved Successfully!");
+		} catch (err) {
+			console.error(err);
+			toast.error("Calculation done but failed to save history.");
+		}
+	}
+
+
+
+	// async function handleSubmit() {
+	// 	const importingCountry = findCountryValue(importingCountryInput);
+	// 	const exportingCountry = findCountryValue(exportingCountryInput);
+
+	// 	if (!importingCountry || !exportingCountry) {
+	// 		setError("Please enter valid countries.");
+	// 		return;
+	// 	}
+	// 	if (importingCountry === exportingCountry) {
+	// 		setError("Importing and exporting countries cannot be the same.");
+	// 		return;
+	// 	}
+	// 	if (!productCost || Number(productCost) <= 0) {
+	// 		setError("Please enter a valid product cost.");
+	// 		return;
+	// 	}
+
+	// 	setError(""); // Clear error only on successful validation
+	// 	setIsLoading(true);
+	// 	setResult(null);
+
+	// 	try {
+	// 		const res = await fetch("http://localhost:8080/api/calculate", {
+	// 			method: "POST",
+	// 			headers: { "Content-Type": "application/json" },
+	// 			body: JSON.stringify({
+	// 				reporter: importingCountry,
+	// 				partner: exportingCountry,
+	// 				hs6: productCode,
+	// 				tradeValue: Number(productCost),
+	// 				transactionDate: new Date().toISOString(),
+	// 			}),
+	// 		});
+	// 		if (!res.ok) {
+	// 			let errMsg = "Calculation failed";
+	// 			try {
+	// 				const json = await res.json();
+	// 				errMsg = json.message || errMsg;
+	// 			} catch {}
+	// 			throw new Error(errMsg);
+	// 		}
+	// 		const data = await res.json();
+	// 		setResult(data);
+	// 	} catch (err: any) {
+	// 		setError(err.message);
+	// 	} finally {
+	// 		setIsLoading(false);
+	// 	}
+	// }
+
+	/* Mock function for testing without backend
+		async function handleSubmit() {
+			if (!importingCountryInput || !exportingCountryInput) {
+				setError("Please enter valid countries.");
+				return;
+			}
+			if (!productCost || Number(productCost) <= 0) {
+				setError("Please enter a valid product cost.");
+				return;
+			}
+	
+			setError("");
+			setIsLoading(true);
+			setResult(null);
+	
+			try {
+				// Simulated delay to mimic API call
+				await new Promise((resolve) => setTimeout(resolve, 1000));
+	
+				// Mock response data
+				const mockData = {
+					ratePercent: 5.25,
+					duty: (Number(productCost) * 0.0525).toFixed(2),
+					totalPayable: (Number(productCost) * 1.0525).toFixed(2),
+				};
+	
+				setResult(mockData);
+			} catch (err: any) {
+				setError("Mock calculation failed.");
+			} finally {
+				setIsLoading(false);
+			}
+		}
+	*/
 	const isCalculateDisabled =
 		importingCountryError ||
 		exportingCountryError ||
@@ -582,6 +685,35 @@ export function ViewCalculation() {
 								placeholder="Enter cost"
 							/>
 						</div>
+
+						<div className="flex flex-col">
+							<label className="block text-sm font-medium mb-2">Transaction Date:</label>
+							<input
+								type="date"
+								value={transactionDate}
+								onChange={(e) => setTransactionDate(e.target.value)}
+								className={`${inputClass} border-gray-300 focus:ring-black`}
+							/>
+						</div>
+
+						<div className="flex flex-col">
+							<label
+								htmlFor="productWeight"
+								className="block text-sm font-medium mb-2"
+							>
+								Product Weight (in kg):
+							</label>
+							<input
+								id="productWeight"
+								type="number"
+								min="0"
+								step="0.01"
+								value={Number.isNaN(productWeight) ? "" : productWeight}
+								onChange={(e) => setProductWeight(parseFloat(e.target.value))}
+								className={`${inputClass} border-gray-300 focus:ring-black`}
+								placeholder="Enter weight"
+							/>
+						</div>
 					</div>
 					<div className="flex justify-center mt-6">
 						<button
@@ -601,9 +733,8 @@ export function ViewCalculation() {
 						<CardContent>
 							<div
 								ref={resultRef}
-								className={`transition-opacity duration-700 ${
-									showResult ? "opacity-100" : "opacity-0"
-								}`}
+								className={`transition-opacity duration-700 ${showResult ? "opacity-100" : "opacity-0"
+									}`}
 							>
 								<h3 className="text-lg font-bold underline mb-4">
 									Calculation Result
@@ -625,12 +756,52 @@ export function ViewCalculation() {
 											{totalPayableCount}
 										</span>
 									</div>
+
+									<AlertDialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+										<AlertDialogTrigger asChild>
+											<Button
+												disabled={!canSaveHistory}
+												variant="default"
+											>
+												Save History
+											</Button>
+										</AlertDialogTrigger>
+										<AlertDialogContent>
+											<AlertDialogHeader>
+												<AlertDialogTitle>Confirm Save</AlertDialogTitle>
+												<AlertDialogDescription>
+													You are about to save this calculation to history.
+													Are you sure you want to continue?
+												</AlertDialogDescription>
+											</AlertDialogHeader>
+											<AlertDialogFooter className="flex gap-2">
+												<AlertDialogCancel>Cancel</AlertDialogCancel>
+												<Button
+													variant="default"
+													onClick={async () => {
+														await handleSaveHistory();
+														setIsDialogOpen(false); // manually close the dialog
+													}}
+												>
+													Yes, Save it
+												</Button>
+											</AlertDialogFooter>
+										</AlertDialogContent>
+									</AlertDialog>
+
 								</div>
 							</div>
 						</CardContent>
 					)}
 				</CardContent>
 			</Card>
+
+			<button
+				onClick={() => router.push("/history")}
+				className="mt-4 bg-blue-600 text-white px-4 py-2 rounded"
+			>
+				View History
+			</button>
 		</div>
 	);
 }

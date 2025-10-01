@@ -1201,7 +1201,6 @@ async function main() {
     });
   }
   console.log(`Seeded ${countries.length} countries.`);
-
   // Seed products
   console.log("Seeding products...");
   for (const product of products) {
@@ -1215,6 +1214,878 @@ async function main() {
     });
   }
   console.log(`Seeded ${products.length} products.`);
+  // Seed suspensions
+  console.log("Seeding suspensions...");
+  const suspensions = [
+    // Sanctions against Russia (RUS) - Multiple products suspended
+    {
+      importer_code: "USA",
+      product_code: "290110",
+      valid_from: new Date("2022-02-25"),
+      valid_to: null, // Ongoing
+      suspension_flag: true,
+      suspension_note:
+        "Sanctions related to Russian conflict - petrochemicals embargo",
+    },
+    {
+      importer_code: "USA",
+      product_code: "290220",
+      valid_from: new Date("2022-02-25"),
+      valid_to: null,
+      suspension_flag: true,
+      suspension_note:
+        "Sanctions related to Russian conflict - benzene imports suspended",
+    },
+    {
+      importer_code: "GBR",
+      product_code: "290110",
+      valid_from: new Date("2022-03-01"),
+      valid_to: null,
+      suspension_flag: true,
+      suspension_note: "UK sanctions on Russian energy and chemical products",
+    },
+    // EU sanctions against Iran (IRN)
+    {
+      importer_code: "AUT",
+      product_code: "290312",
+      valid_from: new Date("2023-01-15"),
+      valid_to: null,
+      suspension_flag: true,
+      suspension_note: "EU sanctions - chemical precursors and dual-use items",
+    },
+    {
+      importer_code: "POL",
+      product_code: "290313",
+      valid_from: new Date("2023-01-15"),
+      valid_to: null,
+      suspension_flag: true,
+      suspension_note: "EU sanctions framework - chloroform imports suspended",
+    },
+    // Environmental protection suspensions
+    {
+      importer_code: "AUS",
+      product_code: "290314",
+      valid_from: new Date("2023-06-01"),
+      valid_to: new Date("2025-12-31"),
+      suspension_flag: true,
+      suspension_note:
+        "Environmental protection - carbon tetrachloride phase-out program",
+    },
+    {
+      importer_code: "CAN",
+      product_code: "290351",
+      valid_from: new Date("2022-01-01"),
+      valid_to: null,
+      suspension_flag: true,
+      suspension_note:
+        "Stockholm Convention compliance - HCH/lindane banned substance",
+    },
+    // Trade dispute related suspensions
+    {
+      importer_code: "CHN",
+      product_code: "290230",
+      valid_from: new Date("2021-05-01"),
+      valid_to: new Date("2024-03-15"), // Historical - resolved
+      suspension_flag: false,
+      suspension_note: "Trade dispute resolved - toluene trade normalization",
+    },
+    {
+      importer_code: "IND",
+      product_code: "290250",
+      valid_from: new Date("2022-08-01"),
+      valid_to: new Date("2023-12-31"), // Expired
+      suspension_flag: false,
+      suspension_note:
+        "Border dispute related trade measures - styrene imports",
+    },
+    // Anti-dumping related temporary suspensions
+    {
+      importer_code: "USA",
+      product_code: "290121",
+      valid_from: new Date("2023-03-01"),
+      valid_to: new Date("2024-02-29"),
+      suspension_flag: false,
+      suspension_note: "Anti-dumping investigation period - ethylene trade",
+    },
+    {
+      importer_code: "BRA",
+      product_code: "290122",
+      valid_from: new Date("2024-01-01"),
+      valid_to: new Date("2024-12-31"),
+      suspension_flag: true,
+      suspension_note: "Safeguard measure - propylene market protection",
+    },
+    // Health and safety related suspensions
+    {
+      importer_code: "JPN",
+      product_code: "290352",
+      valid_from: new Date("2020-01-01"),
+      valid_to: null,
+      suspension_flag: true,
+      suspension_note:
+        "Persistent Organic Pollutants (POPs) regulation - aldrin/chlordane ban",
+    },
+    {
+      importer_code: "KOR",
+      product_code: "290362",
+      valid_from: new Date("2019-01-01"),
+      valid_to: null,
+      suspension_flag: true,
+      suspension_note:
+        "Chemical safety regulation - DDT and hexachlorobenzene prohibited",
+    },
+    // Regional trade bloc suspensions
+    {
+      importer_code: "MEX",
+      product_code: "290260",
+      valid_from: new Date("2023-01-01"),
+      valid_to: null,
+      suspension_flag: true,
+      suspension_note: "Political sanctions - ethylbenzene trade suspended",
+    },
+    {
+      importer_code: "COL",
+      product_code: "290270",
+      valid_from: new Date("2022-06-01"),
+      valid_to: new Date("2024-06-01"),
+      suspension_flag: true,
+      suspension_note: "Border security concerns - cumene imports restricted",
+    },
+    // Temporary quality/safety suspensions
+    {
+      importer_code: "SGP",
+      product_code: "290123",
+      valid_from: new Date("2024-08-01"),
+      valid_to: new Date("2024-11-30"),
+      suspension_flag: true,
+      suspension_note:
+        "Quality control issues - butene shipment contamination investigation",
+    },
+    {
+      importer_code: "THA",
+      product_code: "290124",
+      valid_from: new Date("2024-09-15"),
+      valid_to: new Date("2024-12-15"),
+      suspension_flag: true,
+      suspension_note:
+        "Safety inspection failure - buta-1,3-diene quality standards",
+    },
+    // Counter-sanctions (retaliatory measures)
+    {
+      importer_code: "RUS",
+      product_code: "290211",
+      valid_from: new Date("2022-03-01"),
+      valid_to: null,
+      suspension_flag: true,
+      suspension_note:
+        "Retaliatory sanctions - cyclohexane imports from unfriendly countries",
+    },
+    {
+      importer_code: "RUS",
+      product_code: "290241",
+      valid_from: new Date("2022-03-15"),
+      valid_to: null,
+      suspension_flag: true,
+      suspension_note: "Counter-sanctions measure - o-Xylene trade restriction",
+    },
+    // Historical suspensions (now inactive)
+    {
+      importer_code: "ZAF",
+      product_code: "290315",
+      valid_from: new Date("2020-01-01"),
+      valid_to: new Date("2023-06-30"),
+      suspension_flag: false,
+      suspension_note:
+        "Nuclear-related sanctions - ethylene dichloride dual-use concerns (resolved)",
+    },
+  ];
+  for (const suspension of suspensions) {
+    await prisma.suspension.upsert({
+      where: {
+        importer_code_product_code_valid_from: {
+          importer_code: suspension.importer_code,
+          product_code: suspension.product_code,
+          valid_from: suspension.valid_from,
+        },
+      },
+      update: {
+        valid_to: suspension.valid_to,
+        suspension_flag: suspension.suspension_flag,
+        suspension_note: suspension.suspension_note,
+      },
+      create: suspension,
+    });
+  }
+  console.log(`Seeded ${suspensions.length} suspension records.`);
+
+  // Seed preferences (trade agreements and preferential tariffs)
+  console.log("Seeding preferences...");
+  const preferences = [
+    // USMCA (US-Mexico-Canada Agreement) - Reduced rates
+    {
+      importer_code: "USA",
+      exporter_code: "CAN",
+      product_code: "290110",
+      valid_from: new Date("2020-07-01"),
+      valid_to: null,
+      pref_adval_rate: 0.0, // Duty-free under USMCA
+    },
+    {
+      importer_code: "USA",
+      exporter_code: "MEX",
+      product_code: "290110",
+      valid_from: new Date("2020-07-01"),
+      valid_to: null,
+      pref_adval_rate: 0.0,
+    },
+    {
+      importer_code: "USA",
+      exporter_code: "CAN",
+      product_code: "290220",
+      valid_from: new Date("2020-07-01"),
+      valid_to: null,
+      pref_adval_rate: 0.0,
+    },
+    {
+      importer_code: "USA",
+      exporter_code: "MEX",
+      product_code: "290121",
+      valid_from: new Date("2020-07-01"),
+      valid_to: null,
+      pref_adval_rate: 0.0,
+    },
+    {
+      importer_code: "CAN",
+      exporter_code: "USA",
+      product_code: "290110",
+      valid_from: new Date("2020-07-01"),
+      valid_to: null,
+      pref_adval_rate: 0.0,
+    },
+    {
+      importer_code: "MEX",
+      exporter_code: "USA",
+      product_code: "290122",
+      valid_from: new Date("2020-07-01"),
+      valid_to: null,
+      pref_adval_rate: 0.0,
+    },
+
+    // EU-UK Trade and Cooperation Agreement
+    {
+      importer_code: "GBR",
+      exporter_code: "AUT",
+      product_code: "290220",
+      valid_from: new Date("2021-01-01"),
+      valid_to: null,
+      pref_adval_rate: 0.0,
+    },
+    {
+      importer_code: "GBR",
+      exporter_code: "POL",
+      product_code: "290230",
+      valid_from: new Date("2021-01-01"),
+      valid_to: null,
+      pref_adval_rate: 0.0,
+    },
+    {
+      importer_code: "AUT",
+      exporter_code: "GBR",
+      product_code: "290121",
+      valid_from: new Date("2021-01-01"),
+      valid_to: null,
+      pref_adval_rate: 0.0,
+    },
+
+    // ASEAN Free Trade Area (AFTA)
+    {
+      importer_code: "SGP",
+      exporter_code: "THA",
+      product_code: "290110",
+      valid_from: new Date("2023-01-01"),
+      valid_to: null,
+      pref_adval_rate: 0.0,
+    },
+    {
+      importer_code: "SGP",
+      exporter_code: "IDN",
+      product_code: "290122",
+      valid_from: new Date("2023-01-01"),
+      valid_to: null,
+      pref_adval_rate: 0.0,
+    },
+    {
+      importer_code: "THA",
+      exporter_code: "SGP",
+      product_code: "290121",
+      valid_from: new Date("2023-01-01"),
+      valid_to: null,
+      pref_adval_rate: 0.0,
+    },
+    {
+      importer_code: "THA",
+      exporter_code: "VNM",
+      product_code: "290220",
+      valid_from: new Date("2023-01-01"),
+      valid_to: null,
+      pref_adval_rate: 0.0,
+    },
+
+    // Japan-Australia EPA (Economic Partnership Agreement)
+    {
+      importer_code: "JPN",
+      exporter_code: "AUS",
+      product_code: "290110",
+      valid_from: new Date("2015-01-15"),
+      valid_to: null,
+      pref_adval_rate: 0.5,
+    },
+    {
+      importer_code: "JPN",
+      exporter_code: "AUS",
+      product_code: "290220",
+      valid_from: new Date("2015-01-15"),
+      valid_to: null,
+      pref_adval_rate: 1.0,
+    },
+    {
+      importer_code: "AUS",
+      exporter_code: "JPN",
+      product_code: "290123",
+      valid_from: new Date("2015-01-15"),
+      valid_to: null,
+      pref_adval_rate: 0.0,
+    },
+
+    // EU internal market preferences (intra-EU trade)
+    {
+      importer_code: "AUT",
+      exporter_code: "POL",
+      product_code: "290110",
+      valid_from: new Date("2004-05-01"),
+      valid_to: null,
+      pref_adval_rate: 0.0,
+    },
+    {
+      importer_code: "POL",
+      exporter_code: "AUT",
+      product_code: "290220",
+      valid_from: new Date("2004-05-01"),
+      valid_to: null,
+      pref_adval_rate: 0.0,
+    },
+    {
+      importer_code: "AUT",
+      exporter_code: "CZE",
+      product_code: "290122",
+      valid_from: new Date("2004-05-01"),
+      valid_to: null,
+      pref_adval_rate: 0.0,
+    },
+
+    // CPTPP (Comprehensive and Progressive Trans-Pacific Partnership)
+    {
+      importer_code: "CAN",
+      exporter_code: "AUS",
+      product_code: "290110",
+      valid_from: new Date("2018-12-30"),
+      valid_to: null,
+      pref_adval_rate: 0.0,
+    },
+    {
+      importer_code: "CAN",
+      exporter_code: "JPN",
+      product_code: "290122",
+      valid_from: new Date("2018-12-30"),
+      valid_to: null,
+      pref_adval_rate: 0.0,
+    },
+    {
+      importer_code: "JPN",
+      exporter_code: "CAN",
+      product_code: "290230",
+      valid_from: new Date("2018-12-30"),
+      valid_to: null,
+      pref_adval_rate: 0.5,
+    },
+
+    // MERCOSUR (South American trade bloc)
+    {
+      importer_code: "BRA",
+      exporter_code: "ARG",
+      product_code: "290110",
+      valid_from: new Date("1991-01-01"),
+      valid_to: null,
+      pref_adval_rate: 0.0,
+    },
+    {
+      importer_code: "ARG",
+      exporter_code: "BRA",
+      product_code: "290220",
+      valid_from: new Date("1991-01-01"),
+      valid_to: null,
+      pref_adval_rate: 0.0,
+    },
+    {
+      importer_code: "BRA",
+      exporter_code: "URY",
+      product_code: "290121",
+      valid_from: new Date("1991-01-01"),
+      valid_to: null,
+      pref_adval_rate: 0.0,
+    },
+
+    // Korea-US Free Trade Agreement (KORUS)
+    {
+      importer_code: "USA",
+      exporter_code: "KOR",
+      product_code: "290110",
+      valid_from: new Date("2012-03-15"),
+      valid_to: null,
+      pref_adval_rate: 0.0,
+    },
+    {
+      importer_code: "USA",
+      exporter_code: "KOR",
+      product_code: "290220",
+      valid_from: new Date("2012-03-15"),
+      valid_to: null,
+      pref_adval_rate: 0.0,
+    },
+    {
+      importer_code: "KOR",
+      exporter_code: "USA",
+      product_code: "290121",
+      valid_from: new Date("2012-03-15"),
+      valid_to: null,
+      pref_adval_rate: 0.0,
+    },
+
+    // China-ASEAN FTA
+    {
+      importer_code: "CHN",
+      exporter_code: "THA",
+      product_code: "290110",
+      valid_from: new Date("2010-01-01"),
+      valid_to: null,
+      pref_adval_rate: 0.0,
+    },
+    {
+      importer_code: "CHN",
+      exporter_code: "SGP",
+      product_code: "290220",
+      valid_from: new Date("2010-01-01"),
+      valid_to: null,
+      pref_adval_rate: 0.0,
+    },
+    {
+      importer_code: "THA",
+      exporter_code: "CHN",
+      product_code: "290122",
+      valid_from: new Date("2010-01-01"),
+      valid_to: null,
+      pref_adval_rate: 1.5,
+    },
+
+    // EFTA (European Free Trade Association)
+    {
+      importer_code: "CHE",
+      exporter_code: "ISL",
+      product_code: "290110",
+      valid_from: new Date("1960-01-01"),
+      valid_to: null,
+      pref_adval_rate: 0.0,
+    },
+    {
+      importer_code: "CHE",
+      exporter_code: "NOR",
+      product_code: "290220",
+      valid_from: new Date("1960-01-01"),
+      valid_to: null,
+      pref_adval_rate: 0.0,
+    },
+    {
+      importer_code: "NOR",
+      exporter_code: "CHE",
+      product_code: "290121",
+      valid_from: new Date("1960-01-01"),
+      valid_to: null,
+      pref_adval_rate: 0.0,
+    },
+
+    // Generalized System of Preferences (GSP) - USA to developing countries
+    {
+      importer_code: "USA",
+      exporter_code: "IND",
+      product_code: "290122",
+      valid_from: new Date("2020-01-01"),
+      valid_to: null,
+      pref_adval_rate: 2.5,
+    },
+    {
+      importer_code: "USA",
+      exporter_code: "BRA",
+      product_code: "290123",
+      valid_from: new Date("2020-01-01"),
+      valid_to: null,
+      pref_adval_rate: 2.0,
+    },
+    {
+      importer_code: "USA",
+      exporter_code: "THA",
+      product_code: "290230",
+      valid_from: new Date("2020-01-01"),
+      valid_to: null,
+      pref_adval_rate: 1.5,
+    },
+
+    // EU GSP schemes
+    {
+      importer_code: "GBR",
+      exporter_code: "BGD",
+      product_code: "290110",
+      valid_from: new Date("2021-01-01"),
+      valid_to: null,
+      pref_adval_rate: 0.0,
+    },
+    {
+      importer_code: "AUT",
+      exporter_code: "PAK",
+      product_code: "290220",
+      valid_from: new Date("2014-01-01"),
+      valid_to: null,
+      pref_adval_rate: 0.5,
+    },
+
+    // African Continental Free Trade Area (AfCFTA)
+    {
+      importer_code: "ZAF",
+      exporter_code: "KEN",
+      product_code: "290110",
+      valid_from: new Date("2021-01-01"),
+      valid_to: null,
+      pref_adval_rate: 1.0,
+    },
+    {
+      importer_code: "KEN",
+      exporter_code: "ZAF",
+      product_code: "290220",
+      valid_from: new Date("2021-01-01"),
+      valid_to: null,
+      pref_adval_rate: 1.0,
+    },
+
+    // Australia-Singapore FTA
+    {
+      importer_code: "AUS",
+      exporter_code: "SGP",
+      product_code: "290110",
+      valid_from: new Date("2003-07-28"),
+      valid_to: null,
+      pref_adval_rate: 0.0,
+    },
+    {
+      importer_code: "SGP",
+      exporter_code: "AUS",
+      product_code: "290121",
+      valid_from: new Date("2003-07-28"),
+      valid_to: null,
+      pref_adval_rate: 0.0,
+    },
+
+    // Historical preferences (expired/revised)
+    {
+      importer_code: "USA",
+      exporter_code: "CHN",
+      product_code: "290110",
+      valid_from: new Date("2015-01-01"),
+      valid_to: new Date("2018-12-31"),
+      pref_adval_rate: 3.5,
+    },
+    {
+      importer_code: "GBR",
+      exporter_code: "IND",
+      product_code: "290122",
+      valid_from: new Date("2019-01-01"),
+      valid_to: new Date("2022-12-31"),
+      pref_adval_rate: 2.5,
+    },
+
+    // Bilateral agreements with reduced but non-zero rates
+    {
+      importer_code: "JPN",
+      exporter_code: "IND",
+      product_code: "290110",
+      valid_from: new Date("2011-08-01"),
+      valid_to: null,
+      pref_adval_rate: 2.5,
+    },
+    {
+      importer_code: "IND",
+      exporter_code: "JPN",
+      product_code: "290220",
+      valid_from: new Date("2011-08-01"),
+      valid_to: null,
+      pref_adval_rate: 3.0,
+    },
+
+    // Chile's extensive FTA network
+    {
+      importer_code: "CHL",
+      exporter_code: "USA",
+      product_code: "290110",
+      valid_from: new Date("2004-01-01"),
+      valid_to: null,
+      pref_adval_rate: 0.0,
+    },
+    {
+      importer_code: "CHL",
+      exporter_code: "CHN",
+      product_code: "290220",
+      valid_from: new Date("2006-10-01"),
+      valid_to: null,
+      pref_adval_rate: 0.0,
+    },
+    {
+      importer_code: "USA",
+      exporter_code: "CHL",
+      product_code: "290121",
+      valid_from: new Date("2004-01-01"),
+      valid_to: null,
+      pref_adval_rate: 0.0,
+    },
+  ];
+
+  for (const preference of preferences) {
+    await prisma.preference.upsert({
+      where: {
+        importer_code_exporter_code_product_code_valid_from: {
+          importer_code: preference.importer_code,
+          exporter_code: preference.exporter_code,
+          product_code: preference.product_code,
+          valid_from: preference.valid_from,
+        },
+      },
+      update: {
+        valid_to: preference.valid_to,
+        pref_adval_rate: preference.pref_adval_rate,
+      },
+      create: preference,
+    });
+  }
+  console.log(`Seeded ${preferences.length} preference records.`);
+
+  // Seed measures (tariff rates with three calculation types)
+  console.log("Seeding measures...");
+  const measures = [
+    // TYPE 1: COMPOUND - Both MFN ad-valorem AND specific duty (requires weight)
+    // These apply both percentage and per-kg charges
+    {
+      importer_code: "USA",
+      product_code: "290110", // Acyclic hydrocarbons
+      valid_from: new Date("2020-01-01"),
+      valid_to: null,
+      mfn_adval_rate: 5.5, // 5.5% of trade value
+      specific_rate_per_kg: 0.25, // $0.25 per kg
+    },
+    {
+      importer_code: "GBR",
+      product_code: "290220", // Benzene
+      valid_from: new Date("2021-01-01"),
+      valid_to: null,
+      mfn_adval_rate: 3.7,
+      specific_rate_per_kg: 0.15,
+    },
+    {
+      importer_code: "ARG",
+      product_code: "290241", // o-Xylene
+      valid_from: new Date("2020-01-01"),
+      valid_to: null,
+      mfn_adval_rate: 4.2,
+      specific_rate_per_kg: 0.18,
+    },
+    {
+      importer_code: "NZL",
+      product_code: "290121", // Ethylene
+      valid_from: new Date("2019-01-01"),
+      valid_to: null,
+      mfn_adval_rate: 6.0,
+      specific_rate_per_kg: 0.30,
+    },
+    {
+      importer_code: "JPN",
+      product_code: "290122", // Propene (Propylene)
+      valid_from: new Date("2020-06-01"),
+      valid_to: null,
+      mfn_adval_rate: 4.8,
+      specific_rate_per_kg: 0.22,
+    },
+
+    // TYPE 2: SPECIFIC ONLY - Per-kg charge only (requires weight)
+    // No percentage, just flat rate per kilogram
+    {
+      importer_code: "AUS",
+      product_code: "290110",
+      valid_from: new Date("2020-01-01"),
+      valid_to: null,
+      mfn_adval_rate: null,
+      specific_rate_per_kg: 0.35, // Only per-kg rate
+    },
+    {
+      importer_code: "CHN",
+      product_code: "290220",
+      valid_from: new Date("2021-01-01"),
+      valid_to: null,
+      mfn_adval_rate: null,
+      specific_rate_per_kg: 0.40,
+    },
+    {
+      importer_code: "IND",
+      product_code: "290121",
+      valid_from: new Date("2019-06-01"),
+      valid_to: null,
+      mfn_adval_rate: null,
+      specific_rate_per_kg: 0.28,
+    },
+    {
+      importer_code: "BRA",
+      product_code: "290122",
+      valid_from: new Date("2020-03-01"),
+      valid_to: null,
+      mfn_adval_rate: null,
+      specific_rate_per_kg: 0.32,
+    },
+    {
+      importer_code: "CAN",
+      product_code: "290241",
+      valid_from: new Date("2021-01-01"),
+      valid_to: null,
+      mfn_adval_rate: null,
+      specific_rate_per_kg: 0.20,
+    },
+
+    // TYPE 3: MFN AD-VALOREM ONLY - Percentage of trade value only (no weight needed)
+    // Standard percentage-based tariff
+    {
+      importer_code: "SGP",
+      product_code: "290110",
+      valid_from: new Date("2020-01-01"),
+      valid_to: null,
+      mfn_adval_rate: 2.5, // Only percentage rate
+      specific_rate_per_kg: null,
+    },
+    {
+      importer_code: "KOR",
+      product_code: "290220",
+      valid_from: new Date("2021-01-01"),
+      valid_to: null,
+      mfn_adval_rate: 8.0,
+      specific_rate_per_kg: null,
+    },
+    {
+      importer_code: "VNM",
+      product_code: "290121",
+      valid_from: new Date("2020-01-01"),
+      valid_to: null,
+      mfn_adval_rate: 5.0,
+      specific_rate_per_kg: null,
+    },
+    {
+      importer_code: "THA",
+      product_code: "290122",
+      valid_from: new Date("2019-01-01"),
+      valid_to: null,
+      mfn_adval_rate: 10.0,
+      specific_rate_per_kg: null,
+    },
+    {
+      importer_code: "ZAF",
+      product_code: "290241",
+      valid_from: new Date("2020-01-01"),
+      valid_to: null,
+      mfn_adval_rate: 7.5,
+      specific_rate_per_kg: null,
+    },
+    {
+      importer_code: "RUS",
+      product_code: "290123", // Butene and isomers
+      valid_from: new Date("2020-01-01"),
+      valid_to: null,
+      mfn_adval_rate: 6.5,
+      specific_rate_per_kg: null,
+    },
+    {
+      importer_code: "CHE",
+      product_code: "290124", // Buta-1,3-diene
+      valid_from: new Date("2020-01-01"),
+      valid_to: null,
+      mfn_adval_rate: 4.5,
+      specific_rate_per_kg: null,
+    },
+
+    // Additional variations for testing different countries and products
+    {
+      importer_code: "NOR",
+      product_code: "290211", // Cyclohexane
+      valid_from: new Date("2020-01-01"),
+      valid_to: null,
+      mfn_adval_rate: 3.2,
+      specific_rate_per_kg: 0.12,
+    },
+    {
+      importer_code: "TUR",
+      product_code: "290211",
+      valid_from: new Date("2021-01-01"),
+      valid_to: null,
+      mfn_adval_rate: 4.0,
+      specific_rate_per_kg: null,
+    },
+    {
+      importer_code: "SWE",
+      product_code: "290211",
+      valid_from: new Date("2020-01-01"),
+      valid_to: null,
+      mfn_adval_rate: null,
+      specific_rate_per_kg: 0.25,
+    },
+
+    // Historical rates (expired)
+    {
+      importer_code: "USA",
+      product_code: "290123",
+      valid_from: new Date("2015-01-01"),
+      valid_to: new Date("2019-12-31"),
+      mfn_adval_rate: 7.0,
+      specific_rate_per_kg: 0.35,
+    },
+    {
+      importer_code: "GBR",
+      product_code: "290124",
+      valid_from: new Date("2016-01-01"),
+      valid_to: new Date("2020-12-31"),
+      mfn_adval_rate: 5.5,
+      specific_rate_per_kg: null,
+    },
+  ];
+
+  for (const measure of measures) {
+    await prisma.measure.upsert({
+      where: {
+        importer_code_product_code_valid_from: {
+          importer_code: measure.importer_code,
+          product_code: measure.product_code,
+          valid_from: measure.valid_from,
+        },
+      },
+      update: {
+        valid_to: measure.valid_to,
+        mfn_adval_rate: measure.mfn_adval_rate,
+        specific_rate_per_kg: measure.specific_rate_per_kg,
+      },
+      create: measure,
+    });
+  }
+  console.log(`Seeded ${measures.length} measure records.`);
 }
 
 main()

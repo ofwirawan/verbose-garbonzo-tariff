@@ -7,6 +7,8 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.UUID;
 
+import com.fasterxml.jackson.databind.JsonNode;
+
 //Output Data Transfer Object for tariff calculation
 
 @Getter
@@ -23,10 +25,7 @@ public class CalculateResponse {
 
     private BigDecimal tradeOriginal;
     private BigDecimal tradeFinal;   //after duty applied
-
-    private BigDecimal rateAdval;    
-    private BigDecimal rateSpecific; 
-    private BigDecimal ratePref;     
-
     private BigDecimal netWeight;    
+
+    private JsonNode appliedRate;
 }
