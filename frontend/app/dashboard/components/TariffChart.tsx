@@ -100,151 +100,184 @@ function TariffChartForm({
   onCalculate,
 }: TariffChartFormProps) {
   return (
-    <div className="mb-8 w-full">
-      <div className="flex flex-col lg:flex-row justify-between items-stretch gap-8 w-full">
-        <div className="flex-1 min-w-0">
-          <Label className="mb-2 font-medium block">Start Date</Label>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                className={cn(
-                  "w-full justify-start text-left font-normal",
-                  !startDate && "text-muted-foreground"
-                )}
-              >
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {startDate ? (
-                  format(startDate, "PPP")
-                ) : (
-                  <span>Pick a date</span>
-                )}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <Calendar
-                mode="single"
-                selected={startDate}
-                onSelect={(date) => date && onStartDateChange(date)}
-                initialFocus
-              />
-            </PopoverContent>
-          </Popover>
-        </div>
+    <div className="mb-8 w-full space-y-6">
+      {/* Date Range Section */}
+      <div className="space-y-3">
+        <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
+          Date Range
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">Start Date</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-full justify-start text-left font-normal h-11",
+                    !startDate && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {startDate ? (
+                    format(startDate, "PPP")
+                  ) : (
+                    <span>Pick a date</span>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={startDate}
+                  onSelect={(date) => date && onStartDateChange(date)}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
 
-        <div className="flex-1 min-w-0">
-          <Label className="mb-2 font-medium block">End Date</Label>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                className={cn(
-                  "w-full justify-start text-left font-normal",
-                  !endDate && "text-muted-foreground"
-                )}
-              >
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {endDate ? format(endDate, "PPP") : <span>Pick a date</span>}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <Calendar
-                mode="single"
-                selected={endDate}
-                onSelect={(date) => date && onEndDateChange(date)}
-                initialFocus
-              />
-            </PopoverContent>
-          </Popover>
-        </div>
-
-        <div className="flex-1 min-w-0">
-          <Label htmlFor="importingCountry" className="mb-2">
-            Importing Country (Sets Tariffs):
-          </Label>
-          <Combobox
-            value={importingCountry}
-            onValueChange={onImportingCountryChange}
-            placeholder="Select importing country"
-            id="importingCountry"
-            options={countryOptions}
-            searchPlaceholder="Search importing country..."
-            emptyText="No country found."
-          />
-        </div>
-
-        <div className="flex-1 min-w-0">
-          <Label htmlFor="exportingCountry" className="mb-2">
-            Exporting Country (Pays Tariffs):
-          </Label>
-          <Combobox
-            value={exportingCountry}
-            onValueChange={onExportingCountryChange}
-            placeholder="Select exporting country"
-            id="exportingCountry"
-            options={countryOptions}
-            searchPlaceholder="Search exporting country..."
-            emptyText="No country found."
-          />
-        </div>
-
-        <div className="flex-1 min-w-0">
-          <Label htmlFor="productCode" className="mb-2">
-            Product (HS6 Code):
-          </Label>
-          <Combobox
-            value={productCode}
-            onValueChange={onProductCodeChange}
-            placeholder="Select product"
-            id="productCode"
-            options={productOptions}
-            searchPlaceholder="Search product..."
-            emptyText="No product found."
-            showSecondaryText={true}
-          />
-        </div>
-
-        <div className="flex-1 min-w-0">
-          <Label htmlFor="tradeValue" className="mb-2">
-            Trade Value (USD):
-          </Label>
-          <Input
-            id="tradeValue"
-            type="number"
-            min="0"
-            step="0.01"
-            value={tradeValue}
-            onChange={(e) => onTradeValueChange(e.target.value)}
-            placeholder="Enter trade value"
-            className="w-full"
-          />
-        </div>
-
-        <div className="flex-1 min-w-0">
-          <Label htmlFor="netWeight" className="mb-2">
-            Net Weight (kg):
-          </Label>
-          <Input
-            id="netWeight"
-            type="number"
-            min="0"
-            step="0.01"
-            value={netWeight}
-            onChange={(e) => onNetWeightChange(e.target.value)}
-            placeholder="Optional - for specific duties"
-            className="w-full"
-          />
-          <span className="text-xs text-gray-500 mt-1">
-            Required for specific duty calculations
-          </span>
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">End Date</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-full justify-start text-left font-normal h-11",
+                    !endDate && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {endDate ? format(endDate, "PPP") : <span>Pick a date</span>}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={endDate}
+                  onSelect={(date) => date && onEndDateChange(date)}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
         </div>
       </div>
 
-      <div className="flex justify-center mt-6">
+      {/* Trade Partners Section */}
+      <div className="space-y-3 pt-4 border-t">
+        <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
+          Trade Partners
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="importingCountry" className="text-sm font-medium">
+              Importing Country
+              <span className="text-xs text-gray-500 ml-1 font-normal">
+                (Sets Tariffs)
+              </span>
+            </Label>
+            <Combobox
+              value={importingCountry}
+              onValueChange={onImportingCountryChange}
+              placeholder="Select importing country"
+              id="importingCountry"
+              options={countryOptions}
+              searchPlaceholder="Search importing country..."
+              emptyText="No country found."
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="exportingCountry" className="text-sm font-medium">
+              Exporting Country
+              <span className="text-xs text-gray-500 ml-1 font-normal">
+                (Pays Tariffs)
+              </span>
+            </Label>
+            <Combobox
+              value={exportingCountry}
+              onValueChange={onExportingCountryChange}
+              placeholder="Select exporting country"
+              id="exportingCountry"
+              options={countryOptions}
+              searchPlaceholder="Search exporting country..."
+              emptyText="No country found."
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Product & Trade Details Section */}
+      <div className="space-y-3 pt-4 border-t">
+        <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
+          Product & Trade Details
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="space-y-2 md:col-span-3 lg:col-span-1">
+            <Label htmlFor="productCode" className="text-sm font-medium">
+              Product (HS6 Code)
+            </Label>
+            <Combobox
+              value={productCode}
+              onValueChange={onProductCodeChange}
+              placeholder="Select product"
+              id="productCode"
+              options={productOptions}
+              searchPlaceholder="Search product..."
+              emptyText="No product found."
+              showSecondaryText={true}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="tradeValue" className="text-sm font-medium">
+              Trade Value (USD)
+            </Label>
+            <Input
+              id="tradeValue"
+              type="number"
+              min="0"
+              step="0.01"
+              value={tradeValue}
+              onChange={(e) => onTradeValueChange(e.target.value)}
+              placeholder="Enter trade value"
+              className="w-full h-11"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="netWeight" className="text-sm font-medium">
+              Net Weight (kg)
+              <span className="text-xs text-gray-500 ml-1 font-normal">
+                (Optional)
+              </span>
+            </Label>
+            <Input
+              id="netWeight"
+              type="number"
+              min="0"
+              step="0.01"
+              value={netWeight}
+              onChange={(e) => onNetWeightChange(e.target.value)}
+              placeholder="For specific duties"
+              className="w-full h-11"
+            />
+          </div>
+        </div>
+        <p className="text-xs text-gray-500 mt-1">
+          Net weight is required for specific duty calculations
+        </p>
+      </div>
+
+      {/* Action Button */}
+      <div className="flex justify-end pt-4">
         <Button
           onClick={onCalculate}
           disabled={!importingCountry || !tradeValue || isCalculating}
-          className="bg-black text-white px-6 py-2 rounded hover:bg-gray-800 disabled:opacity-50"
+          size="lg"
+          className="bg-black text-white px-8 hover:bg-gray-800 disabled:opacity-50 min-w-[180px]"
         >
           {isCalculating ? "Calculating..." : "Calculate Tariff"}
         </Button>
@@ -367,10 +400,6 @@ function TariffChartDisplay({
     </ChartContainer>
   );
 }
-
-// ============================================
-// MAIN COMPONENT
-// ============================================
 
 export default function TariffChart({
   initialImportingCountry = "",
