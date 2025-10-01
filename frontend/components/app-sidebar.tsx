@@ -46,8 +46,8 @@ const data = {
       icon: IconDashboard,
     },
     {
-      title: "Lifecycle",
-      url: "#",
+      title: "History",
+      url: "/history",
       icon: IconListDetails,
     },
     {
@@ -164,6 +164,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 <IconInnerShadowTop className="!size-5" />
                 <span className="text-base font-semibold">Acme Inc.</span>
               </a>
+
+            
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
