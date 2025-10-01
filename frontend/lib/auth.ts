@@ -117,3 +117,40 @@ export function getUsername(): string | null {
   if (typeof window === "undefined") return null;
   return localStorage.getItem("username");
 }
+
+/**
+ * Get authentication headers
+ */
+export function getAuthHeaders(): HeadersInit {
+  const token = getToken();
+  return {
+    'Content-Type': 'application/json',
+    ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+  };
+}
+
+/**
+ * Authenticated fetch wrapper that includes JWT token
+ */
+export async function authenticatedFetch(url: string, options?: RequestInit): Promise<Response> {
+  const token = getToken();
+
+  const response = await fetch(url, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+      ...options?.headers,
+    },
+  });
+
+  // If unauthorized, redirect to login
+  if (response.status === 401 || response.status === 403) {
+    if (typeof window !== 'undefined') {
+      logout();
+      window.location.href = '/login';
+    }
+  }
+
+  return response;
+}

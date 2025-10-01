@@ -17,15 +17,7 @@ export function CalculationResults({
   );
 
   return (
-    <div
-      className={`mt-8 p-6 rounded-lg ${
-        result.suspensionActive === true
-          ? "bg-green-50 border-2 border-green-200"
-          : result.suspensionActive === false
-          ? "bg-amber-50 border-2 border-amber-200"
-          : "bg-gray-50"
-      }`}
-    >
+    <div className="mt-8 p-6 rounded-lg bg-white border border-gray-200">
       <ResultHeader result={result} />
       <SuspensionNotice result={result} />
       <ResultSummaryCards
@@ -34,23 +26,23 @@ export function CalculationResults({
       />
       <RateDetails result={result} suspensionNote={suspensionNote} />
       <TransactionInfo result={result} />
-      <ChartLegend />
+      <ChartLegend result={result} />
     </div>
   );
 }
 
 function ResultHeader({ result }: { result: TariffCalculationResult }) {
   return (
-    <div className="flex items-center gap-2 mb-4">
-      <h3 className="text-lg font-semibold">Tariff Calculation Results</h3>
+    <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gray-200">
+      <h3 className="text-xl font-bold text-gray-900">Calculation Results</h3>
       {result.suspensionActive === true && (
-        <span className="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
-          TARIFF SUSPENDED (ACTIVE)
+        <span className="bg-gray-900 text-white text-xs font-medium px-3 py-1 rounded uppercase tracking-wide">
+          Suspension Active
         </span>
       )}
       {result.suspensionActive === false && (
-        <span className="bg-amber-100 text-amber-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
-          TARIFF SUSPENDED (INACTIVE)
+        <span className="bg-gray-400 text-white text-xs font-medium px-3 py-1 rounded uppercase tracking-wide">
+          Suspension Inactive
         </span>
       )}
     </div>
@@ -60,42 +52,34 @@ function ResultHeader({ result }: { result: TariffCalculationResult }) {
 function SuspensionNotice({ result }: { result: TariffCalculationResult }) {
   if (result.suspensionActive === true) {
     return (
-      <div className="mb-4 p-3 bg-green-100 border-l-4 border-green-400 rounded">
-        <div className="flex items-center">
-          <div className="ml-3">
-            <p className="text-sm text-green-700">
-              <strong>Tariff Suspension Active:</strong> This trade relationship
-              has an active tariff suspension, meaning no duties are charged on
-              this product from the specified exporter to importer.
-            </p>
-            {result.suspensionNote && (
-              <p className="text-sm text-green-600 mt-2 italic">
-                {result.suspensionNote}
-              </p>
-            )}
-          </div>
-        </div>
+      <div className="mb-6 p-4 bg-gray-50 border-l-4 border-gray-900 rounded">
+        <p className="text-sm text-gray-900">
+          <strong>Tariff Suspension Active:</strong> This trade relationship
+          has an active tariff suspension, meaning no duties are charged on
+          this product from the specified exporter to importer.
+        </p>
+        {result.suspensionNote && (
+          <p className="text-sm text-gray-600 mt-2 italic">
+            {result.suspensionNote}
+          </p>
+        )}
       </div>
     );
   }
 
   if (result.suspensionActive === false) {
     return (
-      <div className="mb-4 p-3 bg-amber-100 border-l-4 border-amber-400 rounded">
-        <div className="flex items-center">
-          <div className="ml-3">
-            <p className="text-sm text-amber-700">
-              <strong>Historical Suspension Record:</strong> This trade
-              relationship had a tariff suspension in the past, but it is
-              currently inactive or expired. No tariff rate data is available.
-            </p>
-            {result.suspensionNote && (
-              <p className="text-sm text-amber-600 mt-2 italic">
-                {result.suspensionNote}
-              </p>
-            )}
-          </div>
-        </div>
+      <div className="mb-6 p-4 bg-gray-50 border-l-4 border-gray-400 rounded">
+        <p className="text-sm text-gray-900">
+          <strong>Historical Suspension Record:</strong> This trade
+          relationship had a tariff suspension in the past, but it is
+          currently inactive or expired. No tariff rate data is available.
+        </p>
+        {result.suspensionNote && (
+          <p className="text-sm text-gray-600 mt-2 italic">
+            {result.suspensionNote}
+          </p>
+        )}
       </div>
     );
   }
@@ -114,23 +98,27 @@ function ResultSummaryCards({
 
   return (
     <div
-      className={`grid gap-4 ${
+      className={`grid gap-4 mb-6 ${
         hasAppliedRateCard
           ? "grid-cols-2 md:grid-cols-4"
           : "grid-cols-1 md:grid-cols-3"
       }`}
     >
       {hasAppliedRateCard && <AppliedRateCard appliedRate={appliedRate} />}
-      <div className="bg-white p-4 rounded shadow">
-        <div className="text-sm text-gray-500">Original Trade Value</div>
-        <div className="text-xl font-bold">
+      <div className="bg-gray-50 p-5 rounded-lg border border-gray-200">
+        <div className="text-xs text-gray-500 uppercase tracking-wide font-medium mb-2">
+          Original Trade Value
+        </div>
+        <div className="text-2xl font-bold text-gray-900">
           ${Number(result.tradeOriginal).toLocaleString()}
         </div>
       </div>
       <DutyAmountCard result={result} />
-      <div className="bg-white p-4 rounded shadow">
-        <div className="text-sm text-gray-500">Final Amount</div>
-        <div className="text-xl font-bold text-green-600">
+      <div className="bg-gray-50 p-5 rounded-lg border border-gray-200">
+        <div className="text-xs text-gray-500 uppercase tracking-wide font-medium mb-2">
+          Final Amount
+        </div>
+        <div className="text-2xl font-bold text-gray-900">
           $
           {Number(result.tradeFinal).toLocaleString("en-US", {
             minimumFractionDigits: 2,
@@ -160,12 +148,6 @@ function AppliedRateCard({
     return "0.00";
   };
 
-  const getColor = () => {
-    if (appliedRate?.suspension !== undefined) return "text-green-600";
-    if (appliedRate?.prefAdval !== undefined) return "text-purple-600";
-    return "text-blue-600";
-  };
-
   const getLabel = () => {
     if (appliedRate?.suspension !== undefined) return "Suspended";
     if (appliedRate?.prefAdval !== undefined) return "Preferential (FTA)";
@@ -179,10 +161,12 @@ function AppliedRateCard({
   };
 
   return (
-    <div className="bg-white p-4 rounded shadow">
-      <div className="text-sm text-gray-500">Applied Rate</div>
-      <div className={`text-xl font-bold ${getColor()}`}>{getRate()}%</div>
-      <div className="text-xs text-gray-400 mt-1">{getLabel()}</div>
+    <div className="bg-gray-50 p-5 rounded-lg border border-gray-200">
+      <div className="text-xs text-gray-500 uppercase tracking-wide font-medium mb-2">
+        Applied Rate
+      </div>
+      <div className="text-2xl font-bold text-gray-900">{getRate()}%</div>
+      <div className="text-xs text-gray-600 mt-1 font-medium">{getLabel()}</div>
     </div>
   );
 }
@@ -194,21 +178,21 @@ function DutyAmountCard({ result }: { result: TariffCalculationResult }) {
   const getDutyLabel = () => {
     if (dutyAmount === 0 && appliedRate.suspension !== undefined) {
       return (
-        <div className="text-xs text-green-600 mt-1 font-medium">
+        <div className="text-xs text-gray-600 mt-1 font-medium">
           No duty - Suspended
         </div>
       );
     }
     if (dutyAmount === 0 && appliedRate.prefAdval !== undefined) {
       return (
-        <div className="text-xs text-purple-600 mt-1 font-medium">
+        <div className="text-xs text-gray-600 mt-1 font-medium">
           No duty - FTA
         </div>
       );
     }
     if (dutyAmount > 0 && appliedRate.prefAdval !== undefined) {
       return (
-        <div className="text-xs text-purple-600 mt-1 font-medium">
+        <div className="text-xs text-gray-600 mt-1 font-medium">
           Reduced - FTA
         </div>
       );
@@ -217,13 +201,11 @@ function DutyAmountCard({ result }: { result: TariffCalculationResult }) {
   };
 
   return (
-    <div className="bg-white p-4 rounded shadow">
-      <div className="text-sm text-gray-500">Duty Amount</div>
-      <div
-        className={`text-xl font-bold ${
-          dutyAmount === 0 ? "text-green-600" : "text-red-600"
-        }`}
-      >
+    <div className="bg-gray-50 p-5 rounded-lg border border-gray-200">
+      <div className="text-xs text-gray-500 uppercase tracking-wide font-medium mb-2">
+        Duty Amount
+      </div>
+      <div className="text-2xl font-bold text-gray-900">
         $
         {dutyAmount.toLocaleString("en-US", {
           minimumFractionDigits: 2,
@@ -245,55 +227,65 @@ function RateDetails({
   const appliedRate = result.appliedRate || {};
 
   return (
-    <div className="mt-4 p-4 bg-white rounded border">
-      <h4 className="font-medium mb-2">Rate Details:</h4>
+    <div className="p-5 bg-gray-50 rounded-lg border border-gray-200">
+      <h4 className="font-bold text-gray-900 mb-4 text-sm uppercase tracking-wide">
+        Rate Details
+      </h4>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
         {appliedRate.suspension !== undefined && (
-          <div className="bg-green-50 p-3 rounded">
-            <span className="text-gray-700 font-medium">Suspension Rate:</span>
-            <span className="ml-2 font-bold text-green-700">
+          <div className="bg-white p-4 rounded-lg border border-gray-200">
+            <div className="text-xs text-gray-500 uppercase tracking-wide mb-1">
+              Suspension Rate
+            </div>
+            <div className="font-bold text-gray-900 text-lg">
               {Number(appliedRate.suspension).toFixed(2)}%
-            </span>
-            <div className="text-xs text-gray-600 mt-1">Tariff suspended</div>
+            </div>
+            <div className="text-xs text-gray-600 mt-2">Tariff suspended</div>
           </div>
         )}
         {appliedRate.prefAdval !== undefined && (
-          <div className="bg-purple-50 p-3 rounded">
-            <span className="text-gray-700 font-medium">
-              Preferential Rate:
-            </span>
-            <span className="ml-2 font-bold text-purple-700">
+          <div className="bg-white p-4 rounded-lg border border-gray-200">
+            <div className="text-xs text-gray-500 uppercase tracking-wide mb-1">
+              Preferential Rate
+            </div>
+            <div className="font-bold text-gray-900 text-lg">
               {Number(appliedRate.prefAdval).toFixed(2)}%
-            </span>
-            <div className="text-xs text-gray-600 mt-1">
+            </div>
+            <div className="text-xs text-gray-600 mt-2">
               From trade agreement between {result.importerCode} and{" "}
               {result.exporterCode}
             </div>
           </div>
         )}
         {appliedRate.mfnAdval !== undefined && (
-          <div className="bg-blue-50 p-3 rounded">
-            <span className="text-gray-700 font-medium">MFN Ad-valorem:</span>
-            <span className="ml-2 font-bold text-blue-700">
+          <div className="bg-white p-4 rounded-lg border border-gray-200">
+            <div className="text-xs text-gray-500 uppercase tracking-wide mb-1">
+              MFN Ad-valorem
+            </div>
+            <div className="font-bold text-gray-900 text-lg">
               {Number(appliedRate.mfnAdval).toFixed(2)}%
-            </span>
-            <div className="text-xs text-gray-600 mt-1">Standard MFN rate</div>
+            </div>
+            <div className="text-xs text-gray-600 mt-2">Standard MFN rate</div>
           </div>
         )}
         {appliedRate.specific !== undefined && (
-          <div className="bg-amber-50 p-3 rounded">
-            <span className="text-gray-700 font-medium">⚖️ Specific Duty:</span>
-            <span className="ml-2 font-bold text-amber-700">
+          <div className="bg-white p-4 rounded-lg border border-gray-200">
+            <div className="text-xs text-gray-500 uppercase tracking-wide mb-1">
+              Specific Duty
+            </div>
+            <div className="font-bold text-gray-900 text-lg">
               ${Number(appliedRate.specific).toFixed(2)}/kg
-            </span>
-            <div className="text-xs text-gray-600 mt-1">Per kilogram rate</div>
+            </div>
+            <div className="text-xs text-gray-600 mt-2">Per kilogram rate</div>
           </div>
         )}
       </div>
       {suspensionNote && (
-        <div className="mt-4 pt-4 border-t">
-          <span className="text-gray-500">Suspension Note:</span>
-          <p className="mt-1 text-gray-700 italic">{suspensionNote}</p>
+        <div className="mt-4 pt-4 border-t border-gray-200">
+          <span className="text-xs text-gray-500 uppercase tracking-wide font-medium">
+            Suspension Note:
+          </span>
+          <p className="mt-2 text-sm text-gray-700 italic">{suspensionNote}</p>
         </div>
       )}
     </div>
@@ -302,40 +294,106 @@ function RateDetails({
 
 function TransactionInfo({ result }: { result: TariffCalculationResult }) {
   return (
-    <>
-      <div className="mt-4 text-sm text-gray-600">
-        <strong>Product:</strong> {result.hs6} |
-        <strong> Transaction Date:</strong> {result.transactionDate} |
-        <strong> Importer:</strong> {result.importerCode} |
-        <strong> Exporter:</strong> {result.exporterCode || "Not specified"}
+    <div className="mt-6 pt-6 border-t border-gray-200">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
+        <div>
+          <div className="text-xs text-gray-500 uppercase tracking-wide font-medium mb-1">
+            Product
+          </div>
+          <div className="text-gray-900 font-medium">{result.hs6}</div>
+        </div>
+        <div>
+          <div className="text-xs text-gray-500 uppercase tracking-wide font-medium mb-1">
+            Transaction Date
+          </div>
+          <div className="text-gray-900 font-medium">
+            {result.transactionDate}
+          </div>
+        </div>
+        <div>
+          <div className="text-xs text-gray-500 uppercase tracking-wide font-medium mb-1">
+            Importer
+          </div>
+          <div className="text-gray-900 font-medium">{result.importerCode}</div>
+        </div>
+        <div>
+          <div className="text-xs text-gray-500 uppercase tracking-wide font-medium mb-1">
+            Exporter
+          </div>
+          <div className="text-gray-900 font-medium">
+            {result.exporterCode || "Not specified"}
+          </div>
+        </div>
       </div>
-      <div className="mt-2 text-xs text-gray-500">
-        <strong>Transaction ID:</strong> {result.transactionId}
+      <div className="mt-4 text-xs text-gray-500">
+        <span className="font-medium">Transaction ID:</span> {result.transactionId}
       </div>
-    </>
+    </div>
   );
 }
 
-function ChartLegend() {
+function ChartLegend({ result }: { result: TariffCalculationResult }) {
+  const appliedRate = result.appliedRate || {};
+
+  // Determine which rates are active
+  const isSuspended = appliedRate.suspension !== undefined;
+  const isPreferential = appliedRate.prefAdval !== undefined;
+  const isMFN = appliedRate.mfnAdval !== undefined;
+  const isSpecific = appliedRate.specific !== undefined;
+
   return (
-    <div className="mt-4 p-3 bg-white rounded border">
-      <h5 className="text-sm font-medium mb-2">Chart Legend:</h5>
-      <div className="flex flex-wrap gap-4 text-xs">
-        <div className="flex items-center gap-1">
-          <div className="w-3 h-3 bg-green-500 rounded"></div>
-          <span> Suspended (0%)</span>
+    <div className="mt-6 pt-6 border-t border-gray-200">
+      <h5 className="text-xs font-bold text-gray-900 mb-3 uppercase tracking-wide">
+        Rate Types Applied
+      </h5>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+        <div className={`flex items-center gap-2 p-2 rounded border transition-all ${
+          isSuspended
+            ? 'bg-gray-900 border-gray-900 shadow-md'
+            : 'bg-gray-50 border-gray-200 opacity-40'
+        }`}>
+          <div className={`w-2 h-2 rounded-full flex-shrink-0 ${
+            isSuspended ? 'bg-white' : 'bg-black'
+          }`}></div>
+          <span className={`font-medium ${
+            isSuspended ? 'text-white' : 'text-gray-500'
+          }`}>Suspended</span>
         </div>
-        <div className="flex items-center gap-1">
-          <div className="w-3 h-3 bg-purple-600 rounded"></div>
-          <span> Preferential (FTA)</span>
+        <div className={`flex items-center gap-2 p-2 rounded border transition-all ${
+          isPreferential
+            ? 'bg-gray-800 border-gray-800 shadow-md'
+            : 'bg-gray-50 border-gray-300 opacity-40'
+        }`}>
+          <div className={`w-2 h-2 border-2 rounded-full flex-shrink-0 ${
+            isPreferential ? 'border-white' : 'border-gray-600'
+          }`}></div>
+          <span className={`font-medium ${
+            isPreferential ? 'text-white' : 'text-gray-500'
+          }`}>Preferential (FTA)</span>
         </div>
-        <div className="flex items-center gap-1">
-          <div className="w-3 h-3 bg-blue-500 rounded"></div>
-          <span> MFN (Standard)</span>
+        <div className={`flex items-center gap-2 p-2 rounded border transition-all ${
+          isMFN
+            ? 'bg-gray-700 border-gray-700 shadow-md'
+            : 'bg-gray-50 border-gray-400 opacity-40'
+        }`}>
+          <div className={`w-2 h-2 border-2 rounded-full flex-shrink-0 ${
+            isMFN ? 'border-white' : 'border-gray-400'
+          }`}></div>
+          <span className={`font-medium ${
+            isMFN ? 'text-white' : 'text-gray-500'
+          }`}>MFN (Standard)</span>
         </div>
-        <div className="flex items-center gap-1">
-          <div className="w-3 h-3 bg-black rounded"></div>
-          <span>Other Tariff</span>
+        <div className={`flex items-center gap-2 p-2 rounded border transition-all ${
+          isSpecific
+            ? 'bg-gray-600 border-gray-600 shadow-md'
+            : 'bg-gray-50 border-gray-200 opacity-40'
+        }`}>
+          <div className={`w-2 h-2 rounded-full flex-shrink-0 ${
+            isSpecific ? 'bg-white' : 'bg-gray-300'
+          }`}></div>
+          <span className={`font-medium ${
+            isSpecific ? 'text-white' : 'text-gray-500'
+          }`}>Specific Duty</span>
         </div>
       </div>
     </div>
