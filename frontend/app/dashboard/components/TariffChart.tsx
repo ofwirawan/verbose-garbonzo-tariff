@@ -17,20 +17,11 @@ import { cn } from "@/lib/utils";
 import { fetchTopSuspension } from "../actions/dashboardactions";
 import {
   Card,
-  CardAction,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import {
   ChartConfig,
   ChartContainer,
@@ -54,13 +45,11 @@ import {
   convertCountriesToOptions,
   convertProductsToOptions,
   getChartColorScheme,
-  filterDataByTimeRange,
   getTooltipBadgeClass,
 } from "./utils/service";
 
 interface TariffChartFormProps {
-  startDate: Date;
-  endDate: Date;
+  transactionDate: Date;
   importingCountry: string;
   exportingCountry: string;
   productCode: string;
@@ -69,8 +58,7 @@ interface TariffChartFormProps {
   countryOptions: DropdownOption[];
   productOptions: DropdownOption[];
   isCalculating: boolean;
-  onStartDateChange: (date: Date) => void;
-  onEndDateChange: (date: Date) => void;
+  onTransactionDateChange: (date: Date) => void;
   onImportingCountryChange: (value: string) => void;
   onExportingCountryChange: (value: string) => void;
   onProductCodeChange: (value: string) => void;
@@ -80,8 +68,7 @@ interface TariffChartFormProps {
 }
 
 function TariffChartForm({
-  startDate,
-  endDate,
+  transactionDate,
   importingCountry,
   exportingCountry,
   productCode,
@@ -90,8 +77,7 @@ function TariffChartForm({
   countryOptions,
   productOptions,
   isCalculating,
-  onStartDateChange,
-  onEndDateChange,
+  onTransactionDateChange,
   onImportingCountryChange,
   onExportingCountryChange,
   onProductCodeChange,
@@ -101,67 +87,42 @@ function TariffChartForm({
 }: TariffChartFormProps) {
   return (
     <div className="mb-8 w-full space-y-6">
-      {/* Date Range Section */}
+      {/* Transaction Date Section */}
       <div className="space-y-3">
         <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
-          Date Range
+          Transaction Date
         </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label className="text-sm font-medium">Start Date</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    "w-full justify-start text-left font-normal h-11",
-                    !startDate && "text-muted-foreground"
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {startDate ? (
-                    format(startDate, "PPP")
-                  ) : (
-                    <span>Pick a date</span>
-                  )}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={startDate}
-                  onSelect={(date) => date && onStartDateChange(date)}
-                  initialFocus
-                />
-              </PopoverContent>
-            </Popover>
-          </div>
-
-          <div className="space-y-2">
-            <Label className="text-sm font-medium">End Date</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    "w-full justify-start text-left font-normal h-11",
-                    !endDate && "text-muted-foreground"
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {endDate ? format(endDate, "PPP") : <span>Pick a date</span>}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={endDate}
-                  onSelect={(date) => date && onEndDateChange(date)}
-                  initialFocus
-                />
-              </PopoverContent>
-            </Popover>
-          </div>
+        <div className="space-y-2">
+          <Label className="text-sm font-medium">Date</Label>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className={cn(
+                  "w-full justify-start text-left font-normal h-11",
+                  !transactionDate && "text-muted-foreground"
+                )}
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {transactionDate ? (
+                  format(transactionDate, "PPP")
+                ) : (
+                  <span>Pick a date</span>
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="single"
+                selected={transactionDate}
+                onSelect={(date) => date && onTransactionDateChange(date)}
+                initialFocus
+                captionLayout="dropdown"
+                startMonth={new Date(1990, 0)}
+                endMonth={new Date(new Date().getFullYear() + 1, 11)}
+              />
+            </PopoverContent>
+          </Popover>
         </div>
       </div>
 
@@ -266,9 +227,6 @@ function TariffChartForm({
             />
           </div>
         </div>
-        <p className="text-xs text-gray-500 mt-1">
-          Net weight is required for specific duty calculations
-        </p>
       </div>
 
       {/* Action Button */}
@@ -429,17 +387,14 @@ export default function TariffChart({
     initialExportingCountry
   );
   const [productCode, setProductCode] = useState(initialProductCode);
-  const [timeRange, setTimeRange] = useState("all");
   const [tradeValue, setTradeValue] = useState("10000");
   const [netWeight, setNetWeight] = useState("");
-  const [startDate, setStartDate] = useState<Date>(new Date("2020-01-01"));
-  const [endDate, setEndDate] = useState<Date>(new Date());
+  const [transactionDate, setTransactionDate] = useState<Date>(new Date());
   const [hasAutoCalculated, setHasAutoCalculated] = useState(false);
 
   // Derived state
   const countryOptions = convertCountriesToOptions(countries);
   const productOptions = convertProductsToOptions(product);
-  const filteredData = filterDataByTimeRange(data, timeRange);
   const chartColorScheme = getChartColorScheme(data);
 
   const chartConfig = {
@@ -456,20 +411,14 @@ export default function TariffChart({
         const suspensionResult = await fetchTopSuspension();
 
         if (suspensionResult.suspension) {
-          const { importer_code, product_code, valid_from, valid_to } =
+          const { importer_code, product_code, valid_from } =
             suspensionResult.suspension;
 
           setImportingCountry(importer_code);
           setProductCode(product_code);
 
           if (valid_from) {
-            setStartDate(new Date(valid_from));
-          }
-
-          if (valid_to) {
-            setEndDate(new Date(valid_to));
-          } else {
-            setEndDate(new Date());
+            setTransactionDate(new Date(valid_from));
           }
         }
       } catch (error) {
@@ -529,8 +478,7 @@ export default function TariffChart({
       productCode,
       tradeValue,
       netWeight,
-      startDate,
-      endDate,
+      transactionDate,
     });
   };
 
@@ -554,39 +502,6 @@ export default function TariffChart({
             </strong>
           </span>
         </CardDescription>
-        <CardAction>
-          <ToggleGroup
-            type="single"
-            value={timeRange}
-            onValueChange={setTimeRange}
-            variant="outline"
-            className="hidden *:data-[slot=toggle-group-item]:!px-4 @[767px]/card:flex"
-          >
-            <ToggleGroupItem value="all">All Years</ToggleGroupItem>
-            <ToggleGroupItem value="5y">Last 5 Years</ToggleGroupItem>
-            <ToggleGroupItem value="3y">Last 3 Years</ToggleGroupItem>
-          </ToggleGroup>
-          <Select value={timeRange} onValueChange={setTimeRange}>
-            <SelectTrigger
-              className="flex w-40 **:data-[slot=select-value]:block **:data-[slot=select-value]:truncate @[767px]/card:hidden"
-              size="sm"
-              aria-label="Select a value"
-            >
-              <SelectValue placeholder="All Years" />
-            </SelectTrigger>
-            <SelectContent className="rounded-xl">
-              <SelectItem value="all" className="rounded-lg">
-                All Years
-              </SelectItem>
-              <SelectItem value="5y" className="rounded-lg">
-                Last 5 Years
-              </SelectItem>
-              <SelectItem value="3y" className="rounded-lg">
-                Last 3 Years
-              </SelectItem>
-            </SelectContent>
-          </Select>
-        </CardAction>
       </CardHeader>
 
       <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
@@ -596,7 +511,7 @@ export default function TariffChart({
           <EmptyDataPlaceholder />
         ) : (
           <TariffChartDisplay
-            data={filteredData}
+            data={data}
             chartConfig={chartConfig}
             chartColorScheme={chartColorScheme}
           />
@@ -605,8 +520,7 @@ export default function TariffChart({
 
       <CardContent>
         <TariffChartForm
-          startDate={startDate}
-          endDate={endDate}
+          transactionDate={transactionDate}
           importingCountry={importingCountry}
           exportingCountry={exportingCountry}
           productCode={productCode}
@@ -615,8 +529,7 @@ export default function TariffChart({
           countryOptions={countryOptions}
           productOptions={productOptions}
           isCalculating={isCalculating}
-          onStartDateChange={setStartDate}
-          onEndDateChange={setEndDate}
+          onTransactionDateChange={setTransactionDate}
           onImportingCountryChange={setImportingCountry}
           onExportingCountryChange={setExportingCountry}
           onProductCodeChange={setProductCode}

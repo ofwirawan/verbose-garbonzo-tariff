@@ -4,10 +4,13 @@ import { useState, useEffect } from "react";
 import {
   fetchCountries,
   fetchProduct,
-  fetchSuspensionsByProduct,
   fetchSuspensionNote,
 } from "../../actions/dashboardactions";
-import { calculateTariffsForYears } from "./service";
+import {
+  calculateTariff,
+  calculateEffectiveRate,
+  calculateDutyAmount,
+} from "./service";
 import {
   Country,
   ChartDataPoint,
@@ -78,8 +81,7 @@ export function useTariffCalculation() {
     productCode: string;
     tradeValue: string;
     netWeight: string;
-    startDate: Date;
-    endDate: Date;
+    transactionDate: Date;
   }) => {
     const {
       importingCountry,
@@ -87,8 +89,7 @@ export function useTariffCalculation() {
       productCode,
       tradeValue,
       netWeight,
-      startDate,
-      endDate,
+      transactionDate,
     } = params;
 
     if (!importingCountry || !tradeValue) {
@@ -97,55 +98,51 @@ export function useTariffCalculation() {
     }
 
     setIsCalculating(true);
-    const startYear = startDate.getFullYear();
-    const endYear = endDate.getFullYear();
 
     try {
       setHasError(false);
       setCalculationResult(null);
       setMissingRateYears([]);
 
-      // Fetch suspension data
-      const suspensionData = await fetchSuspensionsByProduct(
-        importingCountry,
-        productCode,
-        startYear,
-        endYear
-      );
+      // Calculate tariff for the specific transaction date only
+      const result = await calculateTariff({
+        importerCode: importingCountry,
+        exporterCode: exportingCountry || null,
+        hs6: productCode,
+        tradeOriginal: Number(tradeValue),
+        netWeight: netWeight ? Number(netWeight) : null,
+        transactionDate: transactionDate.toISOString().split('T')[0], // Format as YYYY-MM-DD
+      });
 
-      // Calculate tariffs for all years
-      const { chartData, lastResult, errors } = await calculateTariffsForYears(
-        {
-          importerCode: importingCountry,
-          exporterCode: exportingCountry || null,
-          hs6: productCode,
-          tradeOriginal: Number(tradeValue),
-          netWeight: netWeight ? Number(netWeight) : null,
-        },
-        suspensionData.suspensions,
-        startYear,
-        endYear
-      );
+      // Store the calculation result
+      setCalculationResult(result);
 
-      // Store the last calculation result
-      if (lastResult) {
-        setCalculationResult(lastResult);
-
-        try {
-          const noteResult = await fetchSuspensionNote(
-            importingCountry,
-            productCode,
-            lastResult.transactionDate
-          );
-          setSuspensionNote(noteResult.suspensionNote);
-        } catch (error) {
-          console.error("Error fetching suspension note:", error);
-          setSuspensionNote(null);
-        }
+      // Fetch suspension note if applicable
+      try {
+        const noteResult = await fetchSuspensionNote(
+          importingCountry,
+          productCode,
+          result.transactionDate
+        );
+        setSuspensionNote(noteResult.suspensionNote);
+      } catch (error) {
+        console.error("Error fetching suspension note:", error);
+        setSuspensionNote(null);
       }
 
-      setData(chartData);
-      setMissingRateYears(errors);
+      // Create single data point for the chart
+      const { effectiveRate, rateType, isSuspended } = calculateEffectiveRate(result);
+      const dutyAmount = calculateDutyAmount(result);
+
+      setData([{
+        date: transactionDate.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }),
+        value: effectiveRate,
+        rateType: rateType,
+        isSuspended: isSuspended,
+        dutyAmount: dutyAmount,
+      }]);
+
+      setMissingRateYears([]);
       setHasError(false);
     } catch (error) {
       console.error("Error calculating tariff:", error);
