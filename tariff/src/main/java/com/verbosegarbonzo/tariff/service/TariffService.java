@@ -3,24 +3,24 @@ package com.verbosegarbonzo.tariff.service;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.verbosegarbonzo.tariff.config.WitsProperties;
-import com.verbosegarbonzo.tariff.model.CalculateRequest;
 import com.verbosegarbonzo.tariff.model.CalculateResponse;
+import com.verbosegarbonzo.tariff.model.CalculateRequest;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 
 @Service
 public class TariffService {
-    // - Build WITS SDMX URL
-    // - Call WITS
-    // - Extract ratePercent
-    // - Compute duty and totalPayable
-    // - Return response
+    private static final Logger logger = LoggerFactory.getLogger(TariffService.class);
 
     private final WebClient webClient;
     private final WitsProperties props;
@@ -34,7 +34,6 @@ public class TariffService {
     public CalculateResponse calculate(CalculateRequest req) {
         final int year = req.getTransactionDate().getYear();
 
-        // Build the initial WITS API path using original reporter and partner
         String partner = req.getPartner();
         String path = props.getTariff().getDataset()
                 + "/reporter/" + req.getReporter()
@@ -44,53 +43,62 @@ public class TariffService {
                 + "/datatype/reported?format=JSON";
 
         final String dataUrlBase = props.getTariff().getBaseUrl();
-
         String dataUrl = dataUrlBase + "/" + path;
 
-        // WebClient call hits WITS and waits for the response
-        String raw = webClient.get()
-                .uri("/" + path) // prepend slash to be safe
-                .accept(MediaType.APPLICATION_JSON)
-                .retrieve()
-                .bodyToMono(String.class)
-                .block(); // block() is fine in a service method in this project
+        logger.info("Calling WITS API with path: {}", path);
 
-        // Extract tariff percentage from WITS JSON response
-        BigDecimal ratePercent = extractMfnSimpleAveragePercent(raw);
+        String raw = null;
+        BigDecimal ratePercent = null;
 
-        // If rate not found, attempt fallback with partner "000" (default/world)
-        if (ratePercent == null && !"000".equals(partner)) {
-            partner = "000"; // fallback to partner '000'
+        try {
+            raw = webClient.get()
+                    .uri("/" + path)
+                    .accept(MediaType.APPLICATION_JSON)
+                    .retrieve()
+                    .bodyToMono(String.class)
+                    .block();
 
-            // Rebuild path with fallback partner
+            logger.info("Received raw response of length: {} from WITS API", raw != null ? raw.length() : 0);
+
+            ratePercent = extractMfnSimpleAveragePercent(raw);
+        } catch (WebClientResponseException.NotFound e) {
+            logger.warn("WITS API 404 Not Found for partner={}, trying fallback partner 000", partner);
+            partner = "000";
             path = props.getTariff().getDataset()
                     + "/reporter/" + req.getReporter()
                     + "/partner/" + partner
                     + "/product/" + req.getHs6()
                     + "/year/" + year
                     + "/datatype/reported?format=JSON";
-
             dataUrl = dataUrlBase + "/" + path;
+            try {
+                raw = webClient.get()
+                        .uri("/" + path)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .retrieve()
+                        .bodyToMono(String.class)
+                        .block();
 
-            // Retry WITS call with fallback partner
-            raw = webClient.get()
-                    .uri("/" + path) // prepend slash again
-                    .accept(MediaType.APPLICATION_JSON)
-                    .retrieve()
-                    .bodyToMono(String.class)
-                    .block();
+                logger.info("Received raw response from fallback partner of length: {}", raw != null ? raw.length() : 0);
 
-            ratePercent = extractMfnSimpleAveragePercent(raw);
-
-            // Throw exception if fallback also yields no rate
-            if (ratePercent == null) {
+                ratePercent = extractMfnSimpleAveragePercent(raw);
+            } catch (WebClientResponseException.NotFound ex) {
+                logger.error("Fallback partner 000 also returned 404 Not Found");
                 throw new RateNotFoundException("No MFN rate for hs6=" + req.getHs6()
                         + " reporter=" + req.getReporter()
                         + " partner=" + partner
                         + " year=" + year);
+            } catch (Exception ex) {
+                logger.error("Error during WITS API call with fallback partner", ex);
+                throw ex;
             }
-        } else if (ratePercent == null) {
-            // Rate not found and partner was already '000' or no fallback possible
+        } catch (Exception e) {
+            logger.error("Error during WITS API call", e);
+            throw e;
+        }
+
+        if (ratePercent == null) {
+            logger.error("No MFN rate found in WITS API response");
             throw new RateNotFoundException("No MFN rate for hs6=" + req.getHs6()
                     + " reporter=" + req.getReporter()
                     + " partner=" + partner
@@ -108,8 +116,7 @@ public class TariffService {
         // Calculate total amount payable including duty
         BigDecimal totalPayable = req.getTradeValue().add(duty);
 
-        // Build output DTO with results and metadata including possibly fallback
-        // partner
+        // Build output DTO with results and metadata including possibly fallback partner
         final CalculateResponse resp = new CalculateResponse();
         resp.setHs6(req.getHs6());
         resp.setReporter(req.getReporter());
@@ -169,3 +176,4 @@ public class TariffService {
         }
     }
 }
+
