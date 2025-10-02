@@ -119,6 +119,28 @@ export function getUsername(): string | null {
 }
 
 /**
+ * Get current user info
+ */
+export interface UserInfo {
+  name: string;
+  email: string;
+  avatar: string;
+}
+
+export function getCurrentUser(): UserInfo | null {
+  if (typeof window === "undefined") return null;
+
+  const username = localStorage.getItem("username");
+  if (!username) return null;
+
+  return {
+    name: username.split('@')[0], // Use part before @ as display name
+    email: username,
+    avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=random`,
+  };
+}
+
+/**
  * Get authentication headers
  */
 export function getAuthHeaders(): HeadersInit {

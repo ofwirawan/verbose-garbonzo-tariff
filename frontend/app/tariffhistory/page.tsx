@@ -306,8 +306,7 @@ export default function TariffHistoryPage() {
                         disabled={
                           !selectedCountry || !selectedProduct || isFetching
                         }
-                        size="lg"
-                        className="w-full sm:w-auto bg-black text-white hover:bg-gray-800 disabled:opacity-40 h-14 px-12 font-bold text-base uppercase tracking-wide"
+                        className="w-full sm:w-auto bg-black text-white hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed h-10 px-6 font-semibold text-sm uppercase tracking-wide transition-all duration-200"
                       >
                         {isFetching ? (
                           <span className="flex items-center gap-3">
@@ -315,7 +314,22 @@ export default function TariffHistoryPage() {
                             Fetching...
                           </span>
                         ) : (
-                          "Fetch Historical Data"
+                          <span className="flex items-center gap-3">
+                            <svg
+                              className="h-5 w-5"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                              strokeWidth={2.5}
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                              />
+                            </svg>
+                            Fetch Historical Data
+                          </span>
                         )}
                       </Button>
                     </div>
