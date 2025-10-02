@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -13,7 +13,6 @@ import {
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
-import { fetchTopSuspension } from "../actions/dashboardactions";
 import {
   Card,
   CardContent,
@@ -312,77 +311,10 @@ export default function TariffChart({
   const [tradeValue, setTradeValue] = useState("10000");
   const [netWeight, setNetWeight] = useState("");
   const [transactionDate, setTransactionDate] = useState<Date>(new Date());
-  const [hasAutoCalculated, setHasAutoCalculated] = useState(false);
 
   // Derived state
   const countryOptions = convertCountriesToOptions(countries);
   const productOptions = convertProductsToOptions(product);
-
-  // Initialize form with top suspension data
-  useEffect(() => {
-    const initializeForm = async () => {
-      try {
-        const suspensionResult = await fetchTopSuspension();
-
-        if (suspensionResult.suspension) {
-          const { importer_code, product_code, valid_from } =
-            suspensionResult.suspension;
-
-          setImportingCountry(importer_code);
-          setProductCode(product_code);
-
-          if (valid_from) {
-            setTransactionDate(new Date(valid_from));
-          }
-        }
-      } catch (error) {
-        console.error("Error fetching top suspension:", error);
-      }
-    };
-
-    initializeForm();
-  }, []);
-
-  // Set default product if current selection is not available
-  useEffect(() => {
-    if (productOptions.length > 0) {
-      const currentProductExists = productOptions.find(
-        (opt) => opt.value === productCode
-      );
-      if (!currentProductExists) {
-        console.log(
-          "Current product code not found, setting to first available:",
-          productOptions[0]
-        );
-        setProductCode(productOptions[0].value);
-      }
-    }
-  }, [productOptions, productCode]);
-
-  // Auto-calculate on initial load when all data is ready
-  useEffect(() => {
-    if (
-      countries.length > 0 &&
-      product.length > 0 &&
-      importingCountry &&
-      productCode &&
-      tradeValue &&
-      !isCalculating &&
-      !hasAutoCalculated
-    ) {
-      console.log("Auto-calculating tariff on initial load");
-      handleCalculate();
-      setHasAutoCalculated(true);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    countries,
-    product,
-    importingCountry,
-    productCode,
-    tradeValue,
-    hasAutoCalculated,
-  ]);
 
   const handleCalculate = () => {
     calculateTariff({

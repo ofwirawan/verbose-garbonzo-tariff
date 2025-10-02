@@ -46,31 +46,6 @@ export async function fetchProduct() {
   return { products };
 }
 
-export async function fetchTopSuspension() {
-  const prisma = new PrismaClient();
-  try {
-    const suspension = await prisma.suspension.findFirst({
-      where: { suspension_flag: true },
-      orderBy: { suspension_id: "desc" },
-      select: {
-        importer_code: true,
-        product_code: true,
-        valid_from: true,
-        valid_to: true,
-      },
-    });
-    return { suspension };
-  } catch (error) {
-    throw new Error(
-      error instanceof Error
-        ? error.message
-        : "Unknown error fetching suspension"
-    );
-  } finally {
-    await prisma.$disconnect();
-  }
-}
-
 export async function fetchSuspensionsByProduct(
   importerCode: string,
   productCode: string,
