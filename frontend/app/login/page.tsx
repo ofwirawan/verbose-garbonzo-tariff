@@ -4,6 +4,7 @@ import { GalleryVerticalEnd } from "lucide-react";
 import { LoginForm } from "@/components/login-form";
 import { toast } from "sonner";
 import { login } from "@/lib/auth";
+import Image from "next/image";
 
 export default function LoginPage() {
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -18,9 +19,6 @@ export default function LoginPage() {
         username,
         password,
       });
-
-      console.log("Login successful, token stored");
-      console.log("JWT Token:", localStorage.getItem("jwt_token")?.substring(0, 20) + "...");
 
       toast.success("Login successful! Redirecting...");
 
@@ -44,7 +42,7 @@ export default function LoginPage() {
             <div className="bg-primary text-primary-foreground flex size-6 items-center justify-center rounded-md">
               <GalleryVerticalEnd className="size-4" />
             </div>
-            Tariff Calculator
+            Tariffic
           </a>
         </div>
         <div className="flex flex-1 items-center justify-center">
@@ -54,9 +52,10 @@ export default function LoginPage() {
         </div>
       </div>
       <div className="bg-muted relative hidden lg:block">
-        <img
-          src="/placeholder.svg"
+        <Image
+          src="/auth-image.webp"
           alt="Image"
+          fill
           className="absolute inset-0 h-full w-full object-cover dark:brightness-[0.2] dark:grayscale"
         />
       </div>

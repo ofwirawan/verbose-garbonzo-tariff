@@ -20,9 +20,7 @@ import {
 
 const REFRESH_INTERVAL = 30000; // 30 seconds
 
-/**
- * Hook for fetching and managing tariff-related data (countries, products)
- */
+// Hook for fetching and managing tariff-related data (countries, products)
 export function useTariffData() {
   const [countries, setCountries] = useState<Country[]>([]);
   const [product, setProduct] = useState<
@@ -66,9 +64,7 @@ export function useTariffData() {
   return { countries, product, isLoading, hasError };
 }
 
-/**
- * Hook for managing tariff calculations
- */
+// Hook for managing tariff calculations
 export function useTariffCalculation() {
   const [data, setData] = useState<ChartDataPoint[]>([]);
   const [isCalculating, setIsCalculating] = useState(false);
@@ -116,7 +112,7 @@ export function useTariffCalculation() {
         hs6: productCode,
         tradeOriginal: Number(tradeValue),
         netWeight: netWeight ? Number(netWeight) : null,
-        transactionDate: transactionDate.toISOString().split('T')[0], // Format as YYYY-MM-DD
+        transactionDate: transactionDate.toISOString().split("T")[0], // Format as YYYY-MM-DD
       });
 
       // Store the calculation result
@@ -136,16 +132,23 @@ export function useTariffCalculation() {
       }
 
       // Create single data point for the chart
-      const { effectiveRate, rateType, isSuspended } = calculateEffectiveRate(result);
+      const { effectiveRate, rateType, isSuspended } =
+        calculateEffectiveRate(result);
       const dutyAmount = calculateDutyAmount(result);
 
-      setData([{
-        date: transactionDate.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }),
-        value: effectiveRate,
-        rateType: rateType,
-        isSuspended: isSuspended,
-        dutyAmount: dutyAmount,
-      }]);
+      setData([
+        {
+          date: transactionDate.toLocaleDateString("en-US", {
+            year: "numeric",
+            month: "short",
+            day: "numeric",
+          }),
+          value: effectiveRate,
+          rateType: rateType,
+          isSuspended: isSuspended,
+          dutyAmount: dutyAmount,
+        },
+      ]);
 
       setMissingRateYears([]);
       setHasError(false);

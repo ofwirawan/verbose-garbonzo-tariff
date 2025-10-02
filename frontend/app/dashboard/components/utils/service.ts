@@ -24,7 +24,8 @@ export async function calculateTariff(
   request: CalculateTariffRequest
 ): Promise<TariffCalculationResult> {
   // Get JWT token from localStorage
-  const token = typeof window !== "undefined" ? localStorage.getItem("jwt_token") : null;
+  const token =
+    typeof window !== "undefined" ? localStorage.getItem("jwt_token") : null;
 
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
@@ -101,10 +102,6 @@ export async function calculateTariffsForYears(
   return { chartData, lastResult, errors };
 }
 
-// ============================================
-// CALCULATION UTILITIES
-// ============================================
-
 const TIME_RANGE_YEARS: Record<string, number> = {
   "5y": 5,
   "3y": 3,
@@ -168,16 +165,12 @@ export function filterDataByTimeRange(
   return data.filter((item) => item.date >= cutoff);
 }
 
-/**
- * Calculate duty amount from calculation result
- */
+// Calculate duty amount from calculation result
 export function calculateDutyAmount(result: TariffCalculationResult): number {
   return Number(result.tradeFinal) - Number(result.tradeOriginal);
 }
 
-/**
- * Create year-to-date mapping for suspension data
- */
+// Create year-to-date mapping for suspension data
 export function createYearDateMap(
   suspensions: Array<{ valid_from: string; valid_to: string | null }>,
   startYear: number,
@@ -217,10 +210,6 @@ export function createYearDateMap(
 
   return yearDateMap;
 }
-
-// ============================================
-// CHART HELPER UTILITIES
-// ============================================
 
 export const CHART_COLORS = {
   SUSPENDED: {

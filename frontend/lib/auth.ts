@@ -12,9 +12,7 @@ export interface RegisterData {
   roles: string;
 }
 
-/**
- * Login user and get JWT token
- */
+//Login user and get JWT token
 export async function login(credentials: LoginCredentials): Promise<string> {
   console.log("Login attempt with email:", credentials.username);
 
@@ -28,7 +26,12 @@ export async function login(credentials: LoginCredentials): Promise<string> {
 
   if (!response.ok) {
     const errorText = await response.text().catch(() => "");
-    console.error("Login failed - Status:", response.status, "Error:", errorText);
+    console.error(
+      "Login failed - Status:",
+      response.status,
+      "Error:",
+      errorText
+    );
 
     // Parse the error message if possible
     let errorMessage = "Invalid username or password";
@@ -51,17 +54,20 @@ export async function login(credentials: LoginCredentials): Promise<string> {
     localStorage.setItem("username", credentials.username);
 
     // Also store in cookies for middleware access
-    document.cookie = `jwt_token=${token}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
+    document.cookie = `jwt_token=${token}; path=/; max-age=${
+      60 * 60 * 24 * 7
+    }; SameSite=Lax`;
   }
 
   return token;
 }
 
-/**
- * Register new user
- */
+//Register new user
 export async function register(data: RegisterData): Promise<string> {
-  console.log("Registration attempt with:", { name: data.name, email: data.email });
+  console.log("Registration attempt with:", {
+    name: data.name,
+    email: data.email,
+  });
 
   const response = await fetch(`${API_BASE_URL}/auth/addNewUser`, {
     method: "POST",
@@ -73,7 +79,12 @@ export async function register(data: RegisterData): Promise<string> {
 
   if (!response.ok) {
     const errorText = await response.text().catch(() => "");
-    console.error("Registration failed - Status:", response.status, "Error:", errorText);
+    console.error(
+      "Registration failed - Status:",
+      response.status,
+      "Error:",
+      errorText
+    );
     throw new Error(errorText || "Registration failed");
   }
 
@@ -82,24 +93,18 @@ export async function register(data: RegisterData): Promise<string> {
   return message;
 }
 
-/**
- * Get stored JWT token
- */
+// Get stored JWT token
 export function getToken(): string | null {
   if (typeof window === "undefined") return null;
   return localStorage.getItem("jwt_token");
 }
 
-/**
- * Check if user is authenticated
- */
+// Check if user is authenticated
 export function isAuthenticated(): boolean {
   return !!getToken();
 }
 
-/**
- * Logout user
- */
+// Logout user
 export function logout(): void {
   if (typeof window !== "undefined") {
     localStorage.removeItem("jwt_token");
@@ -110,17 +115,13 @@ export function logout(): void {
   }
 }
 
-/**
- * Get current username
- */
+// Get current username
 export function getUsername(): string | null {
   if (typeof window === "undefined") return null;
   return localStorage.getItem("username");
 }
 
-/**
- * Get current user info
- */
+//Get current user info
 export interface UserInfo {
   name: string;
   email: string;
@@ -134,43 +135,44 @@ export function getCurrentUser(): UserInfo | null {
   if (!username) return null;
 
   return {
-    name: username.split('@')[0], // Use part before @ as display name
+    name: username.split("@")[0], // Use part before @ as display name
     email: username,
-    avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=random`,
+    avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(
+      username
+    )}&background=random`,
   };
 }
 
-/**
- * Get authentication headers
- */
+// Get authentication headers
 export function getAuthHeaders(): HeadersInit {
   const token = getToken();
   return {
-    'Content-Type': 'application/json',
-    ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+    "Content-Type": "application/json",
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
   };
 }
 
-/**
- * Authenticated fetch wrapper that includes JWT token
- */
-export async function authenticatedFetch(url: string, options?: RequestInit): Promise<Response> {
+// Authenticated fetch wrapper that includes JWT token
+export async function authenticatedFetch(
+  url: string,
+  options?: RequestInit
+): Promise<Response> {
   const token = getToken();
 
   const response = await fetch(url, {
     ...options,
     headers: {
-      'Content-Type': 'application/json',
-      ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...options?.headers,
     },
   });
 
   // If unauthorized, redirect to login
   if (response.status === 401 || response.status === 403) {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       logout();
-      window.location.href = '/login';
+      window.location.href = "/login";
     }
   }
 
