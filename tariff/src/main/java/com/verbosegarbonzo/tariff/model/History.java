@@ -16,7 +16,7 @@ public class History {
     private LocalDate date;
     private String product;
     private String route;
-    private double weight;
+    private Double weight; // Changed from double to Double to make it optional
     private double tradeValue;
     private double tariffRate;
     private double tariffCost;

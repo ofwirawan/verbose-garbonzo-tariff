@@ -1,6 +1,20 @@
 "use client";
 
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
 import { TariffCalculationResult } from "./utils/types";
+import { authenticatedFetch } from "@/lib/auth";
 
 interface CalculationResultsProps {
   result: TariffCalculationResult;
@@ -334,99 +348,173 @@ function TransactionInfo({ result }: { result: TariffCalculationResult }) {
 }
 
 function ChartLegend({ result }: { result: TariffCalculationResult }) {
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [canSaveHistory, setCanSaveHistory] = useState(true);
   const appliedRate = result.appliedRate || {};
 
-  // Determine which rates are active
+  async function handleSaveHistory() {
+    if (!result) return;
+
+    try {
+      // Use the transaction date from the result instead of today's date
+      const formattedDate = result.transactionDate; // This is already in YYYY-MM-DD format
+
+      const requestBody = {
+        t_date: formattedDate,
+        importer_code: result.importerCode,
+        exporter_code: result.exporterCode,
+        hs6code: result.hs6,
+        trade_original: Number(result.tradeOriginal),
+        net_weight: result.netWeight || null,
+        trade_final: Number(result.tradeFinal),
+        applied_rate: appliedRate
+      };
+
+      const response = await authenticatedFetch("/api/history", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(requestBody)
+      });
+
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.message || "An error occurred while saving history");
+      }
+
+      setCanSaveHistory(false);
+      setIsDialogOpen(false);
+      toast.success("Calculation saved to history!");
+    } catch (err) {
+      console.error("Save history error:", err);
+      toast.error(err instanceof Error ? err.message : "Failed to save calculation history");
+      setIsDialogOpen(false);
+    }
+  }
+
   const isSuspended = appliedRate.suspension !== undefined;
   const isPreferential = appliedRate.prefAdval !== undefined;
   const isMFN = appliedRate.mfnAdval !== undefined;
   const isSpecific = appliedRate.specific !== undefined;
 
   return (
-    <div className="mt-6 pt-6 border-t border-gray-200">
-      <h5 className="text-xs font-bold text-gray-900 mb-3 uppercase tracking-wide">
-        Rate Types Applied
-      </h5>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
-        <div
-          className={`flex items-center gap-2 p-2 rounded border transition-all ${
-            isSuspended
-              ? "bg-gray-700 border-gray-700 shadow-md"
-              : "bg-gray-50 border-gray-200 opacity-40"
-          }`}
-        >
+    <>
+      <div className="mt-6 pt-6 border-t border-gray-200">
+        <h5 className="text-xs font-bold text-gray-900 mb-3 uppercase tracking-wide">
+          Rate Types Applied
+        </h5>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
           <div
-            className={`w-2 h-2 border-2 rounded-full flex-shrink-0 ${
-              isSuspended ? "border-white" : "border-gray-400"
-            }`}
-          ></div>
-          <span
-            className={`font-medium ${
-              isSuspended ? "text-white" : "text-gray-500"
+            className={`flex items-center gap-2 p-2 rounded border transition-all ${
+              isSuspended
+                ? "bg-gray-700 border-gray-700 shadow-md"
+                : "bg-gray-50 border-gray-200 opacity-40"
             }`}
           >
-            Suspended
-          </span>
+            <div
+              className={`w-2 h-2 border-2 rounded-full flex-shrink-0 ${
+                isSuspended ? "border-white" : "border-gray-400"
+              }`}
+            ></div>
+            <span
+              className={`font-medium ${
+                isSuspended ? "text-white" : "text-gray-500"
+              }`}
+            >
+              Suspended
+            </span>
+          </div>
+          <div
+            className={`flex items-center gap-2 p-2 rounded border transition-all ${
+              isPreferential
+                ? "bg-gray-700 border-gray-700 shadow-md"
+                : "bg-gray-50 border-gray-200 opacity-40"
+            }`}
+          >
+            <div
+              className={`w-2 h-2 border-2 rounded-full flex-shrink-0 ${
+                isPreferential ? "border-white" : "border-gray-400"
+              }`}
+            ></div>
+            <span
+              className={`font-medium ${
+                isPreferential ? "text-white" : "text-gray-500"
+              }`}
+            >
+              Preferential (FTA)
+            </span>
+          </div>
+          <div
+            className={`flex items-center gap-2 p-2 rounded border transition-all ${
+              isMFN
+                ? "bg-gray-700 border-gray-700 shadow-md"
+                : "bg-gray-50 border-gray-200 opacity-40"
+            }`}
+          >
+            <div
+              className={`w-2 h-2 border-2 rounded-full flex-shrink-0 ${
+                isMFN ? "border-white" : "border-gray-400"
+              }`}
+            ></div>
+            <span
+              className={`font-medium ${
+                isMFN ? "text-white" : "text-gray-500"
+              }`}
+            >
+              MFN (Standard)
+            </span>
+          </div>
+          <div
+            className={`flex items-center gap-2 p-2 rounded border transition-all ${
+              isSpecific
+                ? "bg-gray-700 border-gray-700 shadow-md"
+                : "bg-gray-50 border-gray-200 opacity-40"
+            }`}
+          >
+            <div
+              className={`w-2 h-2 border-2 rounded-full flex-shrink-0 ${
+                isSpecific ? "border-white" : "border-gray-400"
+              }`}
+            ></div>
+            <span
+              className={`font-medium ${
+                isSpecific ? "text-white" : "text-gray-500"
+              }`}
+            >
+              Specific Duty
+            </span>
+          </div>
         </div>
-        <div
-          className={`flex items-center gap-2 p-2 rounded border transition-all ${
-            isPreferential
-              ? "bg-gray-700 border-gray-700 shadow-md"
-              : "bg-gray-50 border-gray-200 opacity-40"
-          }`}
-        >
-          <div
-            className={`w-2 h-2 border-2 rounded-full flex-shrink-0 ${
-              isPreferential ? "border-white" : "border-gray-400"
-            }`}
-          ></div>
-          <span
-            className={`font-medium ${
-              isPreferential ? "text-white" : "text-gray-500"
-            }`}
+        <div className="mt-6 flex justify-end">
+          <Button
+            onClick={() => setIsDialogOpen(true)}
+            disabled={!canSaveHistory}
+            size="lg"
+            className="w-full sm:w-auto bg-black text-white hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed h-14 px-12 font-bold text-base uppercase tracking-wide border-2 border-black transition-all duration-200"
           >
-            Preferential (FTA)
-          </span>
-        </div>
-        <div
-          className={`flex items-center gap-2 p-2 rounded border transition-all ${
-            isMFN
-              ? "bg-gray-700 border-gray-700 shadow-md"
-              : "bg-gray-50 border-gray-200 opacity-40"
-          }`}
-        >
-          <div
-            className={`w-2 h-2 border-2 rounded-full flex-shrink-0 ${
-              isMFN ? "border-white" : "border-gray-400"
-            }`}
-          ></div>
-          <span
-            className={`font-medium ${isMFN ? "text-white" : "text-gray-500"}`}
-          >
-            MFN (Standard)
-          </span>
-        </div>
-        <div
-          className={`flex items-center gap-2 p-2 rounded border transition-all ${
-            isSpecific
-              ? "bg-gray-700 border-gray-700 shadow-md"
-              : "bg-gray-50 border-gray-200 opacity-40"
-          }`}
-        >
-          <div
-            className={`w-2 h-2 border-2 rounded-full flex-shrink-0 ${
-              isSpecific ? "border-white" : "border-gray-400"
-            }`}
-          ></div>
-          <span
-            className={`font-medium ${
-              isSpecific ? "text-white" : "text-gray-500"
-            }`}
-          >
-            Specific Duty
-          </span>
+            Save History
+          </Button>
         </div>
       </div>
-    </div>
+
+      <AlertDialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Save</AlertDialogTitle>
+            <AlertDialogDescription>
+              You are about to save this calculation to history. Are you sure you want to continue?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleSaveHistory}>
+              Yes, Save it
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }

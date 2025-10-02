@@ -46,16 +46,48 @@ import {
 } from "@/components/ui/alert-dialog";
 
 import { toast } from "sonner"
+import { authenticatedFetch } from "@/lib/auth"
 
+// Backend Transaction model structure
+export interface BackendTransaction {
+    tid: number
+    tDate: string
+    hs6code: string
+    importerCode: string
+    exporterCode?: string
+    tradeOriginal: number
+    tradeFinal: number
+    netWeight?: number
+    appliedRate?: any
+    uid: string
+}
+
+// Frontend display structure
 export interface HistoryItem {
     id: number
-    date: string | null
-    product: string | null
+    date: string
+    product: string
+    route: string
+    tradeValue: number
+    tariffRate: number
+    tariffCost: number
     weight: number | null
-    route: string | null
-    tradeValue: number | null
-    tariffRate: number | null
-    tariffCost: number | null
+    appliedRate?: any  // Add the full applied rate JSON
+}
+
+// Transform backend data to frontend format
+export function transformTransactionToHistoryItem(transaction: BackendTransaction): HistoryItem {
+    return {
+        id: transaction.tid,
+        date: transaction.tDate,
+        product: transaction.hs6code,
+        route: `${transaction.importerCode}${transaction.exporterCode ? ` → ${transaction.exporterCode}` : ''}`,
+        tradeValue: transaction.tradeOriginal,
+        tariffRate: transaction.appliedRate?.rate || 0,
+        tariffCost: transaction.tradeFinal - transaction.tradeOriginal,
+        weight: transaction.netWeight || null,
+        appliedRate: transaction.appliedRate  // Include the full applied rate data
+    }
 }
 
 interface HistoryTableProps {
@@ -90,48 +122,114 @@ export const columns: ColumnDef<HistoryItem>[] = [
         accessorKey: "date",
         header: "Date",
         cell: ({ row }) => {
-            if (!row || !row.original) return "N/A";
-            const value = row.getValue<string | null>("date");
-            return value ? new Date(value).toLocaleDateString() : "N/A";
+            const value = row.getValue<string>("date");
+            if (!value) return "N/A";
+            
+            // Parse the date string directly without timezone conversion
+            // Assuming the backend sends dates in YYYY-MM-DD format
+            const [year, month, day] = value.split('-').map(Number);
+            const date = new Date(year, month - 1, day); // month is 0-indexed
+            
+            return date.toLocaleDateString();
         },
     },
     {
         accessorKey: "product",
         header: "Product",
-        cell: ({ row }) => row.original?.product ?? "N/A",
+        cell: ({ row }) => row.getValue("product") || "N/A",
     },
     {
         accessorKey: "route",
         header: "Route",
-        cell: ({ row }) => row.original?.route ?? "N/A",
+        cell: ({ row }) => row.getValue("route") || "N/A",
     },
     {
         accessorKey: "weight",
         header: "Weight (kg)",
         cell: ({ row }) => {
-            const valueRaw = row.original?.weight;
-            const value = valueRaw === null || valueRaw === undefined ? NaN : Number(valueRaw);
-            return <div>{isNaN(value) ? "N/A" : value.toFixed(2)} kg</div>;
+            const value = row.getValue<number | null>("weight");
+            if (value === null || value === undefined) {
+                return <div>N/A</div>;
+            }
+            return <div>{value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} kg</div>;
         },
     },
     {
         accessorKey: "tradeValue",
         header: "Trade Value",
         cell: ({ row }) => {
-            const value = row.original?.tradeValue ?? 0;
+            const value = row.getValue<number>("tradeValue") || 0;
             return <div>${value.toLocaleString()}</div>;
         },
     },
     {
         accessorKey: "tariffRate",
         header: "Tariff Rate (%)",
-        cell: ({ row }) => row.original?.tariffRate?.toString() ?? "N/A",
+        cell: ({ row }) => {
+            const value = row.getValue<number>("tariffRate");
+            return value !== undefined && value !== null ? `${Number(value).toFixed(2)}%` : "N/A";
+        },
+    },
+    {
+        accessorKey: "appliedRate",
+        header: "Rate Details",
+        cell: ({ row }) => {
+            const appliedRate = row.getValue<any>("appliedRate");
+            
+            if (!appliedRate) {
+                return <div className="text-gray-500">No rate data</div>;
+            }
+
+            const renderRateDetails = () => {
+                const rates = [];
+                
+                // Check for suspension
+                if (appliedRate.suspension !== undefined) {
+                    rates.push(
+                        <div key="suspension" className="text-xs bg-gray-100 px-2 py-1 rounded mb-1">
+                            <span className="font-medium text-gray-700">Suspended:</span> {Number(appliedRate.suspension).toFixed(2)}%
+                        </div>
+                    );
+                }
+                
+                // Check for preferential rate
+                if (appliedRate.prefAdval !== undefined) {
+                    rates.push(
+                        <div key="preferential" className="text-xs bg-green-100 px-2 py-1 rounded mb-1">
+                            <span className="font-medium text-green-700">Preferential:</span> {Number(appliedRate.prefAdval).toFixed(2)}%
+                        </div>
+                    );
+                }
+                
+                // Check for MFN rate
+                if (appliedRate.mfnAdval !== undefined) {
+                    rates.push(
+                        <div key="mfn" className="text-xs bg-blue-100 px-2 py-1 rounded mb-1">
+                            <span className="font-medium text-blue-700">MFN:</span> {Number(appliedRate.mfnAdval).toFixed(2)}%
+                        </div>
+                    );
+                }
+                
+                // Check for specific duty
+                if (appliedRate.specific !== undefined) {
+                    rates.push(
+                        <div key="specific" className="text-xs bg-orange-100 px-2 py-1 rounded mb-1">
+                            <span className="font-medium text-orange-700">Specific:</span> ${Number(appliedRate.specific).toFixed(2)}/kg
+                        </div>
+                    );
+                }
+                
+                return rates.length > 0 ? rates : <div className="text-gray-500 text-xs">No rate components</div>;
+            };
+
+            return <div className="space-y-1">{renderRateDetails()}</div>;
+        },
     },
     {
         accessorKey: "tariffCost",
         header: "Tariff Cost",
         cell: ({ row }) => {
-            const value = row.original?.tariffCost ?? 0;
+            const value = row.getValue<number>("tariffCost") || 0;
             return <div>${value.toLocaleString()}</div>;
         },
     },
@@ -215,14 +313,15 @@ export function HistoryTable({ data, onDelete }: HistoryTableProps) {
                                     const selected = table.getFilteredSelectedRowModel().rows
 
                                     try {
-                                        // Call backend DELETE for each row
-                                        await Promise.all(
-                                            selected.map((row) =>
-                                                fetch(`http://localhost:8080/api/history/${row.original.id}`, {
-                                                    method: "DELETE",
-                                                })
-                                            )
-                                        )
+                                        // Call backend DELETE for each row using query parameters
+                                        const deletePromises = selected.map(async (row) => {
+                                            const response = await authenticatedFetch(`/api/history?id=${row.original.id}`, {
+                                                method: "DELETE",
+                                            })
+                                            return response
+                                        })
+
+                                        const results = await Promise.all(deletePromises)
 
                                         // Update frontend state
                                         setHistory((prev) =>
@@ -231,15 +330,13 @@ export function HistoryTable({ data, onDelete }: HistoryTableProps) {
                                             )
                                         )
 
-                                        // ✅ Reset checkbox selection
+                                        // Reset checkbox selection
                                         table.resetRowSelection()
 
-                                        // ✅ Show toast notification
+                                        // Show toast notification
                                         toast.success(
                                             `${selected.length} item${selected.length > 1 ? "s" : ""} deleted successfully!`
                                         )
-
-                                        console.log("Deleted items:", selected.map((row) => row.original.id))
                                     } catch (err) {
                                         console.error("Failed to delete selected items:", err)
                                         toast.error("Failed to delete items. Please try again.")

@@ -1,20 +1,38 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { HistoryTable, HistoryItem } from "./HistoryTable"
+import { HistoryTable, HistoryItem, BackendTransaction, transformTransactionToHistoryItem } from "./HistoryTable"
+import { authenticatedFetch, getToken } from "@/lib/auth"
 
 export default function HistoryPage() {
   const [history, setHistory] = useState<HistoryItem[]>([])
+  const [isLoading, setIsLoading] = useState(false)
 
-  // Fetch history from backend
+  // Fetch history from backend using authenticated request
   const fetchHistory = async () => {
+    if (isLoading) {
+      return
+    }
+
     try {
-      const res = await fetch("http://localhost:8080/api/history")
-      if (!res.ok) throw new Error("Failed to fetch history")
-      const data: HistoryItem[] = await res.json()
-      setHistory(data)
+      setIsLoading(true)
+      const res = await authenticatedFetch("/api/history")
+      
+      if (!res.ok) {
+        const error = await res.json()
+        throw new Error(error.message || "Failed to fetch history")
+      }
+      
+      const backendData: BackendTransaction[] = await res.json()
+      
+      // Transform backend data to frontend format
+      const transformedData = backendData.map(transformTransactionToHistoryItem)
+      
+      setHistory(transformedData)
     } catch (err) {
       console.error("Fetch history error:", err)
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -22,12 +40,12 @@ export default function HistoryPage() {
     fetchHistory()
   }, [])
 
-  // Delete multiple history records
+  // Delete multiple history records using authenticated requests
   const handleDelete = async (ids: number[]) => {
     try {
       await Promise.all(
         ids.map((id) =>
-          fetch(`http://localhost:8080/api/history/${id}`, {
+          authenticatedFetch(`/api/history/${id}`, {
             method: "DELETE",
           })
         )

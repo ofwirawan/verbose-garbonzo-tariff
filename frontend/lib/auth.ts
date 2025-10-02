@@ -135,6 +135,14 @@ export function getAuthHeaders(): HeadersInit {
 export async function authenticatedFetch(url: string, options?: RequestInit): Promise<Response> {
   const token = getToken();
 
+  // Debug logging
+  console.log('🔍 authenticatedFetch debug:', {
+    url,
+    hasToken: !!token,
+    tokenPreview: token ? `${token.substring(0, 20)}...` : 'No token',
+    localStorage: typeof window !== 'undefined' ? localStorage.getItem("jwt_token") : 'SSR'
+  });
+
   const response = await fetch(url, {
     ...options,
     headers: {
@@ -144,12 +152,12 @@ export async function authenticatedFetch(url: string, options?: RequestInit): Pr
     },
   });
 
-  // If unauthorized, redirect to login
+  // Debug response
+  console.log('🔍 Response status:', response.status, response.statusText);
+
+  // Remove automatic redirect - just log the error
   if (response.status === 401 || response.status === 403) {
-    if (typeof window !== 'undefined') {
-      logout();
-      window.location.href = '/login';
-    }
+    console.log('🚨 Auth failed, but NOT redirecting automatically');
   }
 
   return response;
