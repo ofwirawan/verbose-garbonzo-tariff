@@ -1,0 +1,389 @@
+hs6code,description
+290110,Saturated
+290121,Ethylene
+290122,Propene (propylene)
+290123,Butene (butylene) and isomers thereof
+290124,"Buta-1,3-diene and isoprene"
+290211,Cyclohexane
+290220,Benzene
+290230,Toluene
+290241,o-Xylene
+290242,m-Xylene
+290243,p-Xylene
+290244,Mixed xylene isomers
+290250,Styrene
+290260,Ethylbenzene
+290270,Cumene
+290311,Chloromethane (methyl chloride) and chloroethane (ethyl chloride)
+290312,Dichloromethane (methylene chloride)
+290313,Chloroform (trichloromethane)
+290314,Carbon tetrachloride
+290315,"Ethylene dichloride (ISO) (1,2-dichloroethane)"
+290316,"1,2-Dichloropropane (propylene dichloride) and dichlorobutanes"
+290321,Vinyl chloride (chloroethylene)
+290322,Trichloroethylene
+290323,Tetrachloroethylene (perchloroethylene)
+290330,"Fluorinated, brominated or iodinated derivatives of acyclic hydrocarbons"
+290331,"Ethylene dibromide (ISO) (1,2-dibromoethane)"
+290340,Halogenated derivatives of acyclic hydrocarbons containing two or more different halogens
+290341,Trichlorofluoromethane
+290342,Dichlorodifluoromethane
+290343,Trichlorotrifluoroethanes
+290344,Dichlorotetrafluoroethanes and chloropentafluoroethane
+290345,Other derivatives perhalogenated only with fluorine and chlorine
+290346,"Bromochlorodifluoromethane, bromotrifluoromethane and dibromotetrafluoroethanes"
+290347,Other perhalogenated derivatives
+290348,"Saturated fluorinated derivatives of acyclic hydrocarbons; 1,1,1,3,3-pentafluorobutane (HFC-365mfc) and 1,1,1,2,2,3,4,5,5,5-decafluoropentane (HFC-43-10mee)"
+290351,"1,2,3,4,5,6-Hexachlorocyclohexane (HCH (ISO)), including lindane (ISO, INN)"
+290352,"Aldrin (ISO), chlordane (ISO) and heptachlor (ISO)"
+290361,"Chlorobenzene, o-dichlorobenzene and p-dichlorobenzene"
+290362,"Hexachlorobenzene (ISO) and DDT (ISO) (clofenotane (INN), 1,1,1-trichloro-2,2-bis(p-chlorophenyl)ethane)"
+290371,Chlorodifluoromethane
+290372,Dichlorotrifluoroethanes
+290373,Dichlorofluoroethanes
+290374,Chlorodifluoroethanes
+290375,Dichloropentafluoropropanes
+290376,"Bromochlorodifluoromethane, bromotrifluoromethane and dibromotetrafluoroethanes"
+290377,"Other, perhalogenated only with fluorine and chlorine"
+290378,Other perhalogenated derivatives
+290381,"1,2,3,4,5,6-Hexachlorocyclohexane (HCH (ISO)), including lindane (ISO, INN)"
+290382,"Aldrin (ISO), chlordane (ISO) and heptachlor (ISO)"
+290383,Mirex (ISO)
+290391,"Chlorobenzene, o-dichlorobenzene and p-dichlorobenzene"
+290392,"Hexachlorobenzene (ISO) and DDT (ISO) (clofenotane (INN), 1,1,1-trichloro-2,2-bis(p-chlorophenyl)ethane)"
+290393,Pentachlorobenzene (ISO)
+290394,Hexabromobiphenyls
+290410,"Derivatives containing only sulpho groups, their salts and ethyl esters"
+290420,Derivatives containing only nitro or only nitroso groups
+290431,Perfluorooctane sulphonic acid
+290432,Ammonium perfluorooctane sulphonate
+290433,Lithium perfluorooctane sulphonate
+290434,Potassium perfluorooctane sulphonate
+290435,Other salts of perfluorooctane sulphonic acid
+290436,Perfluorooctane sulphonyl fluoride
+290491,Trichloronitromethane (chloropicrin)
+290511,Methanol (methyl alcohol)
+290512,Propan-1-ol (propyl alcohol) and propan-2-ol (isopropyl alcohol)
+290513,Butan-1-ol (n-butyl alcohol)
+290514,Other butanols
+290515,Pentanol (amyl alcohol) and isomers thereof
+290516,Octanol (octyl alcohol) and isomers thereof
+290517,"Dodecan-1-ol (lauryl alcohol), hexadecan-1-ol (cetyl alcohol) and octadecan-1-ol (stearyl alcohol)"
+290521,Allyl alcohol
+290522,Acyclic terpene alcohols
+290531,Ethylene glycol (ethanediol)
+290532,"Propylene glycol (propane-1,2-diol)"
+290541,"2-Ethyl-2-(hydroxymethyl)propane-1,3-diol (trimethylolpropane)"
+290542,Pentaerythritol
+290543,Mannitol
+290544,D-glucitol (sorbitol)
+290545,Glycerol
+290550,"Halogenated, sulphonated, nitrated or nitrosated derivatives of acyclic alcohols"
+290551,Ethchlorvynol (INN)
+290611,Menthol
+290612,"Cyclohexanol, methylcyclohexanols and dimethylcyclohexanols"
+290613,Sterols and inositols
+290614,Terpineols
+290621,Benzyl alcohol
+290711,Phenol (hydroxybenzene) and its salts
+290712,Cresols and their salts
+290713,"Octylphenol, nonylphenol and their isomers; salts thereof"
+290714,Xylenols and their salts
+290715,Naphthols and their salts
+290721,Resorcinol and its salts
+290722,Hydroquinone (quinol) and its salts
+290723,"4,4'-Isopropylidenediphenol (bisphenol A, diphenylolpropane) and its salts"
+290730,Phenol-alcohols
+290810,Derivatives containing only halogen substituents and their salts
+290811,Pentachlorophenol (ISO)
+290820,"Derivatives containing only sulpho groups, their salts and esters"
+290891,Dinoseb (ISO) and its salts
+290892,"4,6-Dinitro-o-cresol (DNOC (ISO)) and its salts"
+290911,Diethyl ether
+290920,"Cyclanic, cyclenic or cycloterpenic ethers and their halogenated, sulphonated, nitrated or nitrosated derivatives"
+290930,"Aromatic ethers and their halogenated, sulphonated, nitrated or nitrosated derivatives"
+290941,"2,2'-Oxydiethanol (diethylene glycol, digol)"
+290942,Monomethyl ethers of ethylene glycol or of diethylene glycol
+290943,Monobutyl ethers of ethylene glycol or of diethylene glycol
+290944,Other monoalkylethers of ethylene glycol or of diethylene glycol
+290950,"Ether-phenols, ether-alcohol-phenols and their halogenated, sulphonated, nitrated or nitrosated derivatives"
+290960,"Alcohol peroxides, ether peroxides, ketone peroxides and their halogenated, sulphonated, nitrated or nitrosated derivatives"
+291010,Oxirane (ethylene oxide)
+291020,Methyloxirane (propylene oxide)
+291030,"1-Chloro-2,3-epoxypropane (epichlorohydrin)"
+291040,"Dieldrin (ISO, INN)"
+291050,Endrin (ISO)
+291100,"Acetals and hemiacetals, whether or not with other oxygen function, and their halogenated, sulphonated, nitrated or nitrosated derivatives"
+291211,Methanal (formaldehyde)
+291212,Ethanal (acetaldehyde)
+291213,"Butanal (butyraldehyde, normal isomer)"
+291221,Benzaldehyde
+291230,Aldehyde-alcohols
+291241,Vanillin (4-hydroxy-3-methoxybenzaldehyde)
+291242,Ethylvanillin (3-ethoxy-4-hydroxybenzaldehyde)
+291250,Cyclic polymers of aldehydes
+291260,Paraformaldehyde
+291300,"Halogenated, sulphonated, nitrated or nitrosated derivatives of products of heading 2912"
+291411,Acetone
+291412,Butanone (methyl ethyl ketone)
+291413,4-Methylpentan-2-one (methyl isobutyl ketone)
+291421,Camphor
+291422,Cyclohexanone and methylcyclohexanones
+291423,Ionones and methylionones
+291430,Aromatic ketones without other oxygen function
+291431,Phenylacetone (phenylpropan-2-one)
+291440,Ketone-alcohols and ketone-aldehydes
+291441,4-Hydroxy-4-methylpentan-2-one (diacetone alcohol)
+291450,Ketone-phenols and ketones with other oxygen function
+291461,Anthraquinone
+291462,Coenzyme Q10 (ubidecarenone (INN))
+291470,"Halogenated, sulphonated, nitrated or nitrosated derivatives"
+291471,Chlordecone (ISO)
+291511,Formic acid
+291512,Salts of formic acid
+291513,Esters of formic acid
+291521,Acetic acid
+291522,Sodium acetate
+291523,Cobalt acetates
+291524,Acetic anhydride
+291531,Ethyl acetate
+291532,Vinyl acetate
+291533,n-Butyl acetate
+291534,Isobutyl acetate
+291535,2- Ethoxyethyl acetate
+291536,Dinoseb (ISO) acetate
+291540,"Mono-, di- or trichloroacetic acids, their salts and esters"
+291550,"Propionic acid, its salts and esters"
+291560,"Butanoic acids, pentanoic acids, their salts and esters"
+291570,"Palmitic acid, stearic acid, their salts and esters"
+291611,Acrylic acid and its salts
+291612,Esters of acrylic acid
+291613,Methacrylic acid and its salts
+291614,Esters of methacrylic acid
+291615,"Oleic, linoleic or linolenic acids, their salts and esters"
+291616,Binapacryl (ISO)
+291620,"Cyclanic, cyclenic or cycloterpenic monocarboxylic acids, their anhydrides, halides, peroxides, peroxyacids and their derivatives"
+291631,"Benzoic acid, its salts and esters"
+291632,Benzoyl peroxide and benzoyl chloride
+291633,"Phenylacetic acid, its salts and esters"
+291634,Phenylacetic acid and its salts
+291635,Esters of phenylacetic acid
+291636,Binapacryl (ISO)
+291711,"Oxalic acid, its salts and esters"
+291712,"Adipic acid, its salts and esters"
+291713,"Azelaic acid, sebacic acid, their salts and esters"
+291714,Maleic anhydride
+291720,"Cyclanic, cyclenic or cycloterpenic polycarboxylic acids, their anhydrides, halides, peroxides, peroxyacids and their derivatives"
+291731,Dibutyl orthophthalates
+291732,Dioctyl orthophthalates
+291733,Dinonyl or didecyl orthophthalates
+291734,Other esters of orthophthalic acid
+291735,Phthalic anhydride
+291736,Terephthalic acid and its salts
+291737,Dimethyl terephthalate
+291811,"Lactic acid, its salts and esters"
+291812,Tartaric acid
+291813,Salts and esters of tartaric acid
+291814,Citric acid
+291815,Salts and esters of citric acid
+291816,"Gluconic acid, its salts and esters"
+291817,"2,2-Diphenyl-2-hydroxyacetic acid (benzilic acid)"
+291818,Chlorobenzilate (ISO)
+291821,Salicylic acid and its salts
+291822,"o-Acetylsalicylic acid, its salts and esters"
+291823,Other esters of salicylic acid and their salts
+291830,"Carboxylic acids with aldehyde or ketone function but without other oxygen function, their anhydrides, halides, peroxides, peroxyacids and their derivatives"
+291891,"2,4,5-T (ISO) (2,4,5-trichlorophenoxyacetic acid), its salts and esters"
+291900,"Phosphoric esters and their salts, including lactophosphates; their halogenated, sulphonated, nitrated or nitrosated derivatives."
+291910,"Tris(2,3-dibromopropyl) phosphate"
+292010,"Thiophosphoric esters (phosphorothioates) and their salts; their halogenated, sulphonated, nitrated or nitrosated derivatives"
+292011,Parathion (ISO) and parathion-methyl (ISO) (methyl-parathion)
+292021,Dimethyl phosphite
+292022,Diethyl phosphite
+292023,Trimethyl phosphite
+292024,Triethyl phosphite
+292030,Endosulfan (ISO)
+292111,"Methylamine, di- or trimethylamine and their salts"
+292112,"2-(N,N-Dimethylamino)ethylchloride hydrochloride"
+292113,"2-(N,N-Diethylamino)ethylchloride hydrochloride"
+292114,"2-(N,N-Diisopropylamino)ethylchloride hydrochloride"
+292121,Ethylenediamine and its salts
+292122,Hexamethylenediamine and its salts
+292130,"Cyclanic, cyclenic or cycloterpenic mono- or polyamines, and their derivatives; salts thereof"
+292141,Aniline and its salts
+292142,Aniline derivatives and their salts
+292143,Toluidines and their derivatives; salts thereof
+292144,Diphenylamine and its derivatives; salts thereof
+292145,"1-Naphthylamine (a-naphthylamine), 2-naphthylamine (ß-naphthylamine) and their derivatives; salts thereof"
+292146,"Amfetamine (INN), benzfetamine (INN), dexamfetamine (INN), etilamfetamine (INN), fencamfamin (INN), lefetamine (INN), levamfetamine (INN), mefenorex (INN) and phentermine (INN); salts thereof"
+292151,"o-, m-, p-Phenylenediamine, diaminotoluenes, and their derivatives; salts thereof"
+292211,Monoethanolamine and its salts
+292212,Diethanolamine and its salts
+292213,Triethanolamine and its salts
+292214,Dextropropoxyphene (INN) and its salts
+292215,Triethanolamine
+292216,Diethanolammonium perfluorooctane sulphonate
+292217,Methyldiethanolamine and ethyldiethanolamine
+292218,"2-(N,N-Diisopropylamino)ethanol"
+292221,Aminohydroxynaphthalenesulphonic acids and their salts
+292222,"Anisidines, dianisidines, phenetidines, and their salts"
+292230,"Amino-aldehydes, amino-ketones and amino-quinones, other than those containing more than one kind of oxygen function; salts thereof"
+292231,"Amfepramone (INN), methadone (INN) and normethadone (INN); salts thereof"
+292241,Lysine and its esters; salts thereof
+292242,Glutamic acid and its salts
+292243,Anthranilic acid and its salts
+292244,Tilidine (INN) and its salts
+292250,"Amino-alcohol-phenols, amino-acid-phenols and other amino-compounds with oxygen function"
+292310,Choline and its salts
+292320,Lecithins and other phosphoaminolipids
+292330,Tetraethylammonium perfluorooctane sulphonate
+292340,Didecyldimethylammonium perfluorooctane sulphonate
+292410,Acyclic amides (including acyclic carbamates) and their derivatives; salts thereof
+292411,Meprobamate (INN)
+292412,"Fluoroacetamide (ISO), monocrotophos (ISO) and phosphamidon (ISO)"
+292421,Ureines and their derivatives; salts thereof
+292422,2-Acetamidobenzoic acid
+292423,2-Acetamidobenzoic acid (N-acetylanthranilic acid) and its salts
+292424,Ethinamate (INN)
+292425,Alachlor (ISO)
+292511,Saccharin and its salts
+292512,Glutethimide (INN)
+292520,Imines and their derivatives; salts thereof
+292521,Chlordimeform (ISO)
+292610,Acrylonitrile
+292620,1-Cyanoguanidine (dicyandiamide)
+292630,"Fenproporex (INN) and its salts; methadone (INN) intermediate (4-cyano-2-dimethylamino-4,4-diphenylbutane)"
+292640,alpha-Phenylacetoacetonitrile
+292700,"Diazo-, azo- or azoxy-compounds"
+292800,Organic derivatives of hydrazine or of hydroxylamine
+292910,Isocyanates
+293010,Dithiocarbonates (xanthates)
+293020,Thiocarbamates and dithiocarbamates
+293030,"Thiuram mono-, di- or tetrasulphides"
+293040,Methionine
+293050,Captafol (ISO) and methamidophos (ISO)
+293060,"2-(N,N-Diethylamino)ethanethiol"
+293070,Bis(2-hydroxyethyl)sulfide (thiodiglycol (INN))
+293080,"Aldicarb (ISO), Captafol (ISO) and methamidophos (ISO)"
+293100,Other organo-inorganic compounds.
+293110,Tetramethyl lead and tetraethyl lead
+293120,Tributyltin compounds
+293131,Dimethyl methylphosphonate
+293132,Dimethyl propylphosphonate
+293133,Diethyl ethylphosphonate
+293134,Sodium 3-(trihydroxysilyl)propyl methylphosphonate
+293135,"2,4,6-Tripropyl-1,3,5,2,4,6-trioxatriphosphinane 2,4,6-trioxide"
+293136,"(5-Ethyl-2-methyl-2-oxido-1,3,2-dioxaphosphinan-5-yl)methyl methyl methylphosphonate"
+293137,"Bis[(5-ethyl-2-methyl-2-oxido-1,3,2-dioxaphosphinan-5-yl)methyl] methylphosphonate"
+293138,Salt of methylphosphonic acid and (aminoiminomethyl)urea (1 : 1)
+293141,Non-halogenated organo-phosphorous derivatives; dimethyl methylphosphonate
+293142,Non-halogenated organo-phosphorous derivatives; dimethyl propylphosphonate
+293143,Non-halogenated organo-phosphorous derivatives; diethyl ethylphosphonate
+293144,Non-halogenated organo-phosphorous derivatives; methylphosphonic acid
+293145,Non-halogenated organo-phosphorous derivatives; salt of methylphosphonic acid and (aminominomethyl) urea (1:1)
+293146,"Non-halogenated organo-phosphorous derivatives; 2,4,6-tripropyl-1,3,5,2,4,6-trioxatriphosphinane 2,4,6-trioxide"
+293147,"Non-halogenated organo-phosphorous derivatives; (5-ethyl-2-methyl-2-oxido-1,3,2-dioxaphosphinan-5-yl) methyl methyl methylphosphonate"
+293148,"Non-halogenated organo-phosphorous derivatives; 3,9-dimethyl-2,4,8,10-tetraoxa-3,9-diphosphaspiro[5.5] undecane 3,9-dioxide"
+293149,"Non-halogenated organo-phosphorous derivatives; other non-halogenated organo-phosphorous derivatives, n.e.c. in item no. 2931.4"
+293151,Halogenated organo-phosphorous derivatives; methylphosphonic dichloride
+293152,Halogenated organo-phosphorous derivatives; propylphosphonic dichloride
+293153,Halogenated organo-phosphorous derivatives; O-(3-chloropropyl) O-[4-nitro-3-(trifluoromethyl)phenyl] methylphosphonothionate
+293154,Halogenated organo-phosphorous derivatives; trichlorfon (ISO)
+293159,"Halogenated organo-phosphorous derivatives; other halogenated organo-phosphorous derivatives, n.e.c. in item no. 2931.5"
+293211,Tetrahydrofuran
+293212,2-Furaldehyde (furfuraldehyde)
+293213,Furfuryl alcohol and tetrahydrofurfuryl alcohol
+293214,Sucralose
+293220,Lactones
+293221,"Coumarin, methylcoumarins and ethylcoumarins"
+293229,Other lactones
+293291,Isosafrole
+293292,"1-(1,3-Benzodioxol-5-yl)propan-2-one"
+293293,Piperonal
+293294,Safrole
+293295,Tetrahydrocannabinols (all isomers)
+293296,"Heterocyclic compounds; with oxygen hetero-atom(s) only, (other than lactones or compounds containing an unfused furan ring (whether or not hydrogenated) in the structure), carbofuran (ISO)"
+293311,Phenazone (antipyrin) and its derivatives
+293321,Hydantoin and its derivatives
+293331,Pyridine and its salts
+293332,Piperidine and its salts
+293333,"Alfentanil (INN), anileridine (INN), bezitramide (INN), bromazepam (INN), difenoxin (INN), diphenoxylate (INN), dipipanone (INN), fentanyl (INN), ketobemidone (INN), methylphenidate (INN), pentazocine (INN), pethidine (INN), pethidine (INN) intermediat"
+293334,"Heterocyclic compounds; containing an unfused pyridine ring (whether or not hydrogenated) in the structure, other fentanyls and their derivatives"
+293335,"Heterocyclic compounds; containing an unfused pyridine ring (whether or not hydrogenated) in the structure, 3-quinuclidinol"
+293336,"Heterocyclic compounds; containing an unfused pyridine ring (whether or not hydrogenated) in the structure, 4-anilino-N-phenethylpiperidine (ANPP)"
+293337,"Heterocyclic compounds; containing an unfused pyridine ring (whether or not hydrogenated) in the structure, N-phenethyl-4-piperdone (NPP)"
+293340,"Compounds containing a quinoline or isoquinoline ring-system (whether or not hydrogenated), not further fused"
+293341,Levorphanol (INN) and its salts
+293351,Malonylurea (barbituric acid) and its derivatives; salts thereof
+293352,Malonylurea (barbituric acid) and its salts
+293353,"Allobarbital (INN), amobarbital (INN), barbital (INN), butalbital (INN), butobarbital, cyclobarbital (INN), methylphenobarbital (INN), pentobarbital (INN), phenobarbital (INN), secbutabarbital (INN), secobarbital (INN) and vinylbital (INN); salts there"
+293354,Other derivatives of malonylurea (barbituric acid); salts thereof
+293355,"Loprazolam (INN), mecloqualone (INN), methaqualone (INN) and zipeprol (INN); salts thereof"
+293361,Melamine
+293371,6-Hexanelactam (epsilon-caprolactam)
+293372,Clobazam (INN) and methyprylon (INN)
+293379,Other lactams
+293391,"Alprazolam (INN), camazepam (INN), chlordiazepoxide (INN), clonazepam (INN), clorazepate, delorazepam (INN), diazepam (INN), estazolam (INN), ethyl loflazepate (INN), fludiazepam (INN), flunitrazepam (INN), flurazepam (INN), halazepam (INN), lorazepam"
+293392,Azinphos-methyl (ISO)
+293410,Compounds containing an unfused thiazole ring (whether or not hydrogenated) in the structure
+293420,"Compounds containing in the structure a benzothiazole ring-system (whether or not hydrogenated), not further fused"
+293430,"Compounds containing in the structure a phenothiazine ring-system (whether or not hydrogenated), not further fused"
+293491,"Aminorex (INN), brotizolam (INN), clotiazepam (INN), cloxazolam (INN), dextromoramide (INN), haloxazolam (INN), ketazolam (INN), mesocarb (INN), oxazolam (INN), pemoline (INN), phendimetrazine (INN), phenmetrazine (INN) and sufentanil (INN); salts ther"
+293492,"Heterocyclic compounds; other fentanyls n.e.c. in 2934, and their derivatives"
+293500,Sulphonamides.
+293510,N-Methylperfluorooctane sulphonamide
+293520,N-Ethylperfluorooctane sulphonamide
+293530,N-Ethyl-N-(2-hydroxyethyl) perfluorooctane sulphonamide
+293540,N-(2-Hydroxyethyl)-N-methylperfluorooctane sulphonamide
+293550,Other perfluorooctane sulphonamides
+293610,"Provitamins, unmixed"
+293621,Vitamins A and their derivatives
+293622,Vitamin B1 and its derivatives
+293623,Vitamin B2 and its derivatives
+293624,D- or DL-Pantothenic acid (vitamin B3 or vitamin B5) and its derivatives
+293625,Vitamin B6 and its derivatives
+293626,Vitamin B12 and its derivatives
+293627,Vitamin C and its derivatives
+293628,Vitamin E and its derivatives
+293629,Other vitamins and their derivatives
+293690,"Other, including natural concentrates"
+293710,"Pituitary (anterior) or similar hormones, and their derivatives"
+293711,"Somatotropin, its derivatives and structural analogues"
+293712,Insulin and its salts
+293721,"Cortisone, hydrocortisone, prednisone (dehydrocortisone) and prednisolone (dehydrohydrocortisone)"
+293722,Halogenated derivatives of corticosteroidal hormones
+293723,Oestrogens and progestogens
+293731,Epinephrine
+293740,Amino-acid derivatives
+293750,"Prostaglandins, thromboxanes and leukotrienes, their derivatives and structural analogues"
+293791,Insulin and its salts
+293792,Oestrogens and progestogens
+293810,Rutoside (rutin) and its derivatives
+293910,Alkaloids of opium and their derivatives; salts thereof
+293911,"Concentrates of poppy straw; buprenorphine (INN), codeine, dihydrocodeine (INN), ethylmorphine, etorphine (INN), heroin, hydrocodone (INN), hydromorphone (INN), morphine, nicomorphine (INN), oxycodone (INN), oxymorphone (INN), pholcodine (INN), thebaco"
+293920,Alkaloids of cinchona and their derivatives; salts thereof
+293921,Quinine and its salts
+293930,Caffeine and its salts
+293940,Ephedrines and their salts
+293941,Ephedrine and its salts
+293942,Pseudoephedrine (INN) and its salts
+293943,Cathine (INN) and its salts
+293944,Norephedrine and its salts
+293945,"Alkaloids; of ephedrine and their derivatives; levometamfetamine, metamfetamine (INN), metamefetamine racemate and their salts"
+293950,Theophylline and aminophylline (theophylline- ethylenediamine) and their derivatives; salts thereof
+293951,Fenetylline (INN) and its salts
+293960,Alkaloids of rye ergot and their derivatives; salts thereof
+293961,Ergometrine (INN) and its salts
+293962,Ergotamine (INN) and its salts
+293963,Lysergic acid and its salts
+293970,Nicotine and its salts
+293971,"Cocaine, ecgonine, levometamfetamine, metamfetamine (INN), metamfetamine racemate; salts, esters and other derivatives thereof"
+293972,"Alkaloids; of vegetal origin, cocaine, ecgonine; salts, esters and other derivatives thereof"
+293991,"Cocaine, ecgonine, levometamfetamine, metamfetamine (INN), metamfetamine racemate; salts, esters and other derivatives thereof"
+294000,"Sugars, chemically pure, other than sucrose, lactose, maltose, glucose and fructose; sugar ethers, sugar acetals and sugar esters, and their salts, other than products of heading 2937, 2938 or 2939"
+294110,Penicillins and their derivatives with a penicillanic acid structure; salts thereof
+294120,Streptomycins and their derivatives; salts thereof
+294130,Tetracyclines and their derivatives; salts thereof
+294140,Chloramphenicol and its derivatives; salts thereof
+294150,Erythromycin and its derivatives; salts thereof
+294200,Other organic compounds

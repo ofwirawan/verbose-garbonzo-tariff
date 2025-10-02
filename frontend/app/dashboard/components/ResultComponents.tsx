@@ -54,9 +54,9 @@ function SuspensionNotice({ result }: { result: TariffCalculationResult }) {
     return (
       <div className="mb-6 p-4 bg-gray-50 border-l-4 border-gray-900 rounded">
         <p className="text-sm text-gray-900">
-          <strong>Tariff Suspension Active:</strong> This trade relationship
-          has an active tariff suspension, meaning no duties are charged on
-          this product from the specified exporter to importer.
+          <strong>Tariff Suspension Active:</strong> This trade relationship has
+          an active tariff suspension, meaning no duties are charged on this
+          product from the specified exporter to importer.
         </p>
         {result.suspensionNote && (
           <p className="text-sm text-gray-600 mt-2 italic">
@@ -71,9 +71,9 @@ function SuspensionNotice({ result }: { result: TariffCalculationResult }) {
     return (
       <div className="mb-6 p-4 bg-gray-50 border-l-4 border-gray-400 rounded">
         <p className="text-sm text-gray-900">
-          <strong>Historical Suspension Record:</strong> This trade
-          relationship had a tariff suspension in the past, but it is
-          currently inactive or expired. No tariff rate data is available.
+          <strong>Historical Suspension Record:</strong> This trade relationship
+          had a tariff suspension in the past, but it is currently inactive or
+          expired. No tariff rate data is available.
         </p>
         {result.suspensionNote && (
           <p className="text-sm text-gray-600 mt-2 italic">
@@ -283,7 +283,7 @@ function RateDetails({
       {suspensionNote && (
         <div className="mt-4 pt-4 border-t border-gray-200">
           <span className="text-xs text-gray-500 uppercase tracking-wide font-medium">
-            Suspension Note:
+            Note:
           </span>
           <p className="mt-2 text-sm text-gray-700 italic">{suspensionNote}</p>
         </div>
@@ -326,7 +326,8 @@ function TransactionInfo({ result }: { result: TariffCalculationResult }) {
         </div>
       </div>
       <div className="mt-4 text-xs text-gray-500">
-        <span className="font-medium">Transaction ID:</span> {result.transactionId}
+        <span className="font-medium">Transaction ID:</span>{" "}
+        {result.transactionId}
       </div>
     </div>
   );
@@ -347,53 +348,83 @@ function ChartLegend({ result }: { result: TariffCalculationResult }) {
         Rate Types Applied
       </h5>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
-        <div className={`flex items-center gap-2 p-2 rounded border transition-all ${
-          isSuspended
-            ? 'bg-gray-900 border-gray-900 shadow-md'
-            : 'bg-gray-50 border-gray-200 opacity-40'
-        }`}>
-          <div className={`w-2 h-2 rounded-full flex-shrink-0 ${
-            isSuspended ? 'bg-white' : 'bg-black'
-          }`}></div>
-          <span className={`font-medium ${
-            isSuspended ? 'text-white' : 'text-gray-500'
-          }`}>Suspended</span>
+        <div
+          className={`flex items-center gap-2 p-2 rounded border transition-all ${
+            isSuspended
+              ? "bg-gray-700 border-gray-700 shadow-md"
+              : "bg-gray-50 border-gray-200 opacity-40"
+          }`}
+        >
+          <div
+            className={`w-2 h-2 border-2 rounded-full flex-shrink-0 ${
+              isSuspended ? "border-white" : "border-gray-400"
+            }`}
+          ></div>
+          <span
+            className={`font-medium ${
+              isSuspended ? "text-white" : "text-gray-500"
+            }`}
+          >
+            Suspended
+          </span>
         </div>
-        <div className={`flex items-center gap-2 p-2 rounded border transition-all ${
-          isPreferential
-            ? 'bg-gray-800 border-gray-800 shadow-md'
-            : 'bg-gray-50 border-gray-300 opacity-40'
-        }`}>
-          <div className={`w-2 h-2 border-2 rounded-full flex-shrink-0 ${
-            isPreferential ? 'border-white' : 'border-gray-600'
-          }`}></div>
-          <span className={`font-medium ${
-            isPreferential ? 'text-white' : 'text-gray-500'
-          }`}>Preferential (FTA)</span>
+        <div
+          className={`flex items-center gap-2 p-2 rounded border transition-all ${
+            isPreferential
+              ? "bg-gray-700 border-gray-700 shadow-md"
+              : "bg-gray-50 border-gray-200 opacity-40"
+          }`}
+        >
+          <div
+            className={`w-2 h-2 border-2 rounded-full flex-shrink-0 ${
+              isPreferential ? "border-white" : "border-gray-400"
+            }`}
+          ></div>
+          <span
+            className={`font-medium ${
+              isPreferential ? "text-white" : "text-gray-500"
+            }`}
+          >
+            Preferential (FTA)
+          </span>
         </div>
-        <div className={`flex items-center gap-2 p-2 rounded border transition-all ${
-          isMFN
-            ? 'bg-gray-700 border-gray-700 shadow-md'
-            : 'bg-gray-50 border-gray-400 opacity-40'
-        }`}>
-          <div className={`w-2 h-2 border-2 rounded-full flex-shrink-0 ${
-            isMFN ? 'border-white' : 'border-gray-400'
-          }`}></div>
-          <span className={`font-medium ${
-            isMFN ? 'text-white' : 'text-gray-500'
-          }`}>MFN (Standard)</span>
+        <div
+          className={`flex items-center gap-2 p-2 rounded border transition-all ${
+            isMFN
+              ? "bg-gray-700 border-gray-700 shadow-md"
+              : "bg-gray-50 border-gray-200 opacity-40"
+          }`}
+        >
+          <div
+            className={`w-2 h-2 border-2 rounded-full flex-shrink-0 ${
+              isMFN ? "border-white" : "border-gray-400"
+            }`}
+          ></div>
+          <span
+            className={`font-medium ${isMFN ? "text-white" : "text-gray-500"}`}
+          >
+            MFN (Standard)
+          </span>
         </div>
-        <div className={`flex items-center gap-2 p-2 rounded border transition-all ${
-          isSpecific
-            ? 'bg-gray-600 border-gray-600 shadow-md'
-            : 'bg-gray-50 border-gray-200 opacity-40'
-        }`}>
-          <div className={`w-2 h-2 rounded-full flex-shrink-0 ${
-            isSpecific ? 'bg-white' : 'bg-gray-300'
-          }`}></div>
-          <span className={`font-medium ${
-            isSpecific ? 'text-white' : 'text-gray-500'
-          }`}>Specific Duty</span>
+        <div
+          className={`flex items-center gap-2 p-2 rounded border transition-all ${
+            isSpecific
+              ? "bg-gray-700 border-gray-700 shadow-md"
+              : "bg-gray-50 border-gray-200 opacity-40"
+          }`}
+        >
+          <div
+            className={`w-2 h-2 border-2 rounded-full flex-shrink-0 ${
+              isSpecific ? "border-white" : "border-gray-400"
+            }`}
+          ></div>
+          <span
+            className={`font-medium ${
+              isSpecific ? "text-white" : "text-gray-500"
+            }`}
+          >
+            Specific Duty
+          </span>
         </div>
       </div>
     </div>
