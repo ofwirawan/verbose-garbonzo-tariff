@@ -52,11 +52,13 @@ export function Combobox({
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className="w-full justify-between"
+          className="w-full justify-between h-12 px-4 bg-white border border-gray-300 hover:bg-gray-50 transition-all"
         >
-          {value
-            ? options.find((option) => option.value === value)?.label
-            : placeholder}
+          <span className="truncate">
+            {value
+              ? options.find((option) => option.value === value)?.label
+              : placeholder}
+          </span>
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
@@ -94,14 +96,14 @@ export function Combobox({
                     )}
                   />
                   {showSecondaryText ? (
-                    <div className="flex flex-col">
-                      <span className="font-medium">{option.label}</span>
-                      <span className="text-xs text-muted-foreground">
+                    <div className="flex flex-col min-w-0">
+                      <span className="font-medium truncate">{option.label}</span>
+                      <span className="text-xs text-muted-foreground truncate">
                         HS6: {option.value}
                       </span>
                     </div>
                   ) : (
-                    option.label
+                    <span className="truncate">{option.label}</span>
                   )}
                 </CommandItem>
               ))}

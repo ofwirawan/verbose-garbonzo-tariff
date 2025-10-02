@@ -6,12 +6,28 @@ import { SiteHeader } from "@/components/site-header";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Legend } from "recharts";
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import { fetchCountries, fetchProduct } from "@/app/dashboard/actions/dashboardactions";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Area, AreaChart, CartesianGrid, XAxis } from "recharts";
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+} from "@/components/ui/chart";
+import {
+  fetchCountries,
+  fetchProduct,
+} from "@/app/dashboard/actions/dashboardactions";
 import { Combobox } from "@/app/dashboard/components/SharedComponents";
-import { convertCountriesToOptions, convertProductsToOptions } from "@/app/dashboard/components/utils/service";
+import {
+  convertCountriesToOptions,
+  convertProductsToOptions,
+} from "@/app/dashboard/components/utils/service";
 import { DropdownOption } from "@/app/dashboard/components/utils/types";
 
 interface CountryOption {
@@ -25,8 +41,9 @@ interface ProductOption {
   description: string | null;
 }
 
-const START_YEAR = 2015;
-const END_YEAR = 2023;
+const END_YEAR = 2022;
+const START_YEAR = 2006;
+const YEAR_INTERVAL = 2;
 
 export default function TariffHistoryPage() {
   const [countries, setCountries] = useState<CountryOption[]>([]);
@@ -34,11 +51,16 @@ export default function TariffHistoryPage() {
   const [selectedCountry, setSelectedCountry] = useState<string>("");
   const [selectedProduct, setSelectedProduct] = useState<string>("");
   const [isFetching, setIsFetching] = useState(false);
-  const [chartData, setChartData] = useState<{ year: string; tariffRate: number; date: string }[]>([]);
+  const [chartData, setChartData] = useState<
+    { year: string; tariffRate: number; date: string }[]
+  >([]);
   const [error, setError] = useState<string | null>(null);
   const [fetchStatus, setFetchStatus] = useState<string>("");
 
-  const YEARS = Array.from({ length: END_YEAR - START_YEAR + 1 }, (_, i) => (START_YEAR + i).toString());
+  const YEARS = Array.from(
+    { length: Math.floor((END_YEAR - START_YEAR) / YEAR_INTERVAL) + 1 },
+    (_, i) => (START_YEAR + i * YEAR_INTERVAL).toString()
+  );
 
   useEffect(() => {
     const loadData = async () => {
@@ -67,7 +89,12 @@ export default function TariffHistoryPage() {
         const name = attr.name.toLowerCase();
         const value = attr.value;
 
-        if ((name.includes("value") || name.includes("rate") || name.includes("average")) && value) {
+        if (
+          (name.includes("value") ||
+            name.includes("rate") ||
+            name.includes("average")) &&
+          value
+        ) {
           const rate = parseFloat(value);
           if (!isNaN(rate)) return rate;
         }
@@ -123,12 +150,20 @@ export default function TariffHistoryPage() {
     }
 
     try {
-      const downloadedData: { year: string; tariffRate: number; date: string }[] = [];
+      const downloadedData: {
+        year: string;
+        tariffRate: number;
+        date: string;
+      }[] = [];
       let successCount = 0;
       let failCount = 0;
 
       for (const year of YEARS) {
-        setFetchStatus(`Fetching ${year}... (${successCount + failCount + 1}/${YEARS.length})`);
+        setFetchStatus(
+          `Fetching ${year}... (${successCount + failCount + 1}/${
+            YEARS.length
+          })`
+        );
 
         try {
           const url = `/api/wits-tariff?reporter=${country.numeric_code}&partner=000&product=${selectedProduct}&year=${year}`;
@@ -164,7 +199,9 @@ export default function TariffHistoryPage() {
         }
       }
 
-      setFetchStatus(`Complete! Success: ${successCount}, Failed: ${failCount}`);
+      setFetchStatus(
+        `Complete! Success: ${successCount}, Failed: ${failCount}`
+      );
 
       if (downloadedData.length === 0) {
         setError("No tariff data found for the selected country and product.");
@@ -179,8 +216,12 @@ export default function TariffHistoryPage() {
     }
   };
 
-  const selectedCountryName = countries.find((c) => c.country_code === selectedCountry)?.name;
-  const selectedProductName = products.find((p) => p.hs6code === selectedProduct)?.description;
+  const selectedCountryName = countries.find(
+    (c) => c.country_code === selectedCountry
+  )?.name;
+  const selectedProductName = products.find(
+    (p) => p.hs6code === selectedProduct
+  )?.description;
 
   const countryOptions: DropdownOption[] = convertCountriesToOptions(countries);
   const productOptions: DropdownOption[] = convertProductsToOptions(products);
@@ -213,7 +254,8 @@ export default function TariffHistoryPage() {
                     Chemical Products Tariff History
                   </CardTitle>
                   <CardDescription className="text-sm mt-1">
-                    Fetch historical tariff rate trends for chemical products directly from WITS API
+                    Fetch historical tariff rate trends for chemical products
+                    directly from WITS API
                   </CardDescription>
                 </CardHeader>
 
@@ -221,7 +263,10 @@ export default function TariffHistoryPage() {
                   <div className="space-y-6">
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="country" className="text-sm font-bold text-black uppercase tracking-wide">
+                        <Label
+                          htmlFor="country"
+                          className="text-sm font-bold text-black uppercase tracking-wide"
+                        >
                           Country (Reporter)
                         </Label>
                         <Combobox
@@ -236,7 +281,10 @@ export default function TariffHistoryPage() {
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="product" className="text-sm font-bold text-black uppercase tracking-wide">
+                        <Label
+                          htmlFor="product"
+                          className="text-sm font-bold text-black uppercase tracking-wide"
+                        >
                           Chemical Product
                         </Label>
                         <Combobox
@@ -255,7 +303,9 @@ export default function TariffHistoryPage() {
                     <div className="flex justify-center sm:justify-end">
                       <Button
                         onClick={fetchFromWITS}
-                        disabled={!selectedCountry || !selectedProduct || isFetching}
+                        disabled={
+                          !selectedCountry || !selectedProduct || isFetching
+                        }
                         size="lg"
                         className="w-full sm:w-auto bg-black text-white hover:bg-gray-800 disabled:opacity-40 h-14 px-12 font-bold text-base uppercase tracking-wide"
                       >
@@ -272,73 +322,99 @@ export default function TariffHistoryPage() {
 
                     {fetchStatus && (
                       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                        <p className="text-blue-800 text-sm font-medium">{fetchStatus}</p>
+                        <p className="text-blue-800 text-sm font-medium">
+                          {fetchStatus}
+                        </p>
                       </div>
                     )}
 
                     {error && (
                       <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                        <p className="text-red-600 text-sm font-medium">{error}</p>
+                        <p className="text-red-600 text-sm font-medium">
+                          {error}
+                        </p>
                       </div>
                     )}
 
                     {chartData.length > 0 && (
                       <div className="space-y-4">
-                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                          <h3 className="font-bold text-sm text-blue-900 mb-1">
-                            Tariff Rate Trend ({START_YEAR}-{END_YEAR})
-                          </h3>
-                          <p className="text-blue-800 text-sm">
-                            Showing <strong>{selectedProductName}</strong> ({selectedProduct})
-                            from <strong>{selectedCountryName}</strong> to the World
-                          </p>
-                        </div>
-
                         <Card>
-                          <CardContent className="p-6">
-                            <ChartContainer config={chartConfig} className="h-[400px] w-full">
-                              <LineChart data={chartData}>
-                                <CartesianGrid strokeDasharray="3 3" />
+                          <CardHeader>
+                            <CardTitle>Tariff Rate Trend</CardTitle>
+                            <CardDescription>
+                              Showing <strong>{selectedProductName}</strong> (
+                              {selectedProduct}) from{" "}
+                              <strong>{selectedCountryName}</strong> to the
+                              World
+                            </CardDescription>
+                          </CardHeader>
+                          <CardContent>
+                            <ChartContainer
+                              config={chartConfig}
+                              className="h-[350px] w-full"
+                            >
+                              <AreaChart
+                                accessibilityLayer
+                                data={chartData}
+                                margin={{
+                                  top: 30,
+                                  left: 20,
+                                  right: 20,
+                                  bottom: 60,
+                                }}
+                              >
+                                <CartesianGrid vertical={false} />
                                 <XAxis
                                   dataKey="year"
-                                  label={{ value: "Year", position: "insideBottom", offset: -5 }}
+                                  tickLine={false}
+                                  axisLine={false}
+                                  tickMargin={8}
+                                  interval={0}
                                 />
-                                <YAxis
-                                  label={{ value: "Tariff Rate (%)", angle: -90, position: "insideLeft" }}
+                                <ChartTooltip
+                                  cursor={false}
+                                  content={
+                                    <ChartTooltipContent indicator="line" />
+                                  }
                                 />
-                                <ChartTooltip content={<ChartTooltipContent />} />
-                                <Legend />
-                                <Line
-                                  type="monotone"
+                                <Area
                                   dataKey="tariffRate"
+                                  type="natural"
+                                  fill="var(--color-tariffRate)"
+                                  fillOpacity={0.4}
                                   stroke="var(--color-tariffRate)"
-                                  strokeWidth={2}
-                                  name={`${selectedCountryName} to World (%)`}
-                                  dot={{ fill: "var(--color-tariffRate)", r: 4 }}
                                 />
-                              </LineChart>
+                              </AreaChart>
                             </ChartContainer>
                           </CardContent>
                         </Card>
 
                         <Card>
                           <CardHeader>
-                            <CardTitle className="text-sm">Data Table</CardTitle>
+                            <CardTitle className="text-sm">
+                              Data Table
+                            </CardTitle>
                           </CardHeader>
                           <CardContent>
                             <div className="overflow-x-auto">
                               <table className="w-full text-sm">
                                 <thead className="bg-gray-50">
                                   <tr>
-                                    <th className="p-3 text-left font-bold">Year</th>
-                                    <th className="p-3 text-right font-bold">Tariff Rate (%)</th>
+                                    <th className="p-3 text-left font-bold">
+                                      Year
+                                    </th>
+                                    <th className="p-3 text-right font-bold">
+                                      Tariff Rate (%)
+                                    </th>
                                   </tr>
                                 </thead>
                                 <tbody>
                                   {chartData.map((item, index) => (
                                     <tr key={index} className="border-t">
                                       <td className="p-3">{item.year}</td>
-                                      <td className="p-3 text-right font-mono">{item.tariffRate.toFixed(2)}%</td>
+                                      <td className="p-3 text-right font-mono">
+                                        {item.tariffRate.toFixed(2)}%
+                                      </td>
                                     </tr>
                                   ))}
                                 </tbody>

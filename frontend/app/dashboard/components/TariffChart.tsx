@@ -81,7 +81,7 @@ function TariffChartForm({
       {/* Single unified form container */}
       <div className="bg-white rounded-lg p-8 border border-gray-200">
         {/* Transaction Date & Product */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           <div className="space-y-3">
             <Label
               htmlFor="transactionDate"
@@ -129,7 +129,7 @@ function TariffChartForm({
           <div className="space-y-3">
             <Label
               htmlFor="productCode"
-              className="text-sm font-bold text-black uppercase tracking-wide flex items-center gap-2"
+              className="text-sm font-bold text-black uppercase tracking-wide"
             >
               Product Code
             </Label>
@@ -147,14 +147,14 @@ function TariffChartForm({
         </div>
 
         {/* Trade Partners */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           <div className="space-y-3">
             <Label
               htmlFor="importingCountry"
               className="text-sm font-bold text-black uppercase tracking-wide flex items-center gap-2"
             >
               Importing Country
-              <span className="text-xs bg-black text-white px-2 py-1 rounded font-medium ml-auto normal-case">
+              <span className="text-xs bg-black text-white px-2 py-0.5 rounded font-medium ml-auto normal-case">
                 Sets Rate
               </span>
             </Label>
@@ -175,7 +175,7 @@ function TariffChartForm({
               className="text-sm font-bold text-black uppercase tracking-wide flex items-center gap-2"
             >
               Exporting Country
-              <span className="text-xs bg-white text-black border border-gray-300 px-2 py-1 rounded font-medium ml-auto normal-case">
+              <span className="text-xs bg-white text-black border border-gray-300 px-2 py-0.5 rounded font-medium ml-auto normal-case">
                 Pays Duty
               </span>
             </Label>
@@ -196,7 +196,7 @@ function TariffChartForm({
           <div className="space-y-3">
             <Label
               htmlFor="tradeValue"
-              className="text-sm font-bold text-black uppercase tracking-wide flex items-center gap-2"
+              className="text-sm font-bold text-black uppercase tracking-wide"
             >
               Trade Value
             </Label>
@@ -223,7 +223,7 @@ function TariffChartForm({
               className="text-sm font-bold text-black uppercase tracking-wide flex items-center gap-2"
             >
               Net Weight
-              <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded font-medium ml-auto normal-case">
+              <span className="text-xs bg-gray-100 text-gray-600 px-2 rounded font-medium ml-auto normal-case">
                 Optional
               </span>
             </Label>
@@ -236,9 +236,9 @@ function TariffChartForm({
                 value={netWeight}
                 onChange={(e) => onNetWeightChange(e.target.value)}
                 placeholder="0.00"
-                className="h-12 px-4 pr-12 bg-white border border-gray-300 hover:bg-gray-50 focus:ring-2 focus:ring-gray-400 focus:border-gray-400 transition-all"
+                className="h-12 px-4 pr-12 bg-white border border-gray-300 hover:bg-gray-50 focus:ring-2 focus:ring-gray-400 focus:border-gray-400 transition-all font-semibold text-base"
               />
-              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-600 text-sm font-medium">
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-600 text-base font-bold">
                 kg
               </span>
             </div>
@@ -251,8 +251,7 @@ function TariffChartForm({
         <Button
           onClick={onCalculate}
           disabled={!importingCountry || !tradeValue || isCalculating}
-          size="lg"
-          className="w-full sm:w-auto bg-black text-white hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed h-14 px-12 font-bold text-base uppercase tracking-wide border-2 border-black transition-all duration-200"
+          className="w-full sm:w-auto bg-black text-white hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed h-10 px-6 font-semibold text-sm uppercase tracking-wide transition-all duration-200"
         >
           {isCalculating ? (
             <span className="flex items-center gap-3">

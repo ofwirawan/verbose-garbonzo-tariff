@@ -32,9 +32,12 @@ export function useTariffData() {
   const [hasError, setHasError] = useState(false);
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchData = async (isInitialLoad = false) => {
       try {
-        setIsLoading(true);
+        // Only show loading state on initial load, not on background refreshes
+        if (isInitialLoad) {
+          setIsLoading(true);
+        }
         setHasError(false);
 
         const [countriesResult, productsResult] = await Promise.all([
@@ -48,12 +51,14 @@ export function useTariffData() {
         console.error("Error fetching data:", error);
         setHasError(true);
       } finally {
-        setIsLoading(false);
+        if (isInitialLoad) {
+          setIsLoading(false);
+        }
       }
     };
 
-    fetchData();
-    const interval = setInterval(fetchData, REFRESH_INTERVAL);
+    fetchData(true); // Initial load
+    const interval = setInterval(() => fetchData(false), REFRESH_INTERVAL); // Background refreshes
 
     return () => clearInterval(interval);
   }, []);

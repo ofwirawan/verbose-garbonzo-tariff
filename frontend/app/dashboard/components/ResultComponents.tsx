@@ -351,7 +351,7 @@ function ChartLegend({ result }: { result: TariffCalculationResult }) {
         <div
           className={`flex items-center gap-2 p-2 rounded border transition-all ${
             isSuspended
-              ? "bg-gray-700 border-gray-700 shadow-md"
+              ? "bg-black border-black shadow-md"
               : "bg-gray-50 border-gray-200 opacity-40"
           }`}
         >
@@ -371,7 +371,7 @@ function ChartLegend({ result }: { result: TariffCalculationResult }) {
         <div
           className={`flex items-center gap-2 p-2 rounded border transition-all ${
             isPreferential
-              ? "bg-gray-700 border-gray-700 shadow-md"
+              ? "bg-black border-black shadow-md"
               : "bg-gray-50 border-gray-200 opacity-40"
           }`}
         >
@@ -391,7 +391,7 @@ function ChartLegend({ result }: { result: TariffCalculationResult }) {
         <div
           className={`flex items-center gap-2 p-2 rounded border transition-all ${
             isMFN
-              ? "bg-gray-700 border-gray-700 shadow-md"
+              ? "bg-black border-black shadow-md"
               : "bg-gray-50 border-gray-200 opacity-40"
           }`}
         >
@@ -409,7 +409,7 @@ function ChartLegend({ result }: { result: TariffCalculationResult }) {
         <div
           className={`flex items-center gap-2 p-2 rounded border transition-all ${
             isSpecific
-              ? "bg-gray-700 border-gray-700 shadow-md"
+              ? "bg-black border-black shadow-md"
               : "bg-gray-50 border-gray-200 opacity-40"
           }`}
         >
