@@ -5,6 +5,9 @@ import com.verbosegarbonzo.tariff.model.UserInfo;
 import com.verbosegarbonzo.tariff.service.JwtService;
 import com.verbosegarbonzo.tariff.service.UserInfoService;
 
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
