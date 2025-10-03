@@ -1,5 +1,7 @@
 package com.verbosegarbonzo.tariff.repository;
 
+import com.verbosegarbonzo.tariff.model.Country;
+import com.verbosegarbonzo.tariff.model.Product;
 import com.verbosegarbonzo.tariff.model.Suspension;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -24,4 +26,9 @@ public interface SuspensionRepository extends JpaRepository<Suspension, Integer>
         @Param("hs6") String hs6,
         @Param("date") LocalDate date
     );
+
+    Optional<Suspension> findByImporterAndProductAndValidFrom(
+        Country importer,
+        Product product,
+        LocalDate validFrom);
 }

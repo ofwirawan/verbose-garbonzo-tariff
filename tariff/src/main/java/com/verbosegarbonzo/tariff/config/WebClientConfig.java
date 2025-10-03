@@ -30,8 +30,10 @@ public class WebClientConfig {
         return HttpClient.create()
                 .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 30000)
                 .responseTimeout(Duration.ofSeconds(30))
-                .doOnConnected(conn -> conn.addHandlerLast(new ReadTimeoutHandler(30, TimeUnit.SECONDS))
-                        .addHandlerLast(new WriteTimeoutHandler(30, TimeUnit.SECONDS)));
+                .doOnConnected(conn ->
+                        conn.addHandlerLast(new ReadTimeoutHandler(30, TimeUnit.SECONDS))
+                            .addHandlerLast(new WriteTimeoutHandler(30, TimeUnit.SECONDS))
+                );
     }
 
     @Bean

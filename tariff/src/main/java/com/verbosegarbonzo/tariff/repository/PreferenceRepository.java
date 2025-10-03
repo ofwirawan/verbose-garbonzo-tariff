@@ -1,13 +1,16 @@
 package com.verbosegarbonzo.tariff.repository;
 
+import com.verbosegarbonzo.tariff.model.Country;
 import com.verbosegarbonzo.tariff.model.Preference;
+import com.verbosegarbonzo.tariff.model.Product;
+import java.time.LocalDate;
+import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import java.time.LocalDate;
-import java.util.Optional;
-
+@Repository
 public interface PreferenceRepository extends JpaRepository<Preference, Integer> {
     @Query("""
         SELECT p FROM Preference p
@@ -22,4 +25,10 @@ public interface PreferenceRepository extends JpaRepository<Preference, Integer>
         @Param("exporter") String exporter,
         @Param("hs6") String hs6,
         @Param("date") LocalDate date);
+
+    Optional<Preference> findByImporterAndExporterAndProductAndValidFrom(
+        Country importer,
+        Country exporter,
+        Product product,
+        LocalDate validFrom);
 }

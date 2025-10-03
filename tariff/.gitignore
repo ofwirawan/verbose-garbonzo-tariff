@@ -20,6 +20,14 @@
 # production
 /build
 
+# java class files
+*.class
+
+# maven build directories
+/target/
+/build/
+/out/
+
 # misc
 .DS_Store
 *.pem
