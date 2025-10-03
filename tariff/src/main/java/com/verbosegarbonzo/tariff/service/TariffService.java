@@ -1,179 +1,212 @@
 package com.verbosegarbonzo.tariff.service;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.verbosegarbonzo.tariff.config.WitsProperties;
-import com.verbosegarbonzo.tariff.model.CalculateResponse;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+
+import com.verbosegarbonzo.tariff.exception.RateNotFoundException;
+import com.verbosegarbonzo.tariff.exception.WeightRequiredException;
+import com.verbosegarbonzo.tariff.exception.InvalidRateException;
+import com.verbosegarbonzo.tariff.exception.InvalidRequestException;
+
 import com.verbosegarbonzo.tariff.model.CalculateRequest;
+import com.verbosegarbonzo.tariff.model.CalculateResponse;
+import com.verbosegarbonzo.tariff.model.Measure;
+import com.verbosegarbonzo.tariff.model.Preference;
+import com.verbosegarbonzo.tariff.model.Suspension;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.verbosegarbonzo.tariff.repository.MeasureRepository;
+import com.verbosegarbonzo.tariff.repository.PreferenceRepository;
+import com.verbosegarbonzo.tariff.repository.SuspensionRepository;
 
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.client.WebClient;
-import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.List;
 
 @Service
 public class TariffService {
-    private static final Logger logger = LoggerFactory.getLogger(TariffService.class);
 
-    private final WebClient webClient;
-    private final WitsProperties props;
-    private final ObjectMapper om = new ObjectMapper(); // JSON parsing
+    private static final UUID TEMP_USER_ID = UUID.fromString("11111111-1111-1111-1111-111111111111");
 
-    public TariffService(@Qualifier("tariffWebClient") WebClient tariffWebClient, WitsProperties props) {
-        this.webClient = tariffWebClient;
-        this.props = props;
+    private final PreferenceRepository preferenceRepo;
+    private final MeasureRepository measureRepo;
+    private final SuspensionRepository suspensionRepo;
+    private final ObjectMapper objectMapper = new ObjectMapper();
+
+    public TariffService(PreferenceRepository preferenceRepo, MeasureRepository measureRepo,
+            SuspensionRepository suspensionRepo) {
+        this.preferenceRepo = preferenceRepo;
+        this.measureRepo = measureRepo;
+        this.suspensionRepo = suspensionRepo;
     }
 
     public CalculateResponse calculate(CalculateRequest req) {
-        final int year = req.getTransactionDate().getYear();
+        List<String> errors = new ArrayList<>();
 
-        String partner = req.getPartner();
-        String path = props.getTariff().getDataset()
-                + "/reporter/" + req.getReporter()
-                + "/partner/" + partner
-                + "/product/" + req.getHs6()
-                + "/year/" + year
-                + "/datatype/reported?format=JSON";
+        if (req.getHs6() == null || req.getHs6().isBlank()) {
+            errors.add("HS6 code is required");
+        }
+        if (req.getTradeOriginal() == null) {
+            errors.add("Trade original is required");
+        }
+        if (req.getTransactionDate() == null) {
+            errors.add("Transaction date is required");
+        }
 
-        final String dataUrlBase = props.getTariff().getBaseUrl();
-        String dataUrl = dataUrlBase + "/" + path;
+        // If errors found, throw once
+        if (!errors.isEmpty()) {
+            throw new InvalidRequestException(String.join("; ", errors));
+        }
 
-        logger.info("Calling WITS API with path: {}", path);
+        LocalDate date = req.getTransactionDate();
 
-        String raw = null;
-        BigDecimal ratePercent = null;
+        // Check suspension first
+        Optional<Suspension> suspOpt = suspensionRepo.findActiveSuspension(
+                req.getImporterCode(), req.getHs6(), date);
 
-        try {
-            raw = webClient.get()
-                    .uri("/" + path)
-                    .accept(MediaType.APPLICATION_JSON)
-                    .retrieve()
-                    .bodyToMono(String.class)
-                    .block();
+        // Check preference (if exporter provided) - preference can override suspension
+        Optional<Preference> prefOpt = (req.getExporterCode() != null && !req.getExporterCode().isBlank())
+                ? preferenceRepo.findValidRate(req.getImporterCode(), req.getExporterCode(), req.getHs6(), date)
+                : Optional.empty();
 
-            logger.info("Received raw response of length: {} from WITS API", raw != null ? raw.length() : 0);
+        // If both suspension and preference exist, preference takes precedence (FTA overrides suspension)
+        if (prefOpt.isPresent()) {
+            List<String> rateErrors = new ArrayList<>();
+            Preference pref = prefOpt.get();
 
-            ratePercent = extractMfnSimpleAveragePercent(raw);
-        } catch (WebClientResponseException.NotFound e) {
-            logger.warn("WITS API 404 Not Found for partner={}, trying fallback partner 000", partner);
-            partner = "000";
-            path = props.getTariff().getDataset()
-                    + "/reporter/" + req.getReporter()
-                    + "/partner/" + partner
-                    + "/product/" + req.getHs6()
-                    + "/year/" + year
-                    + "/datatype/reported?format=JSON";
-            dataUrl = dataUrlBase + "/" + path;
-            try {
-                raw = webClient.get()
-                        .uri("/" + path)
-                        .accept(MediaType.APPLICATION_JSON)
-                        .retrieve()
-                        .bodyToMono(String.class)
-                        .block();
+            BigDecimal ratePref = pref.getPrefAdvalRate();
 
-                logger.info("Received raw response from fallback partner of length: {}", raw != null ? raw.length() : 0);
-
-                ratePercent = extractMfnSimpleAveragePercent(raw);
-            } catch (WebClientResponseException.NotFound ex) {
-                logger.error("Fallback partner 000 also returned 404 Not Found");
-                throw new RateNotFoundException("No MFN rate for hs6=" + req.getHs6()
-                        + " reporter=" + req.getReporter()
-                        + " partner=" + partner
-                        + " year=" + year);
-            } catch (Exception ex) {
-                logger.error("Error during WITS API call with fallback partner", ex);
-                throw ex;
+            if (ratePref.compareTo(BigDecimal.ZERO) < 0) {
+                rateErrors.add("Invalid preferential rate: " + ratePref);
             }
-        } catch (Exception e) {
-            logger.error("Error during WITS API call", e);
-            throw e;
+
+            BigDecimal ratePrefCalc = ratePref.multiply(BigDecimal.valueOf(0.01));
+
+            BigDecimal duty = req.getTradeOriginal().multiply(ratePrefCalc);
+            return buildResponse(req, TEMP_USER_ID, duty, null, null, ratePref, null);
         }
 
-        if (ratePercent == null) {
-            logger.error("No MFN rate found in WITS API response");
-            throw new RateNotFoundException("No MFN rate for hs6=" + req.getHs6()
-                    + " reporter=" + req.getReporter()
-                    + " partner=" + partner
-                    + " year=" + year);
+        // Apply suspension only if no preference was found
+        if (suspOpt.isPresent()) {
+            Suspension susp = suspOpt.get();
+
+            BigDecimal rateSusp = susp.getSuspensionRate();
+            if (rateSusp == null) {
+                rateSusp = BigDecimal.ZERO;
+            }
+
+            if (rateSusp.compareTo(BigDecimal.ZERO) < 0) {
+                throw new InvalidRateException("Invalid suspension rate: " + rateSusp);
+            }
+
+            BigDecimal rateSuspCalc = rateSusp.multiply(BigDecimal.valueOf(0.01));
+
+            BigDecimal duty = req.getTradeOriginal().multiply(rateSuspCalc);
+            // tariff suspended
+            return buildResponse(req, TEMP_USER_ID, duty, null, null, null, rateSusp);
         }
 
-        // Convert percentage rate (e.g., 5.00) to decimal (e.g., 0.05) for calculations
-        BigDecimal rateDecimal = ratePercent.movePointLeft(2);
+        // Otherwise, check measure
+        Optional<Measure> measureOpt = measureRepo.findValidRate(req.getImporterCode(), req.getHs6(), date);
+        if (measureOpt.isPresent()) {
+            List<String> rateErrors = new ArrayList<>();
+            Measure measure = measureOpt.get();
+            BigDecimal duty = BigDecimal.ZERO;
+            BigDecimal rateAdval = null, rateSpecific = null;
 
-        // Calculate duty by multiplying trade value by decimal rate and rounding
-        BigDecimal duty = req.getTradeValue()
-                .multiply(rateDecimal)
-                .setScale(2, RoundingMode.HALF_UP);
+            BigDecimal rateAdvalCalc = null;
 
-        // Calculate total amount payable including duty
-        BigDecimal totalPayable = req.getTradeValue().add(duty);
+            // normalize rates
+            if (measure.getMfnAdvalRate() != null) {
+                rateAdval = measure.getMfnAdvalRate();
 
-        // Build output DTO with results and metadata including possibly fallback partner
-        final CalculateResponse resp = new CalculateResponse();
-        resp.setHs6(req.getHs6());
-        resp.setReporter(req.getReporter());
-        resp.setPartner(partner); // shows fallback partner if used
-        resp.setYear(year);
-        resp.setRatePercent(ratePercent.setScale(2, RoundingMode.HALF_UP));
-        resp.setTradeValue(req.getTradeValue());
-        resp.setDuty(duty);
-        resp.setTotalPayable(totalPayable);
-        resp.setDataUrl(dataUrl);
-        return resp;
-    }
-
-    // pulling out the tariff percentage from the JSON response returned by WITS
-    private BigDecimal extractMfnSimpleAveragePercent(String rawJson) {
-        try {
-            JsonNode root = om.readTree(rawJson);
-
-            JsonNode dataSets = root.path("dataSets");
-            if (!dataSets.isArray() || dataSets.isEmpty())
-                return null;
-
-            JsonNode seriesNode = dataSets.get(0).path("series");
-            // must be an array with at least one element, otherwise return null
-            if (seriesNode.isMissingNode())
-                return null;
-
-            var it = seriesNode.fields();
-            // Look at the "0" entry, if it is an array and the first element is a number ->
-            // return that as a BigDecimal.
-            while (it.hasNext()) {
-                var entry = it.next();
-                JsonNode observations = entry.getValue().path("observations");
-                JsonNode firstObs = observations.path("0");
-                if (firstObs.isArray() && firstObs.size() > 0 && firstObs.get(0).isNumber()) {
-                    // return as percentage
-                    return new BigDecimal(firstObs.get(0).asText());
+                if (rateAdval.compareTo(BigDecimal.ZERO) < 0) {
+                    rateErrors.add("Invalid MFN ad-valorem rate: " + rateAdval);
+                } else {
+                    rateAdvalCalc = rateAdval.multiply(BigDecimal.valueOf(0.01));
                 }
             }
-            return null;
-        } catch (Exception e) {
-            throw new ExternalServiceException("Failed to parse WITS JSON", e);
+            if (measure.getSpecificRatePerKg() != null) {
+                rateSpecific = measure.getSpecificRatePerKg(); // already per kg, no scaling
+
+                if (rateSpecific.compareTo(BigDecimal.ZERO) < 0) {
+                    rateErrors.add("Invalid specific duty rate: " + rateSpecific);
+                }
+            }
+
+            if (!rateErrors.isEmpty()) {
+                throw new InvalidRateException(String.join("; ", rateErrors));
+            }
+
+            if (rateSpecific != null && req.getNetWeight() == null) {
+                throw new WeightRequiredException("Net weight is required for specific duties");
+            }
+
+            // compound case
+            if (rateAdval != null && rateSpecific != null && req.getNetWeight() != null) {
+                duty = req.getTradeOriginal().multiply(rateAdvalCalc)
+                        .add(req.getNetWeight().multiply(rateSpecific));
+            }
+            // ad-valorem only
+            else if (rateAdval != null && req.getTradeOriginal() != null) {
+                duty = req.getTradeOriginal().multiply(rateAdvalCalc);
+            }
+            // specific only
+            else if (rateSpecific != null && req.getNetWeight() != null) {
+                duty = req.getNetWeight().multiply(rateSpecific);
+            }
+
+            return buildResponse(req, TEMP_USER_ID, duty, rateAdval, rateSpecific, null, null);
         }
+
+        // 3. Nothing found
+        throw new RateNotFoundException("No applicable tariff found for hs6=" + req.getHs6());
     }
 
-    // 404 when WITS has no observation for the chosen combo
-    public static class RateNotFoundException extends RuntimeException {
-        public RateNotFoundException(String msg) {
-            super(msg);
-        }
-    }
+    private CalculateResponse buildResponse(
+            CalculateRequest req,
+            UUID uid,
+            BigDecimal duty,
+            BigDecimal rateAdval,
+            BigDecimal rateSpecific,
+            BigDecimal ratePref,
+            BigDecimal rateSup) {
 
-    // 502 or 500 when WITS payload is malformed or network/parsing fails
-    public static class ExternalServiceException extends RuntimeException {
-        public ExternalServiceException(String msg, Throwable cause) {
-            super(msg, cause);
+        // generate tid temporarily (later use DB sequence)
+        long tid = System.currentTimeMillis();
+
+        CalculateResponse resp = new CalculateResponse();
+        resp.setTransactionId(tid);
+        resp.setUid(uid);
+        resp.setHs6(req.getHs6());
+        resp.setImporterCode(req.getImporterCode());
+        resp.setExporterCode(req.getExporterCode());
+        resp.setTransactionDate(req.getTransactionDate());
+
+        resp.setTradeOriginal(req.getTradeOriginal());
+        resp.setNetWeight(req.getNetWeight());
+        resp.setTradeFinal(req.getTradeOriginal().add(duty));
+
+        // build applied_rate JSON
+        ObjectNode rateNode = objectMapper.createObjectNode();
+        if (ratePref != null) {
+            rateNode.set("prefAdval", objectMapper.getNodeFactory().numberNode(ratePref));
         }
+        if (rateAdval != null) {
+            rateNode.set("mfnAdval", objectMapper.getNodeFactory().numberNode(rateAdval));
+        }
+        if (rateSpecific != null) {
+            rateNode.set("specific", objectMapper.getNodeFactory().numberNode(rateSpecific));
+        }
+        if (rateSup != null) {
+            rateNode.set("suspension", objectMapper.getNodeFactory().numberNode(rateSup));
+        }
+
+        resp.setAppliedRate(rateNode);
+        return resp;
     }
 }
-
