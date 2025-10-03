@@ -76,6 +76,14 @@ export function useTariffCalculation() {
   );
   const [hasError, setHasError] = useState(false);
 
+  // Helper function to format date without timezone conversion
+  const formatDateForBackend = (date: Date): string => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
+
   const calculateTariffData = async (params: {
     importingCountry: string;
     exportingCountry: string;
@@ -112,7 +120,7 @@ export function useTariffCalculation() {
         hs6: productCode,
         tradeOriginal: Number(tradeValue),
         netWeight: netWeight ? Number(netWeight) : null,
-        transactionDate: transactionDate.toISOString().split("T")[0], // Format as YYYY-MM-DD
+        transactionDate: formatDateForBackend(transactionDate), // Use local date formatting
       });
 
       // Store the calculation result
@@ -136,9 +144,12 @@ export function useTariffCalculation() {
         calculateEffectiveRate(result);
       const dutyAmount = calculateDutyAmount(result);
 
+      // Use the transaction date from the backend response
+      const resultDate = new Date(result.transactionDate);
+
       setData([
         {
-          date: transactionDate.toLocaleDateString("en-US", {
+          date: resultDate.toLocaleDateString("en-US", {
             year: "numeric",
             month: "short",
             day: "numeric",

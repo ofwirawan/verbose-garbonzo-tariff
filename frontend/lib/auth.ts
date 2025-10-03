@@ -159,6 +159,15 @@ export async function authenticatedFetch(
 ): Promise<Response> {
   const token = getToken();
 
+  // Debug logging
+  console.log("🔍 authenticatedFetch debug:", {
+    url,
+    hasToken: !!token,
+    tokenPreview: token ? `${token.substring(0, 20)}...` : "No token",
+    localStorage:
+      typeof window !== "undefined" ? localStorage.getItem("jwt_token") : "SSR",
+  });
+
   const response = await fetch(url, {
     ...options,
     headers: {
@@ -168,7 +177,10 @@ export async function authenticatedFetch(
     },
   });
 
-  // If unauthorized, redirect to login
+  // Debug response
+  console.log("🔍 Response status:", response.status, response.statusText);
+
+  // Remove automatic redirect - just log the error
   if (response.status === 401 || response.status === 403) {
     if (typeof window !== "undefined") {
       logout();

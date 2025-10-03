@@ -34,24 +34,28 @@ public class SecurityConfig {
     /*
      * Main security configuration
      * Defines endpoint access rules and JWT filter setup
+     * CORS is now handled by CORSConfig.java
      */
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .cors(cors -> {
-                })
+                // Enable CORS with default configuration (uses CORSConfig.java)
+                .cors(cors -> cors.and())
+                
                 // Disable CSRF (not needed for stateless JWT)
                 .csrf(csrf -> csrf.disable())
 
                 // Configure endpoint authorization
                 .authorizeHttpRequests(auth -> auth
-                        // Public endpoints
+                        // Public endpoints - allow all OPTIONS requests for CORS preflight
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/api/**").permitAll()
                         .requestMatchers("/auth/welcome", "/auth/addNewUser", "/auth/generateToken").permitAll()
 
                         // Swagger UI endpoints
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-resources/**", "/webjars/**").permitAll()
+                        // History endpoints now require authentication
+                        .requestMatchers("/api/history/**").authenticated()
 
                         // Role-based endpoints
                         .requestMatchers("/auth/user/**").hasAuthority("ROLE_USER")
