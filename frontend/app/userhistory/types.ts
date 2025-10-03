@@ -1,3 +1,12 @@
+// Applied rate structure
+export interface AppliedRate {
+    rate?: number
+    suspension?: number
+    prefAdval?: number
+    mfnAdval?: number
+    specific?: number
+}
+
 // Backend Transaction model structure
 export interface BackendTransaction {
     tid: number
@@ -8,7 +17,7 @@ export interface BackendTransaction {
     tradeOriginal: number
     tradeFinal: number
     netWeight?: number
-    appliedRate?: any
+    appliedRate?: AppliedRate
     uid: string
 }
 
@@ -21,6 +30,8 @@ export interface HistoryItem {
     tradeValue: number
     tariffRate: number
     tariffCost: number
+    weight: number | null
+    appliedRate?: AppliedRate
 }
 
 // Transform backend data to frontend format
@@ -32,6 +43,8 @@ export function transformTransactionToHistoryItem(transaction: BackendTransactio
         route: `${transaction.importerCode}${transaction.exporterCode ? ` → ${transaction.exporterCode}` : ''}`,
         tradeValue: transaction.tradeOriginal,
         tariffRate: transaction.appliedRate?.rate || 0,
-        tariffCost: transaction.tradeFinal - transaction.tradeOriginal
+        tariffCost: transaction.tradeFinal - transaction.tradeOriginal,
+        weight: transaction.netWeight || null,
+        appliedRate: transaction.appliedRate
     }
 }

@@ -1,7 +1,11 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { HistoryTable, HistoryItem, BackendTransaction, transformTransactionToHistoryItem } from "./HistoryTable"
+import { AppSidebar } from "@/components/app-sidebar"
+import { SiteHeader } from "@/components/site-header"
+import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
+import { HistoryTable } from "./components/HistoryTable"
+import { HistoryItem, BackendTransaction, transformTransactionToHistoryItem } from "./types"
 import { authenticatedFetch, getToken } from "@/lib/auth"
 
 export default function HistoryPage() {
@@ -17,17 +21,17 @@ export default function HistoryPage() {
     try {
       setIsLoading(true)
       const res = await authenticatedFetch("/api/history")
-      
+
       if (!res.ok) {
         const error = await res.json()
         throw new Error(error.message || "Failed to fetch history")
       }
-      
+
       const backendData: BackendTransaction[] = await res.json()
-      
+
       // Transform backend data to frontend format
       const transformedData = backendData.map(transformTransactionToHistoryItem)
-      
+
       setHistory(transformedData)
     } catch (err) {
       console.error("Fetch history error:", err)
@@ -59,13 +63,30 @@ export default function HistoryPage() {
   }
 
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-4">Trade History</h1>
-      {history.length === 0 ? (
-        <p>No history yet. Make a calculation first!</p>
-      ) : (
-        <HistoryTable data={history} onDelete={handleDelete} />
-      )}
-    </div>
+    <SidebarProvider
+      style={
+        {
+          "--sidebar-width": "calc(var(--spacing) * 72)",
+          "--header-height": "calc(var(--spacing) * 12)",
+        } as React.CSSProperties
+      }
+    >
+      <AppSidebar variant="inset" />
+      <SidebarInset>
+        <SiteHeader />
+        <div className="flex flex-1 flex-col overflow-hidden">
+          <div className="@container/main flex-1 overflow-auto">
+            <div className="flex flex-col gap-6 p-4 md:p-6">
+              <h1 className="text-2xl font-bold">Trade History</h1>
+              {history.length === 0 ? (
+                <p>No history yet. Make a calculation first!</p>
+              ) : (
+                <HistoryTable data={history} onDelete={handleDelete} />
+              )}
+            </div>
+          </div>
+        </div>
+      </SidebarInset>
+    </SidebarProvider>
   )
 }

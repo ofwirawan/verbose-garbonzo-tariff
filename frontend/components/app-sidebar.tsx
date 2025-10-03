@@ -48,7 +48,7 @@ const data = {
     },
     {
       title: "User History",
-      url: "/history",
+      url: "/userhistory",
       icon: IconListDetails,
     },
     {
