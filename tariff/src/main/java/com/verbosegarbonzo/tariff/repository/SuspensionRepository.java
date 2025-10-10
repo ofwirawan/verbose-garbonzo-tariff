@@ -15,15 +15,15 @@ public interface SuspensionRepository extends JpaRepository<Suspension, Integer>
     // Find suspension - no exporter means to-the-world
     @Query("""
         SELECT s FROM Suspension s
-        WHERE s.importerCode = :importer
-          AND s.productCode = :hs6
+        WHERE s.importer = :importer
+          AND s.product = :hs6
           AND s.suspensionFlag = true
           AND s.validFrom <= :date
           AND (s.validTo IS NULL OR s.validTo >= :date)
         """)
     Optional<Suspension> findActiveSuspension(
-        @Param("importer") String importer,
-        @Param("hs6") String hs6,
+        @Param("importer") Country importer,
+        @Param("hs6") Product hs6,
         @Param("date") LocalDate date
     );
 

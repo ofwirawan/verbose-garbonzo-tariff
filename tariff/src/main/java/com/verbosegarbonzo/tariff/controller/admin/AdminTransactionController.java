@@ -2,13 +2,15 @@ package com.verbosegarbonzo.tariff.controller.admin;
 
 import com.verbosegarbonzo.tariff.dto.TransactionDTO;
 import com.verbosegarbonzo.tariff.model.Transaction;
-import com.verbosegarbonzo.tariff.model.User;
+import com.verbosegarbonzo.tariff.model.UserInfo;
 import com.verbosegarbonzo.tariff.model.Country;
 import com.verbosegarbonzo.tariff.model.Product;
+
 import com.verbosegarbonzo.tariff.repository.TransactionRepository;
-import com.verbosegarbonzo.tariff.repository.UserRepository;
+import com.verbosegarbonzo.tariff.repository.UserInfoRepository;
 import com.verbosegarbonzo.tariff.repository.CountryRepository;
 import com.verbosegarbonzo.tariff.repository.ProductRepository;
+
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -24,13 +26,13 @@ import java.util.UUID;
 public class AdminTransactionController {
 
     private final TransactionRepository transactionRepository;
-    private final UserRepository userRepository;
+    private final UserInfoRepository userRepository;
     private final CountryRepository countryRepository;
     private final ProductRepository productRepository;
 
     public AdminTransactionController(
             TransactionRepository transactionRepository,
-            UserRepository userRepository,
+            UserInfoRepository userRepository,
             CountryRepository countryRepository,
             ProductRepository productRepository) {
         this.transactionRepository = transactionRepository;
@@ -64,7 +66,7 @@ public class AdminTransactionController {
 
     private Transaction toEntity(TransactionDTO dto) {
         validateRequiredFields(dto.getUser(), dto.getImporter(), dto.getProduct(), dto.getTDate());
-        User user = userRepository.findById(dto.getUser())
+        UserInfo user = userRepository.findById(dto.getUser())
                 .orElseThrow(
                         () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found: " + dto.getUser()));
         Country importer = countryRepository.findById(dto.getImporter())

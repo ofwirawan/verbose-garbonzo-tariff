@@ -6,7 +6,6 @@ import jakarta.validation.constraints.DecimalMin;
 import lombok.*;
 import java.time.LocalDate;
 import java.math.BigDecimal;
-import java.util.UUID;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.vladmihalcea.hibernate.type.json.JsonType;
@@ -27,7 +26,7 @@ public class Transaction {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "uid", referencedColumnName = "uid", nullable = false)
     @NotNull
-    private User user;
+    private UserInfo user;
 
     @Column(name = "t_date", nullable = false)
     @NotNull

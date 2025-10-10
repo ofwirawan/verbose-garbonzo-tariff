@@ -86,7 +86,7 @@ public class AdminMeasureController {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "Product not found: " + dto.getProductCode()));
         boolean exists = measureRepository
-                .findByImporterAndProductAndValidFrom(importer, product, dto.getValidFrom())
+                .findValidRate(importer, product, dto.getValidFrom())
                 .isPresent();
         if (exists) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
@@ -131,7 +131,7 @@ public class AdminMeasureController {
 
             // Duplicate check for update
             boolean exists = measureRepository
-                    .findByImporterAndProductAndValidFrom(importer, product, dto.getValidFrom())
+                    .findValidRate(importer, product, dto.getValidFrom())
                     .filter(m -> !m.getMeasureId().equals(id))
                     .isPresent();
             if (exists) {
@@ -174,7 +174,7 @@ public class AdminMeasureController {
         Product product = productRepository.findById(productCode)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "Product not found: " + productCode));
-        return measureRepository.findByImporterAndProductAndValidFrom(importer, product, validFrom)
+        return measureRepository.findValidRate(importer, product, validFrom)
                 .map(ResponseEntity::ok)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "Measure not found for given parameters"));

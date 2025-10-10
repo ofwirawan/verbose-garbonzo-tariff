@@ -13,9 +13,10 @@ import com.verbosegarbonzo.tariff.model.CalculateResponse;
 import com.verbosegarbonzo.tariff.model.Measure;
 import com.verbosegarbonzo.tariff.model.Preference;
 import com.verbosegarbonzo.tariff.model.Suspension;
-
+import com.verbosegarbonzo.tariff.repository.CountryRepository;
 import com.verbosegarbonzo.tariff.repository.MeasureRepository;
 import com.verbosegarbonzo.tariff.repository.PreferenceRepository;
+import com.verbosegarbonzo.tariff.repository.ProductRepository;
 import com.verbosegarbonzo.tariff.repository.SuspensionRepository;
 
 import org.springframework.stereotype.Service;
@@ -32,16 +33,21 @@ public class TariffService {
 
     private static final UUID TEMP_USER_ID = UUID.fromString("11111111-1111-1111-1111-111111111111");
 
+    private final CountryRepository countryRepository;
+    private final ProductRepository productRepository;
     private final PreferenceRepository preferenceRepo;
     private final MeasureRepository measureRepo;
     private final SuspensionRepository suspensionRepo;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     public TariffService(PreferenceRepository preferenceRepo, MeasureRepository measureRepo,
-            SuspensionRepository suspensionRepo) {
+            SuspensionRepository suspensionRepo, CountryRepository countryRepository,
+            ProductRepository productRepository) {
         this.preferenceRepo = preferenceRepo;
         this.measureRepo = measureRepo;
         this.suspensionRepo = suspensionRepo;
+        this.countryRepository = countryRepository;
+        this.productRepository = productRepository;
     }
 
     public CalculateResponse calculate(CalculateRequest req) {
@@ -66,19 +72,24 @@ public class TariffService {
 
         // Check suspension first
         Optional<Suspension> suspOpt = suspensionRepo.findActiveSuspension(
-                req.getImporterCode(), req.getHs6(), date);
+                countryRepository.findById(req.getImporterCode()).orElseThrow(),
+                productRepository.findById(req.getHs6()).orElseThrow(), date);
 
         // Check preference (if exporter provided) - preference can override suspension
         Optional<Preference> prefOpt = (req.getExporterCode() != null && !req.getExporterCode().isBlank())
-                ? preferenceRepo.findValidRate(req.getImporterCode(), req.getExporterCode(), req.getHs6(), date)
+                ? preferenceRepo.findValidRate(countryRepository.findById(req.getImporterCode()).orElseThrow(),
+                        countryRepository.findById(req.getExporterCode()).orElseThrow(),
+                        productRepository.findById(req.getHs6()).orElseThrow(),
+                        date)
                 : Optional.empty();
 
-        // If both suspension and preference exist, preference takes precedence (FTA overrides suspension)
+        // If both suspension and preference exist, preference takes precedence (FTA
+        // overrides suspension)
         if (prefOpt.isPresent()) {
             List<String> rateErrors = new ArrayList<>();
             Preference pref = prefOpt.get();
 
-            BigDecimal ratePref = pref.getPrefAdvalRate();
+            BigDecimal ratePref = pref.getPrefAdValRate();
 
             if (ratePref.compareTo(BigDecimal.ZERO) < 0) {
                 rateErrors.add("Invalid preferential rate: " + ratePref);
@@ -111,7 +122,9 @@ public class TariffService {
         }
 
         // Otherwise, check measure
-        Optional<Measure> measureOpt = measureRepo.findValidRate(req.getImporterCode(), req.getHs6(), date);
+        Optional<Measure> measureOpt = measureRepo.findValidRate(
+                countryRepository.findById(req.getImporterCode()).orElseThrow(),
+                productRepository.findById(req.getHs6()).orElseThrow(), date);
         if (measureOpt.isPresent()) {
             List<String> rateErrors = new ArrayList<>();
             Measure measure = measureOpt.get();

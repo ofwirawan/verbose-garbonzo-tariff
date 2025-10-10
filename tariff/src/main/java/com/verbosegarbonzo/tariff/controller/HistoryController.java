@@ -1,9 +1,12 @@
 package com.verbosegarbonzo.tariff.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.verbosegarbonzo.tariff.model.Transaction;
 import com.verbosegarbonzo.tariff.model.UserInfo;
+import com.verbosegarbonzo.tariff.repository.CountryRepository;
 import com.verbosegarbonzo.tariff.repository.TransactionRepository;
 import com.verbosegarbonzo.tariff.repository.UserInfoRepository;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -24,6 +27,8 @@ public class HistoryController {
     
     private final TransactionRepository transactionRepository;
     private final UserInfoRepository userInfoRepository;
+    private final CountryRepository countryRepository;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     @GetMapping
     public ResponseEntity<?> getAllHistory(@AuthenticationPrincipal UserDetails userDetails) {
@@ -41,7 +46,7 @@ public class HistoryController {
             }
             
             UserInfo userInfo = userInfoOpt.get();
-            List<Transaction> transactions = transactionRepository.findByUidOrderByTDateDesc(userInfo.getUid());
+            List<Transaction> transactions = transactionRepository.findByUidOrderByTDateDesc(userInfo);
             
             return ResponseEntity.ok(transactions);
         } catch (Exception e) {
@@ -86,16 +91,16 @@ public class HistoryController {
             
             // Create new transaction
             Transaction transaction = new Transaction();
-            transaction.setUid(userInfo.getUid()); // Use UUID directly instead of toString()
+            transaction.setUser(userInfo); // Use UUID directly instead of toString()
             transaction.setTDate(LocalDate.parse(requestBody.get("t_date").toString()));
-            transaction.setImporterCode(requestBody.get("importer_code").toString());
-            transaction.setHs6code(requestBody.get("hs6code").toString());
+            transaction.setImporter(countryRepository.findById(requestBody.get("importer_code").toString()).orElseThrow(null));
+            transaction.setExporter(countryRepository.findById(requestBody.get("hs6code").toString()).orElseThrow());
             transaction.setTradeOriginal(new BigDecimal(requestBody.get("trade_original").toString()));
             transaction.setTradeFinal(new BigDecimal(requestBody.get("trade_final").toString()));
             
             // Optional fields
             if (requestBody.containsKey("exporter_code") && requestBody.get("exporter_code") != null) {
-                transaction.setExporterCode(requestBody.get("exporter_code").toString());
+                transaction.setExporter(countryRepository.findById(requestBody.get("hs6code").toString()).orElseThrow());
             }
             if (requestBody.containsKey("net_weight") && requestBody.get("net_weight") != null) {
                 transaction.setNetWeight(new BigDecimal(requestBody.get("net_weight").toString()));
@@ -103,7 +108,7 @@ public class HistoryController {
             if (requestBody.containsKey("applied_rate") && requestBody.get("applied_rate") != null) {
                 @SuppressWarnings("unchecked")
                 Map<String, Object> appliedRate = (Map<String, Object>) requestBody.get("applied_rate");
-                transaction.setAppliedRate(appliedRate);
+                transaction.setAppliedRate(objectMapper.valueToTree(appliedRate));
             }
             
             // Save transaction
@@ -116,7 +121,7 @@ public class HistoryController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteHistory(@PathVariable Long id, 
+    public ResponseEntity<?> deleteHistory(@PathVariable Integer id, 
                                          @AuthenticationPrincipal UserDetails userDetails) {
         try {
             if (userDetails == null) {
@@ -134,7 +139,7 @@ public class HistoryController {
             UserInfo userInfo = userInfoOpt.get();
             
             // Find transaction by user and id
-            Transaction transaction = transactionRepository.findByUidAndTid(userInfo.getUid(), id);
+            Transaction transaction = transactionRepository.findByUidAndTid(userInfo, id);
             
             if (transaction == null) {
                 return ResponseEntity.status(404).body(Map.of("message", "Transaction not found or access denied"));
