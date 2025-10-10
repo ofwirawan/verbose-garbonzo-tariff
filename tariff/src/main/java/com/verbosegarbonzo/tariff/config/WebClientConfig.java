@@ -3,7 +3,10 @@ package com.verbosegarbonzo.tariff.config;
 import io.netty.channel.ChannelOption;
 import io.netty.handler.timeout.ReadTimeoutHandler;
 import io.netty.handler.timeout.WriteTimeoutHandler;
+
 import org.springframework.context.annotation.Bean;
+import org.springframework.web.servlet.config.annotation.CorsRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
@@ -14,8 +17,8 @@ import java.util.concurrent.TimeUnit;
 
 @Configuration
 public class WebClientConfig {
-//Creates one shared WebClient bean with base URL, timeouts, User-Agent.
-//Every service can inject and reuse it.
+    // Creates one shared WebClient bean with base URL, timeouts, User-Agent.
+    // Every service can inject and reuse it.
 
     private final WitsProperties props;
 
@@ -36,7 +39,7 @@ public class WebClientConfig {
     @Bean
     public WebClient metadataWebClient() {
         return WebClient.builder()
-                .baseUrl(props.getBaseUrl()) //metadata base url
+                .baseUrl(props.getBaseUrl()) // metadata base url
                 .defaultHeader("User-Agent", "TariffApp/1.0")
                 .clientConnector(new ReactorClientHttpConnector(httpClient()))
                 .build();
@@ -45,9 +48,9 @@ public class WebClientConfig {
     @Bean
     public WebClient tariffWebClient() {
         return WebClient.builder()
-                .baseUrl(props.getTariff().getBaseUrl()) //tariff base url
+                .baseUrl(props.getTariff().getBaseUrl()) // tariff base url
                 .defaultHeader("User-Agent", "TariffApp/1.0")
                 .clientConnector(new ReactorClientHttpConnector(httpClient()))
                 .build();
     }
-    }
+}

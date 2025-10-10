@@ -1,14 +1,23 @@
 package com.verbosegarbonzo.tariff.repository;
 
-import java.time.LocalDate;
-import java.util.Optional;
-import com.verbosegarbonzo.tariff.model.Country;
-import com.verbosegarbonzo.tariff.model.Product;
 import com.verbosegarbonzo.tariff.model.Measure;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
-@Repository
+import java.time.LocalDate;
+import java.util.Optional;
+
 public interface MeasureRepository extends JpaRepository<Measure, Integer> {
-    Optional<Measure> findByImporterAndProductAndValidFrom(Country importer, Product product, LocalDate validFrom);
+    @Query("""
+        SELECT m FROM Measure m
+        WHERE m.importerCode = :importer
+          AND m.productCode = :hs6
+          AND m.validFrom <= :date
+          AND (m.validTo IS NULL OR m.validTo >= :date)
+        """)
+    Optional<Measure> findValidRate(
+        @Param("importer") String importer,
+        @Param("hs6") String hs6,
+        @Param("date") LocalDate date);
 }

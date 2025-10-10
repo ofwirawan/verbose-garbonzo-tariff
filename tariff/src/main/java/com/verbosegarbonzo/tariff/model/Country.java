@@ -1,7 +1,9 @@
 package com.verbosegarbonzo.tariff.model;
 
-import jakarta.persistence.*;
-import jakarta.validation.constraints.NotBlank;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 import lombok.*;
 
 @Entity
@@ -10,17 +12,18 @@ import lombok.*;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class Country {
+//created to parse country list into Supabase
+//WITS -> Country -> Supabase
 
     @Id
-    @Column(name = "country_code", length = 3, nullable = false)
-    @NotBlank
-    private String countryCode; // Primary key - country_code
+    @Column(name = "country_code", length = 3, nullable = false) //ISO alpha-3 (e.g., "SGP")
+    private String countryCode;
 
-    @Column(name = "numeric_code", unique = true, length = 3, nullable = false)
-    @NotBlank
-    private String numericCode; // Unique numeric code
-
-    @Column(name = "name", nullable = false, columnDefinition = "text")
+    @Column(name = "name", columnDefinition = "text", nullable = false)
     private String name;
+
+    @Column(name = "numeric_code", length = 3) //ISO numeric (e.g., "702")
+    private String numericCode;
 }

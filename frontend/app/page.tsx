@@ -1,14 +1,19 @@
 "use client";
 
-import { TariffChart } from "./TariffChart";
-import { ViewCalculation } from "./ViewCalculation";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { isAuthenticated } from "@/lib/auth";
 
-export default function Home() {
-  return (
-    <div className="space-y-16 max-w-6xl mx-auto p-4">
-      <TariffChart />
-      <ViewCalculation />
-    </div>
-  );
+export default function Page() {
+  const router = useRouter();
+
+  useEffect(() => {
+    if (isAuthenticated()) {
+      router.push("/dashboard");
+    } else {
+      router.push("/login");
+    }
+  }, [router]);
+
+  return null;
 }
-
