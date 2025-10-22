@@ -29,7 +29,7 @@ import {
   MissingRateWarning,
   Combobox,
 } from "./SharedComponents";
-import { CalculationResults } from "./ResultComponents";
+import { CalculationResults, CalculationResultsSkeleton } from "./ResultComponents";
 import { useTariffData, useTariffCalculation } from "./utils/hooks";
 import {
   convertCountriesToOptions,
@@ -297,6 +297,7 @@ export default function TariffChart({
     suspensionNote,
     missingRateYears,
     hasError,
+    errorMessage,
     calculateTariff,
   } = useTariffCalculation();
 
@@ -366,7 +367,9 @@ export default function TariffChart({
               </div>
             )}
 
-            {calculationResult && (
+            {isCalculating && <CalculationResultsSkeleton />}
+
+            {!isCalculating && calculationResult && (
               <div className="mt-6 pt-6 border-t border-gray-200">
                 <CalculationResults
                   result={calculationResult}
@@ -375,12 +378,65 @@ export default function TariffChart({
               </div>
             )}
 
+            {!isCalculating && calculationResult?.warning && (
+              <div className="mt-6 pt-6 border-t border-gray-200">
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-6">
+                  <div className="flex items-start gap-3">
+                    <svg
+                      className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                      />
+                    </svg>
+                    <div className="flex-1">
+                      <h3 className="text-sm font-semibold text-amber-900 mb-1">
+                        Notice
+                      </h3>
+                      <p className="text-sm text-amber-800 leading-relaxed">
+                        {calculationResult.warning}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {hasError && (
               <div className="mt-6 pt-6 border-t border-gray-200">
-                <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-center">
-                  <p className="text-red-600 text-sm font-medium">
-                    Failed to fetch tariff data. Please try again.
-                  </p>
+                <div className="bg-gray-50 border border-gray-300 rounded-lg p-6">
+                  <div className="flex items-start gap-3">
+                    <svg
+                      className="h-5 w-5 text-gray-600 flex-shrink-0 mt-0.5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                      />
+                    </svg>
+                    <div className="flex-1">
+                      <h3 className="text-sm font-semibold text-gray-900 mb-1">
+                        {errorMessage?.includes("Net weight cannot be used")
+                          ? "Net Weight Not Applicable"
+                          : "No Tariff Data Available"}
+                      </h3>
+                      <p className="text-sm text-gray-700 leading-relaxed">
+                        {errorMessage ||
+                          "No tariff data available for the specified transaction. This data may not be available in the WITS database for this combination."}
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}

@@ -32,6 +32,7 @@ export interface TariffCalculationResult {
   netWeight?: number;
   suspensionNote?: string;
   suspensionActive?: boolean;
+  warning?: string;
   appliedRate?: {
     suspension?: number;
     prefAdval?: number;

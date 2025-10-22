@@ -44,9 +44,30 @@ export async function calculateTariff(
   });
 
   if (!response.ok) {
-    const errorData = await response.json().catch(() => null);
-    const errorMsg =
-      errorData?.message || errorData?.error || `HTTP ${response.status}`;
+    let errorMsg = `HTTP ${response.status}`;
+
+    try {
+      const errorData = await response.json();
+      // Spring Boot error responses have 'message' field
+      if (errorData?.message) {
+        errorMsg = errorData.message;
+      } else if (errorData?.error) {
+        errorMsg = errorData.error;
+      } else if (typeof errorData === 'string') {
+        errorMsg = errorData;
+      }
+    } catch (e) {
+      // If JSON parsing fails, try to get text
+      try {
+        const errorText = await response.text();
+        if (errorText) {
+          errorMsg = errorText;
+        }
+      } catch (textError) {
+        // Keep default HTTP status message
+      }
+    }
+
     throw new Error(errorMsg);
   }
 

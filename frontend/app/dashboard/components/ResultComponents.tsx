@@ -21,6 +21,74 @@ interface CalculationResultsProps {
   suspensionNote: string | null;
 }
 
+export function CalculationResultsSkeleton() {
+  return (
+    <div className="mt-6 pt-6 border-t border-gray-200">
+      <div className="mt-8 p-6 rounded-lg bg-white border border-gray-200 animate-pulse">
+        {/* Header */}
+        <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gray-200">
+          <div className="h-7 w-48 bg-gray-200 rounded"></div>
+        </div>
+
+        {/* Summary Cards */}
+        <div className="grid gap-4 mb-6 grid-cols-2 md:grid-cols-4">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="bg-gray-50 p-5 rounded-lg border border-gray-200">
+              <div className="h-3 w-24 bg-gray-200 rounded mb-2"></div>
+              <div className="h-8 w-20 bg-gray-200 rounded"></div>
+            </div>
+          ))}
+        </div>
+
+        {/* Rate Details */}
+        <div className="p-5 bg-gray-50 rounded-lg border border-gray-200">
+          <div className="h-4 w-28 bg-gray-200 rounded mb-4"></div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="bg-white p-4 rounded-lg border border-gray-200">
+                <div className="h-3 w-24 bg-gray-200 rounded mb-2"></div>
+                <div className="h-7 w-16 bg-gray-200 rounded mb-2"></div>
+                <div className="h-3 w-32 bg-gray-200 rounded"></div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Transaction Info */}
+        <div className="mt-6 pt-6 border-t border-gray-200">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {[...Array(4)].map((_, i) => (
+              <div key={i}>
+                <div className="h-3 w-20 bg-gray-200 rounded mb-1"></div>
+                <div className="h-5 w-32 bg-gray-200 rounded"></div>
+              </div>
+            ))}
+          </div>
+          <div className="mt-4">
+            <div className="h-3 w-64 bg-gray-200 rounded"></div>
+          </div>
+        </div>
+
+        {/* Rate Types */}
+        <div className="mt-6 pt-6 border-t border-gray-200">
+          <div className="h-3 w-32 bg-gray-200 rounded mb-3"></div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="flex items-center gap-2 p-2 rounded border bg-gray-50 border-gray-200">
+                <div className="w-2 h-2 bg-gray-200 rounded-full"></div>
+                <div className="h-3 w-20 bg-gray-200 rounded"></div>
+              </div>
+            ))}
+          </div>
+          <div className="mt-6 flex justify-end">
+            <div className="h-10 w-40 bg-gray-200 rounded"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function CalculationResults({
   result,
   suspensionNote,
@@ -416,7 +484,7 @@ function ChartLegend({ result }: { result: TariffCalculationResult }) {
           <div
             className={`flex items-center gap-2 p-2 rounded border transition-all ${
               isSuspended
-                ? "bg-gray-700 border-gray-700 shadow-md"
+                ? "bg-black border-gray-700 shadow-md"
                 : "bg-gray-50 border-gray-200 opacity-40"
             }`}
           >
@@ -436,7 +504,7 @@ function ChartLegend({ result }: { result: TariffCalculationResult }) {
           <div
             className={`flex items-center gap-2 p-2 rounded border transition-all ${
               isPreferential
-                ? "bg-gray-700 border-gray-700 shadow-md"
+                ? "bg-black border-gray-700 shadow-md"
                 : "bg-gray-50 border-gray-200 opacity-40"
             }`}
           >
@@ -456,7 +524,7 @@ function ChartLegend({ result }: { result: TariffCalculationResult }) {
           <div
             className={`flex items-center gap-2 p-2 rounded border transition-all ${
               isMFN
-                ? "bg-gray-700 border-gray-700 shadow-md"
+                ? "bg-black border-gray-700 shadow-md"
                 : "bg-gray-50 border-gray-200 opacity-40"
             }`}
           >
@@ -476,7 +544,7 @@ function ChartLegend({ result }: { result: TariffCalculationResult }) {
           <div
             className={`flex items-center gap-2 p-2 rounded border transition-all ${
               isSpecific
-                ? "bg-gray-700 border-gray-700 shadow-md"
+                ? "bg-black border-gray-700 shadow-md"
                 : "bg-gray-50 border-gray-200 opacity-40"
             }`}
           >

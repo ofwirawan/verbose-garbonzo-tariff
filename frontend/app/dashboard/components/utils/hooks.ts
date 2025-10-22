@@ -75,6 +75,7 @@ export function useTariffCalculation() {
     []
   );
   const [hasError, setHasError] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string>("");
 
   // Helper function to format date without timezone conversion
   const formatDateForBackend = (date: Date): string => {
@@ -110,6 +111,7 @@ export function useTariffCalculation() {
 
     try {
       setHasError(false);
+      setErrorMessage("");
       setCalculationResult(null);
       setMissingRateYears([]);
 
@@ -166,6 +168,15 @@ export function useTariffCalculation() {
     } catch (error) {
       console.error("Error calculating tariff:", error);
       setHasError(true);
+
+      // Extract meaningful error message from backend
+      if (error instanceof Error) {
+        setErrorMessage(error.message);
+      } else if (typeof error === "string") {
+        setErrorMessage(error);
+      } else {
+        setErrorMessage("Unable to calculate tariff for this transaction.");
+      }
     } finally {
       setIsCalculating(false);
     }
@@ -178,6 +189,7 @@ export function useTariffCalculation() {
     suspensionNote,
     missingRateYears,
     hasError,
+    errorMessage,
     calculateTariff: calculateTariffData,
   };
 }

@@ -8,10 +8,13 @@ import com.verbosegarbonzo.tariff.exception.WeightRequiredException;
 import com.verbosegarbonzo.tariff.exception.InvalidRateException;
 import com.verbosegarbonzo.tariff.exception.InvalidRequestException;
 
+import com.verbosegarbonzo.tariff.config.WitsProperties;
 import com.verbosegarbonzo.tariff.model.CalculateRequest;
 import com.verbosegarbonzo.tariff.model.CalculateResponse;
+import com.verbosegarbonzo.tariff.model.Country;
 import com.verbosegarbonzo.tariff.model.Measure;
 import com.verbosegarbonzo.tariff.model.Preference;
+import com.verbosegarbonzo.tariff.model.Product;
 import com.verbosegarbonzo.tariff.model.Suspension;
 import com.verbosegarbonzo.tariff.repository.CountryRepository;
 import com.verbosegarbonzo.tariff.repository.MeasureRepository;
@@ -19,8 +22,19 @@ import com.verbosegarbonzo.tariff.repository.PreferenceRepository;
 import com.verbosegarbonzo.tariff.repository.ProductRepository;
 import com.verbosegarbonzo.tariff.repository.SuspensionRepository;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.core.io.buffer.DataBuffer;
+import org.springframework.core.io.buffer.DataBufferUtils;
 import org.springframework.stereotype.Service;
+import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Flux;
 
+import javax.xml.stream.XMLInputFactory;
+import javax.xml.stream.XMLStreamConstants;
+import javax.xml.stream.XMLStreamReader;
+import java.io.InputStream;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -31,6 +45,7 @@ import java.util.List;
 @Service
 public class TariffService {
 
+    private static final Logger log = LoggerFactory.getLogger(TariffService.class);
     private static final UUID TEMP_USER_ID = UUID.fromString("11111111-1111-1111-1111-111111111111");
 
     private final CountryRepository countryRepository;
@@ -38,16 +53,22 @@ public class TariffService {
     private final PreferenceRepository preferenceRepo;
     private final MeasureRepository measureRepo;
     private final SuspensionRepository suspensionRepo;
+    private final WebClient tariffWebClient;
+    private final WitsProperties witsProperties;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     public TariffService(PreferenceRepository preferenceRepo, MeasureRepository measureRepo,
             SuspensionRepository suspensionRepo, CountryRepository countryRepository,
-            ProductRepository productRepository) {
+            ProductRepository productRepository,
+            @Qualifier("tariffWebClient") WebClient tariffWebClient,
+            WitsProperties witsProperties) {
         this.preferenceRepo = preferenceRepo;
         this.measureRepo = measureRepo;
         this.suspensionRepo = suspensionRepo;
         this.countryRepository = countryRepository;
         this.productRepository = productRepository;
+        this.tariffWebClient = tariffWebClient;
+        this.witsProperties = witsProperties;
     }
 
     public CalculateResponse calculate(CalculateRequest req) {
@@ -98,7 +119,15 @@ public class TariffService {
             BigDecimal ratePrefCalc = ratePref.multiply(BigDecimal.valueOf(0.01));
 
             BigDecimal duty = req.getTradeOriginal().multiply(ratePrefCalc);
-            return buildResponse(req, TEMP_USER_ID, duty, null, null, ratePref, null);
+
+            // Check if user provided net weight but preference only has ad-valorem rate
+            String warning = null;
+            if (req.getNetWeight() != null) {
+                warning = "Net weight was provided but not used in calculation. The preferential tariff for this product only has an ad-valorem (percentage) rate. Specific duty rates (per kg) are not available.";
+                log.info("Net weight provided but preference only has ad-valorem rate");
+            }
+
+            return buildResponse(req, TEMP_USER_ID, duty, null, null, ratePref, null, warning);
         }
 
         // Apply suspension only if no preference was found
@@ -117,8 +146,16 @@ public class TariffService {
             BigDecimal rateSuspCalc = rateSusp.multiply(BigDecimal.valueOf(0.01));
 
             BigDecimal duty = req.getTradeOriginal().multiply(rateSuspCalc);
+
+            // Check if user provided net weight but suspension only has ad-valorem rate
+            String warning = null;
+            if (req.getNetWeight() != null) {
+                warning = "Net weight was provided but not used in calculation. The suspension tariff for this product only has an ad-valorem (percentage) rate. Specific duty rates (per kg) are not available.";
+                log.info("Net weight provided but suspension only has ad-valorem rate");
+            }
+
             // tariff suspended
-            return buildResponse(req, TEMP_USER_ID, duty, null, null, null, rateSusp);
+            return buildResponse(req, TEMP_USER_ID, duty, null, null, null, rateSusp, warning);
         }
 
         // Otherwise, check measure
@@ -159,6 +196,13 @@ public class TariffService {
                 throw new WeightRequiredException("Net weight is required for specific duties");
             }
 
+            // Check if user provided net weight but measure only has ad-valorem rate
+            String warning = null;
+            if (req.getNetWeight() != null && rateSpecific == null) {
+                warning = "Net weight was provided but not used in calculation. The MFN tariff for this product only has an ad-valorem (percentage) rate. Specific duty rates (per kg) are not available.";
+                log.info("Net weight provided but measure only has ad-valorem rate");
+            }
+
             // compound case
             if (rateAdval != null && rateSpecific != null && req.getNetWeight() != null) {
                 duty = req.getTradeOriginal().multiply(rateAdvalCalc)
@@ -173,11 +217,239 @@ public class TariffService {
                 duty = req.getNetWeight().multiply(rateSpecific);
             }
 
-            return buildResponse(req, TEMP_USER_ID, duty, rateAdval, rateSpecific, null, null);
+            return buildResponse(req, TEMP_USER_ID, duty, rateAdval, rateSpecific, null, null, warning);
         }
 
-        // 3. Nothing found
-        throw new RateNotFoundException("No applicable tariff found for hs6=" + req.getHs6());
+        // 3. Try fetching from WITS API as fallback
+        log.info("No tariff found in database, attempting to fetch from WITS API");
+
+        Country importer = countryRepository.findById(req.getImporterCode()).orElseThrow();
+        Product product = productRepository.findById(req.getHs6()).orElseThrow();
+
+        // Try preferential first if exporter provided
+        if (req.getExporterCode() != null && !req.getExporterCode().isBlank()) {
+            Country exporter = countryRepository.findById(req.getExporterCode()).orElseThrow();
+            BigDecimal prefRate = fetchPreferentialRateFromWits(importer, exporter, product, date);
+
+            if (prefRate != null) {
+                log.info("Found preferential rate from WITS: {}", prefRate);
+
+                // Save to database for future use
+                savePreferenceToDatabase(importer, exporter, product, prefRate, date);
+
+                BigDecimal prefRateCalc = prefRate.multiply(BigDecimal.valueOf(0.01));
+                BigDecimal duty = req.getTradeOriginal().multiply(prefRateCalc);
+
+                // Check if user provided net weight - WITS only provides ad-valorem rates
+                String warning = null;
+                if (req.getNetWeight() != null) {
+                    warning = "Net weight was provided but not used in calculation. The WITS API only provides ad-valorem (percentage) rates. Specific duty rates (per kg) are not available.";
+                    log.info("Net weight provided but WITS only provides ad-valorem rates");
+                }
+
+                return buildResponse(req, TEMP_USER_ID, duty, null, null, prefRate, null, warning);
+            }
+        }
+
+        // Try MFN rate
+        BigDecimal mfnRate = fetchMfnRateFromWits(importer, product, date);
+        if (mfnRate != null) {
+            log.info("Found MFN rate from WITS: {}", mfnRate);
+
+            // Save to database for future use
+            saveMeasureToDatabase(importer, product, mfnRate, date);
+
+            BigDecimal mfnRateCalc = mfnRate.multiply(BigDecimal.valueOf(0.01));
+            BigDecimal duty = req.getTradeOriginal().multiply(mfnRateCalc);
+
+            // Check if user provided net weight - WITS only provides ad-valorem rates
+            String warning = null;
+            if (req.getNetWeight() != null) {
+                warning = "Net weight was provided but not used in calculation. The WITS API only provides ad-valorem (percentage) rates. Specific duty rates (per kg) are not available.";
+                log.info("Net weight provided but WITS only provides ad-valorem rates");
+            }
+
+            return buildResponse(req, TEMP_USER_ID, duty, mfnRate, null, null, null, warning);
+        }
+
+        // 4. Still nothing found
+        throw new RateNotFoundException(
+            "No tariff data available for the specified transaction. " +
+            "Importer: " + req.getImporterCode() + ", " +
+            "Product: " + req.getHs6() + ", " +
+            "Date: " + date + ". " +
+            "This data may not be available in the WITS database for this combination."
+        );
+    }
+
+    private BigDecimal fetchMfnRateFromWits(Country importer, Product product, LocalDate date) {
+        if (importer.getNumericCode() == null || importer.getNumericCode().isBlank()) {
+            log.warn("Cannot fetch from WITS: Country {} has no numeric code", importer.getCountryCode());
+            return null;
+        }
+
+        try {
+            String year = String.valueOf(date.getYear());
+            String uri = String.format("/%s/reporter/%s/partner/000/product/%s/year/%s/datatype/reported",
+                    witsProperties.getTariff().getDataset(),
+                    importer.getNumericCode(),
+                    product.getHs6Code(),
+                    year);
+
+            log.debug("Fetching from WITS: {}", uri);
+
+            Flux<DataBuffer> body = tariffWebClient.get()
+                    .uri(uri)
+                    .accept(org.springframework.http.MediaType.APPLICATION_XML)
+                    .retrieve()
+                    .bodyToFlux(DataBuffer.class);
+
+            InputStream is = DataBufferUtils.join(body)
+                    .map(db -> db.asInputStream(true))
+                    .block();
+
+            if (is == null) {
+                return null;
+            }
+
+            return parseWitsXmlForRate(is);
+
+        } catch (Exception e) {
+            log.error("Error fetching MFN rate from WITS: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    private BigDecimal fetchPreferentialRateFromWits(Country importer, Country exporter,
+                                                     Product product, LocalDate date) {
+        if (importer.getNumericCode() == null || importer.getNumericCode().isBlank() ||
+            exporter.getNumericCode() == null || exporter.getNumericCode().isBlank()) {
+            log.warn("Cannot fetch preferential rate: Missing numeric codes");
+            return null;
+        }
+
+        try {
+            String year = String.valueOf(date.getYear());
+            String uri = String.format("/%s/reporter/%s/partner/%s/product/%s/year/%s/datatype/reported",
+                    witsProperties.getTariff().getDataset(),
+                    importer.getNumericCode(),
+                    exporter.getNumericCode(),
+                    product.getHs6Code(),
+                    year);
+
+            log.debug("Fetching preferential rate from WITS: {}", uri);
+
+            Flux<DataBuffer> body = tariffWebClient.get()
+                    .uri(uri)
+                    .accept(org.springframework.http.MediaType.APPLICATION_XML)
+                    .retrieve()
+                    .bodyToFlux(DataBuffer.class);
+
+            InputStream is = DataBufferUtils.join(body)
+                    .map(db -> db.asInputStream(true))
+                    .block();
+
+            if (is == null) {
+                return null;
+            }
+
+            return parseWitsXmlForRate(is);
+
+        } catch (Exception e) {
+            log.error("Error fetching preferential rate from WITS: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    private BigDecimal parseWitsXmlForRate(InputStream is) {
+        try (InputStream in = is) {
+            XMLInputFactory factory = XMLInputFactory.newFactory();
+            factory.setProperty(XMLInputFactory.IS_NAMESPACE_AWARE, true);
+            XMLStreamReader reader = factory.createXMLStreamReader(in);
+
+            while (reader.hasNext()) {
+                int event = reader.next();
+
+                if (event == XMLStreamConstants.START_ELEMENT) {
+                    String tagName = reader.getLocalName();
+
+                    if ("Obs".equalsIgnoreCase(tagName) || "Observation".equalsIgnoreCase(tagName)) {
+                        for (int i = 0; i < reader.getAttributeCount(); i++) {
+                            String attrName = reader.getAttributeLocalName(i);
+                            String attrValue = reader.getAttributeValue(i);
+
+                            if ("OBS_VALUE".equalsIgnoreCase(attrName) || "value".equalsIgnoreCase(attrName)) {
+                                try {
+                                    return new BigDecimal(attrValue);
+                                } catch (NumberFormatException e) {
+                                    log.warn("Invalid rate value in WITS XML: {}", attrValue);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            return null;
+
+        } catch (Exception e) {
+            log.error("Error parsing WITS XML: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    private void saveMeasureToDatabase(Country importer, Product product, BigDecimal rate, LocalDate date) {
+        try {
+            // Check if already exists to avoid duplicates
+            Optional<Measure> existing = measureRepo.findValidRate(importer, product, date);
+            if (existing.isPresent()) {
+                log.debug("Measure already exists in database, skipping save");
+                return;
+            }
+
+            Measure measure = new Measure();
+            measure.setImporter(importer);
+            measure.setProduct(product);
+            measure.setValidFrom(date.withDayOfYear(1)); // Start of year
+            measure.setValidTo(date.withDayOfYear(date.lengthOfYear())); // End of year
+            measure.setMfnAdvalRate(rate);
+            measure.setSpecificRatePerKg(null);
+
+            measureRepo.save(measure);
+            log.info("Saved MFN measure to database: {} - {} = {}",
+                    importer.getCountryCode(), product.getHs6Code(), rate);
+
+        } catch (Exception e) {
+            log.error("Failed to save measure to database: {}", e.getMessage());
+        }
+    }
+
+    private void savePreferenceToDatabase(Country importer, Country exporter,
+                                         Product product, BigDecimal rate, LocalDate date) {
+        try {
+            // Check if already exists to avoid duplicates
+            Optional<Preference> existing = preferenceRepo.findValidRate(importer, exporter, product, date);
+            if (existing.isPresent()) {
+                log.debug("Preference already exists in database, skipping save");
+                return;
+            }
+
+            Preference preference = new Preference();
+            preference.setImporter(importer);
+            preference.setExporter(exporter);
+            preference.setProduct(product);
+            preference.setValidFrom(date.withDayOfYear(1)); // Start of year
+            preference.setValidTo(date.withDayOfYear(date.lengthOfYear())); // End of year
+            preference.setPrefAdValRate(rate);
+
+            preferenceRepo.save(preference);
+            log.info("Saved preference to database: {} -> {} - {} = {}",
+                    exporter.getCountryCode(), importer.getCountryCode(),
+                    product.getHs6Code(), rate);
+
+        } catch (Exception e) {
+            log.error("Failed to save preference to database: {}", e.getMessage());
+        }
     }
 
     private CalculateResponse buildResponse(
@@ -188,6 +460,18 @@ public class TariffService {
             BigDecimal rateSpecific,
             BigDecimal ratePref,
             BigDecimal rateSup) {
+        return buildResponse(req, uid, duty, rateAdval, rateSpecific, ratePref, rateSup, null);
+    }
+
+    private CalculateResponse buildResponse(
+            CalculateRequest req,
+            UUID uid,
+            BigDecimal duty,
+            BigDecimal rateAdval,
+            BigDecimal rateSpecific,
+            BigDecimal ratePref,
+            BigDecimal rateSup,
+            String warning) {
 
         // generate tid temporarily (later use DB sequence)
         long tid = System.currentTimeMillis();
@@ -220,6 +504,7 @@ public class TariffService {
         }
 
         resp.setAppliedRate(rateNode);
+        resp.setWarning(warning);
         return resp;
     }
 }
