@@ -1,7 +1,6 @@
 package com.verbosegarbonzo.tariff.config;
 
 import com.verbosegarbonzo.tariff.filter.JwtAuthFilter;
-import com.verbosegarbonzo.tariff.config.CoreSecurityBeans;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -9,6 +8,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -40,7 +40,7 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 // Enable CORS with default configuration (uses CORSConfig.java)
-                .cors(cors -> cors.and())
+                .cors(Customizer.withDefaults())
                 
                 // Disable CSRF (not needed for stateless JWT)
                 .csrf(csrf -> csrf.disable())
@@ -50,7 +50,7 @@ public class SecurityConfig {
                         // Public endpoints - allow all OPTIONS requests for CORS preflight
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/api/**").permitAll()
-                        .requestMatchers("/auth/welcome", "/auth/addNewUser", "/auth/generateToken").permitAll()
+                        .requestMatchers("/auth/addNewUser", "/auth/generateToken").permitAll()
 
                         // Swagger UI endpoints
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-resources/**", "/webjars/**").permitAll()
