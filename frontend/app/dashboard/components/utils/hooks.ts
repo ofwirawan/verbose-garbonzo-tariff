@@ -17,6 +17,7 @@ import {
   MissingRateYear,
   TariffCalculationResult,
 } from "@/app/dashboard/components/utils/types";
+import { calculateFreightCost } from "@/lib/freightos";
 
 const REFRESH_INTERVAL = 30000; // 30 seconds
 
@@ -92,6 +93,8 @@ export function useTariffCalculation() {
     tradeValue: string;
     netWeight: string;
     transactionDate: Date;
+    includeFreight?: boolean;
+    freightMode?: 'air' | 'ocean' | 'express';
   }) => {
     const {
       importingCountry,
@@ -100,6 +103,8 @@ export function useTariffCalculation() {
       tradeValue,
       netWeight,
       transactionDate,
+      includeFreight,
+      freightMode,
     } = params;
 
     if (!importingCountry || !tradeValue) {
@@ -124,6 +129,34 @@ export function useTariffCalculation() {
         netWeight: netWeight ? Number(netWeight) : null,
         transactionDate: formatDateForBackend(transactionDate), // Use local date formatting
       });
+
+      // Calculate freight costs if requested and weight is available
+      if (includeFreight && exportingCountry && netWeight) {
+        try {
+          const freightQuote = await calculateFreightCost(
+            exportingCountry,
+            importingCountry,
+            Number(netWeight),
+            freightMode || 'air'
+          );
+
+          if (freightQuote.success && freightQuote.data) {
+            // Add freight data to result
+            result.freightCost = freightQuote.data.avgCost;
+            result.freightCostMin = freightQuote.data.minCost;
+            result.freightCostMax = freightQuote.data.maxCost;
+            result.freightMode = freightMode || 'air';
+            result.transitDays = freightQuote.data.transitDays;
+            result.totalLandedCost = result.tradeFinal + freightQuote.data.avgCost;
+          } else {
+            console.warn('Freight calculation failed:', freightQuote.error);
+            // Don't fail the entire calculation, just skip freight
+          }
+        } catch (freightError) {
+          console.error('Error calculating freight:', freightError);
+          // Continue with tariff calculation even if freight fails
+        }
+      }
 
       // Store the calculation result
       setCalculationResult(result);

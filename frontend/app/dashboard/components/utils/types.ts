@@ -39,6 +39,13 @@ export interface TariffCalculationResult {
     mfnAdval?: number;
     specific?: number;
   };
+  // Freight cost fields
+  freightCost?: number;
+  freightCostMin?: number;
+  freightCostMax?: number;
+  freightMode?: 'air' | 'ocean' | 'express';
+  transitDays?: number;
+  totalLandedCost?: number;
 }
 
 export interface ChartDataPoint {
