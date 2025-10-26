@@ -1,60 +1,18 @@
-/**
- * Freightos API Client
- *
- * Direct integration with Freightos public shipping calculator API
- * API Documentation: https://ship.freightos.com/api/shippingCalculator
- *
- * No authentication required for public marketplace rates
- * Rate limit: 100 calls per hour per IP address
- */
+//https://ship.freightos.com/api/shippingCalculator
+
+import type { Country } from "@/app/dashboard/components/utils/types";
 
 export interface FreightQuoteRequest {
-  origin: string; // Country code will be converted to city,country
-  destination: string; // Country code will be converted to city,country
+  origin: string; // Country code OR city,country format
+  destination: string; // Country code OR city,country format
   weight: number; // Weight in kilograms
   mode?: "air" | "ocean" | "express"; // Shipping mode
   loadtype?: "boxes" | "pallets" | "envelopes" | "crates"; // Load type
   format?: "json" | "xml"; // Response format
+  // Optional: pass full country objects to use city data
+  originCountry?: Country;
+  destinationCountry?: Country;
 }
-
-/**
- * Map country codes to major city,country format for Freightos API
- */
-const COUNTRY_TO_LOCATION: Record<string, string> = {
-  USA: "New York,NY",
-  CHN: "Shanghai,China",
-  JPN: "Tokyo,Japan",
-  KOR: "Seoul,South Korea",
-  DEU: "Hamburg,Germany",
-  GBR: "London,UK",
-  FRA: "Paris,France",
-  IND: "Mumbai,India",
-  SGP: "Singapore",
-  AUS: "Sydney,Australia",
-  CAN: "Toronto,Canada",
-  MEX: "Mexico City,Mexico",
-  BRA: "Sao Paulo,Brazil",
-  ITA: "Milan,Italy",
-  ESP: "Barcelona,Spain",
-  NLD: "Rotterdam,Netherlands",
-  BEL: "Antwerp,Belgium",
-  THA: "Bangkok,Thailand",
-  VNM: "Ho Chi Minh City,Vietnam",
-  MYS: "Kuala Lumpur,Malaysia",
-  IDN: "Jakarta,Indonesia",
-  PHL: "Manila,Philippines",
-  ARE: "Dubai,UAE",
-  SAU: "Jeddah,Saudi Arabia",
-  ZAF: "Cape Town,South Africa",
-  EGY: "Cairo,Egypt",
-  TUR: "Istanbul,Turkey",
-  RUS: "Moscow,Russia",
-  POL: "Warsaw,Poland",
-  SWE: "Stockholm,Sweden",
-  NOR: "Oslo,Norway",
-  DNK: "Copenhagen,Denmark",
-  FIN: "Helsinki,Finland",
-};
 
 export interface FreightQuoteResponse {
   success: boolean;
@@ -72,24 +30,31 @@ export interface FreightQuoteResponse {
 }
 
 /**
- * Convert country code to location string for Freightos API
+ * Convert country code or Country object to location string for Freightos API
+ * Uses city field from Country if available, otherwise falls back to country code
  */
-function countryCodeToLocation(countryCode: string): string {
-  return COUNTRY_TO_LOCATION[countryCode] || countryCode;
+function countryCodeToLocation(
+  countryCode: string,
+  countryObject?: Country
+): string {
+  // If country object has city field, use it
+  if (countryObject?.city) {
+    return countryObject.city;
+  }
+
+  // Fallback to country code (may not work well with Freightos)
+  return countryCode;
 }
 
 export async function getFreightQuote(
   request: FreightQuoteRequest
 ): Promise<FreightQuoteResponse> {
   try {
-    // Convert country codes to location strings
-    const origin = countryCodeToLocation(request.origin);
-    const destination = countryCodeToLocation(request.destination);
-
-    console.log(
-      `[Freight] Requesting quote: ${origin} → ${destination} (${
-        request.weight
-      }kg, ${request.mode || "air"})`
+    // Convert country codes to location strings (using city field if available)
+    const origin = countryCodeToLocation(request.origin, request.originCountry);
+    const destination = countryCodeToLocation(
+      request.destination,
+      request.destinationCountry
     );
 
     // Build query parameters
@@ -108,10 +73,10 @@ export async function getFreightQuote(
       quantity: "1",
     });
 
-    // Construct API URL
-    const url = `https://ship.freightos.com/api/shippingCalculator?${params.toString()}`;
+    // Use backend proxy to avoid CORS issues
+    const url = `/api/freight?${params.toString()}`;
 
-    // Make API request
+    // Make API request to proxy endpoint
     const response = await fetch(url, {
       method: "GET",
       headers: {
@@ -128,8 +93,6 @@ export async function getFreightQuote(
 
     // Parse response
     const data = await response.json();
-
-    console.log("[Freight] API Response:", JSON.stringify(data, null, 2));
 
     // Check for errors in response
     if (data.response?.errors) {
@@ -185,12 +148,6 @@ export async function getFreightQuote(
         ? Math.round((transitDaysMin + transitDaysMax) / 2)
         : transitDaysMin || transitDaysMax;
 
-    console.log(
-      `[Freight] Quote: $${avgCost.toFixed(2)} (${minCost}-${maxCost}), ${
-        transitDays || "N/A"
-      } days`
-    );
-
     return {
       success: true,
       data: {
@@ -217,18 +174,34 @@ export async function getFreightQuote(
   }
 }
 
-// Calculate freight cost based on country codes and weight
+// Calculate freight cost based on country codes/objects and weight
 export async function calculateFreightCost(
-  originCountry: string,
-  destinationCountry: string,
+  originCountry: string | Country,
+  destinationCountry: string | Country,
   weight: number,
   mode: "air" | "ocean" | "express" = "air"
 ): Promise<FreightQuoteResponse> {
+  // Extract country code and object if Country type is passed
+  const originCode =
+    typeof originCountry === "string"
+      ? originCountry
+      : originCountry.country_code;
+  const destCode =
+    typeof destinationCountry === "string"
+      ? destinationCountry
+      : destinationCountry.country_code;
+  const originObj =
+    typeof originCountry === "object" ? originCountry : undefined;
+  const destObj =
+    typeof destinationCountry === "object" ? destinationCountry : undefined;
+
   return getFreightQuote({
-    origin: originCountry,
-    destination: destinationCountry,
+    origin: originCode,
+    destination: destCode,
     weight,
     mode,
     loadtype: "boxes",
+    originCountry: originObj,
+    destinationCountry: destObj,
   });
 }

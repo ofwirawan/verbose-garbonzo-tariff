@@ -4,12 +4,18 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon, InfoIcon } from "lucide-react";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -29,7 +35,10 @@ import {
   MissingRateWarning,
   Combobox,
 } from "./SharedComponents";
-import { CalculationResults, CalculationResultsSkeleton } from "./ResultComponents";
+import {
+  CalculationResults,
+  CalculationResultsSkeleton,
+} from "./ResultComponents";
 import { useTariffData, useTariffCalculation } from "./utils/hooks";
 import {
   convertCountriesToOptions,
@@ -44,7 +53,7 @@ interface TariffChartFormProps {
   tradeValue: string;
   netWeight: string;
   includeFreight: boolean;
-  freightMode: 'air' | 'ocean' | 'express';
+  freightMode: "air" | "ocean" | "express";
   countryOptions: DropdownOption[];
   productOptions: DropdownOption[];
   isCalculating: boolean;
@@ -55,7 +64,7 @@ interface TariffChartFormProps {
   onTradeValueChange: (value: string) => void;
   onNetWeightChange: (value: string) => void;
   onIncludeFreightChange: (value: boolean) => void;
-  onFreightModeChange: (value: 'air' | 'ocean' | 'express') => void;
+  onFreightModeChange: (value: "air" | "ocean" | "express") => void;
   onCalculate: () => void;
 }
 
@@ -90,14 +99,21 @@ function TariffChartForm({
         {/* LEFT COLUMN - Product & Countries */}
         <div className="bg-white rounded-lg p-6 border border-gray-200 space-y-5">
           <div className="pb-3 border-b border-gray-200">
-            <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">Product & Trade Partners</h3>
+            <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">
+              Product & Trade Partners
+            </h3>
           </div>
 
           {/* Product */}
           <div className="space-y-2">
-            <Label htmlFor="productCode" className="text-sm font-medium text-gray-700">
-              Product Code
-            </Label>
+            <div className="h-6 flex items-center">
+              <Label
+                htmlFor="productCode"
+                className="text-sm font-medium text-gray-700"
+              >
+                Product Code
+              </Label>
+            </div>
             <Combobox
               value={productCode}
               onValueChange={onProductCodeChange}
@@ -112,12 +128,17 @@ function TariffChartForm({
 
           {/* Importing Country */}
           <div className="space-y-2">
-            <Label htmlFor="importingCountry" className="text-sm font-medium text-gray-700 flex items-center gap-2">
-              Importing Country
-              <span className="text-xs bg-black text-white px-2 py-0.5 rounded font-medium ml-auto">
-                Sets Rate
-              </span>
-            </Label>
+            <div className="h-6 flex items-center">
+              <Label
+                htmlFor="importingCountry"
+                className="text-sm font-medium text-gray-700 flex items-center gap-2 flex-1"
+              >
+                Importing Country
+                <span className="text-xs bg-black text-white px-2 py-0.5 rounded font-medium ml-auto">
+                  Sets Rate
+                </span>
+              </Label>
+            </div>
             <Combobox
               value={importingCountry}
               onValueChange={onImportingCountryChange}
@@ -131,12 +152,17 @@ function TariffChartForm({
 
           {/* Exporting Country */}
           <div className="space-y-2">
-            <Label htmlFor="exportingCountry" className="text-sm font-medium text-gray-700 flex items-center gap-2">
-              Exporting Country
-              <span className="text-xs bg-white text-black border border-gray-300 px-2 py-0.5 rounded font-medium ml-auto">
-                Pays Duty
-              </span>
-            </Label>
+            <div className="h-6 flex items-center">
+              <Label
+                htmlFor="exportingCountry"
+                className="text-sm font-medium text-gray-700 flex items-center gap-2 flex-1"
+              >
+                Exporting Country
+                <span className="text-xs bg-white text-black border border-gray-300 px-2 py-0.5 rounded font-medium ml-auto">
+                  Pays Duty
+                </span>
+              </Label>
+            </div>
             <Combobox
               value={exportingCountry}
               onValueChange={onExportingCountryChange}
@@ -152,16 +178,25 @@ function TariffChartForm({
         {/* RIGHT COLUMN - Values & Details */}
         <div className="bg-white rounded-lg p-6 border border-gray-200 space-y-5">
           <div className="pb-3 border-b border-gray-200">
-            <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">Transaction Values</h3>
+            <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">
+              Transaction Values
+            </h3>
           </div>
 
           {/* Trade Value */}
           <div className="space-y-2">
-            <Label htmlFor="tradeValue" className="text-sm font-medium text-gray-700">
-              Trade Value
-            </Label>
+            <div className="h-6 flex items-center">
+              <Label
+                htmlFor="tradeValue"
+                className="text-sm font-medium text-gray-700"
+              >
+                Trade Value
+              </Label>
+            </div>
             <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
+                $
+              </span>
               <Input
                 id="tradeValue"
                 type="number"
@@ -177,12 +212,17 @@ function TariffChartForm({
 
           {/* Net Weight */}
           <div className="space-y-2">
-            <Label htmlFor="netWeight" className="text-sm font-medium text-gray-700 flex items-center gap-2">
-              Net Weight
-              <span className="text-xs bg-gray-100 text-gray-600 px-2 rounded font-medium ml-auto">
-                Optional
-              </span>
-            </Label>
+            <div className="h-6 flex items-center">
+              <Label
+                htmlFor="netWeight"
+                className="text-sm font-medium text-gray-700 flex items-center gap-2 flex-1"
+              >
+                Net Weight
+                <span className="text-xs bg-gray-100 text-gray-600 px-2 rounded font-medium ml-auto">
+                  Optional
+                </span>
+              </Label>
+            </div>
             <div className="relative">
               <Input
                 id="netWeight"
@@ -194,15 +234,22 @@ function TariffChartForm({
                 placeholder="100"
                 className="h-11 pr-12 border-gray-300"
               />
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">kg</span>
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">
+                kg
+              </span>
             </div>
           </div>
 
           {/* Transaction Date */}
           <div className="space-y-2">
-            <Label htmlFor="transactionDate" className="text-sm font-medium text-gray-700">
-              Transaction Date
-            </Label>
+            <div className="h-6 flex items-center">
+              <Label
+                htmlFor="transactionDate"
+                className="text-sm font-medium text-gray-700"
+              >
+                Transaction Date
+              </Label>
+            </div>
             <Popover open={datePopoverOpen} onOpenChange={setDatePopoverOpen}>
               <PopoverTrigger asChild>
                 <Button
@@ -214,7 +261,9 @@ function TariffChartForm({
                   )}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {transactionDate ? format(transactionDate, "MMM d, yyyy") : "Select date"}
+                  {transactionDate
+                    ? format(transactionDate, "MMM d, yyyy")
+                    : "Select date"}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
@@ -249,9 +298,46 @@ function TariffChartForm({
               onChange={(e) => onIncludeFreightChange(e.target.checked)}
               className="w-4 h-4 text-gray-900 border-gray-300 rounded focus:ring-gray-900"
             />
-            <Label htmlFor="includeFreight" className="text-sm font-medium text-gray-700 cursor-pointer">
+            <Label
+              htmlFor="includeFreight"
+              className="text-sm font-medium text-gray-700 cursor-pointer"
+            >
               Include freight cost estimation
             </Label>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    className="text-gray-400 hover:text-gray-600 transition-colors"
+                    aria-label="Freight calculation information"
+                  >
+                    <InfoIcon className="w-4 h-4" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs p-4 bg-black text-white">
+                  <div className="space-y-2 text-xs">
+                    <p className="font-semibold">
+                      How freight costs are calculated:
+                    </p>
+                    <ul className="space-y-1 list-disc list-inside">
+                      <li>
+                        Estimates calculated using Freightos marketplace rates
+                      </li>
+                      <li>
+                        Package dimensions auto-estimated from weight (200kg/m³
+                        density)
+                      </li>
+                      <li>Costs shown as min-max range with average</li>
+                    </ul>
+                    <p className="text-gray-300 italic mt-2">
+                      Note: Actual shipping costs may vary based on carrier,
+                      exact location, package size, and current market rates.
+                    </p>
+                  </div>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
 
           {includeFreight && (
@@ -265,13 +351,19 @@ function TariffChartForm({
                     type="radio"
                     name="freightMode"
                     value="air"
-                    checked={freightMode === 'air'}
-                    onChange={(e) => onFreightModeChange(e.target.value as 'air')}
+                    checked={freightMode === "air"}
+                    onChange={(e) =>
+                      onFreightModeChange(e.target.value as "air")
+                    }
                     className="w-4 h-4 mt-0.5 text-gray-900 border-gray-300 focus:ring-gray-900"
                   />
                   <div className="flex-1">
-                    <span className="text-sm font-semibold text-gray-900 block">Air Freight</span>
-                    <p className="text-xs text-gray-500 mt-0.5">Fast delivery</p>
+                    <span className="text-sm font-semibold text-gray-900 block">
+                      Air Freight
+                    </span>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      Fast delivery
+                    </p>
                     <p className="text-xs text-gray-400">3-7 days</p>
                   </div>
                 </label>
@@ -280,13 +372,19 @@ function TariffChartForm({
                     type="radio"
                     name="freightMode"
                     value="ocean"
-                    checked={freightMode === 'ocean'}
-                    onChange={(e) => onFreightModeChange(e.target.value as 'ocean')}
+                    checked={freightMode === "ocean"}
+                    onChange={(e) =>
+                      onFreightModeChange(e.target.value as "ocean")
+                    }
                     className="w-4 h-4 mt-0.5 text-gray-900 border-gray-300 focus:ring-gray-900"
                   />
                   <div className="flex-1">
-                    <span className="text-sm font-semibold text-gray-900 block">Ocean Freight</span>
-                    <p className="text-xs text-gray-500 mt-0.5">Economical option</p>
+                    <span className="text-sm font-semibold text-gray-900 block">
+                      Ocean Freight
+                    </span>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      Economical option
+                    </p>
                     <p className="text-xs text-gray-400">20-45 days</p>
                   </div>
                 </label>
@@ -295,13 +393,19 @@ function TariffChartForm({
                     type="radio"
                     name="freightMode"
                     value="express"
-                    checked={freightMode === 'express'}
-                    onChange={(e) => onFreightModeChange(e.target.value as 'express')}
+                    checked={freightMode === "express"}
+                    onChange={(e) =>
+                      onFreightModeChange(e.target.value as "express")
+                    }
                     className="w-4 h-4 mt-0.5 text-gray-900 border-gray-300 focus:ring-gray-900"
                   />
                   <div className="flex-1">
-                    <span className="text-sm font-semibold text-gray-900 block">Express</span>
-                    <p className="text-xs text-gray-500 mt-0.5">Fastest delivery</p>
+                    <span className="text-sm font-semibold text-gray-900 block">
+                      Express
+                    </span>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      Fastest delivery
+                    </p>
                     <p className="text-xs text-gray-400">1-3 days</p>
                   </div>
                 </label>
@@ -379,13 +483,23 @@ export default function TariffChart({
   const [netWeight, setNetWeight] = useState("");
   const [transactionDate, setTransactionDate] = useState<Date>(new Date());
   const [includeFreight, setIncludeFreight] = useState(false);
-  const [freightMode, setFreightMode] = useState<'air' | 'ocean' | 'express'>('air');
+  const [freightMode, setFreightMode] = useState<"air" | "ocean" | "express">(
+    "air"
+  );
 
   // Derived state
   const countryOptions = convertCountriesToOptions(countries);
   const productOptions = convertProductsToOptions(product);
 
   const handleCalculate = () => {
+    // Find the full country objects for freight city lookup
+    const importingCountryObj = countries.find(
+      (c) => c.country_code === importingCountry
+    );
+    const exportingCountryObj = countries.find(
+      (c) => c.country_code === exportingCountry
+    );
+
     calculateTariff({
       importingCountry,
       exportingCountry,
@@ -395,15 +509,20 @@ export default function TariffChart({
       transactionDate,
       includeFreight,
       freightMode,
+      importingCountryObj,
+      exportingCountryObj,
     });
   };
 
   return (
     <Card className="@container/card shadow-sm">
       <CardHeader className="border-b border-gray-200 pb-6 pt-6">
-        <CardTitle className="text-xl font-bold text-gray-900">{chartTitle}</CardTitle>
+        <CardTitle className="text-xl font-bold text-gray-900">
+          {chartTitle}
+        </CardTitle>
         <CardDescription className="text-sm mt-2 text-gray-600">
-          Enter transaction details and shipping options to calculate import duties and freight costs
+          Enter transaction details and shipping options to calculate import
+          duties and freight costs
         </CardDescription>
       </CardHeader>
 

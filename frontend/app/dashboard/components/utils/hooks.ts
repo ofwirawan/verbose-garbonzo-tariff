@@ -95,6 +95,9 @@ export function useTariffCalculation() {
     transactionDate: Date;
     includeFreight?: boolean;
     freightMode?: 'air' | 'ocean' | 'express';
+    // Optional: pass full country objects for freight city lookup
+    importingCountryObj?: Country;
+    exportingCountryObj?: Country;
   }) => {
     const {
       importingCountry,
@@ -105,6 +108,8 @@ export function useTariffCalculation() {
       transactionDate,
       includeFreight,
       freightMode,
+      importingCountryObj,
+      exportingCountryObj,
     } = params;
 
     if (!importingCountry || !tradeValue) {
@@ -133,9 +138,10 @@ export function useTariffCalculation() {
       // Calculate freight costs if requested and weight is available
       if (includeFreight && exportingCountry && netWeight) {
         try {
+          // Pass country objects if available, otherwise pass country codes
           const freightQuote = await calculateFreightCost(
-            exportingCountry,
-            importingCountry,
+            exportingCountryObj || exportingCountry,
+            importingCountryObj || importingCountry,
             Number(netWeight),
             freightMode || 'air'
           );

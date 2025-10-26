@@ -13,7 +13,7 @@ export async function fetchCountries() {
   let countries = [];
   try {
     countries = await prisma.country.findMany({
-      select: { country_code: true, name: true, numeric_code: true },
+      select: { country_code: true, name: true, numeric_code: true, city: true },
       orderBy: { name: "asc" },
     });
   } catch (error) {

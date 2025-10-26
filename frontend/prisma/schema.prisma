@@ -1,0 +1,104 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model country {
+  country_code          String        @id @db.VarChar(3)
+  numeric_code          String        @unique @db.VarChar(3)
+  name                  String        @default("")
+  city                  String?       @db.VarChar(100)
+  measures              measure[]
+  exporter_preferences  preference[]  @relation("exporter_preferences")
+  importer_preferences  preference[]  @relation("importer_preferences")
+  suspensions           suspension[]
+  exporter_transactions transaction[] @relation("exporter_transactions")
+  importer_transactions transaction[] @relation("importer_transactions")
+}
+
+model product {
+  hs6code     String        @id @db.VarChar(6)
+  description String?       @default("") @db.VarChar(255)
+  measures    measure[]
+  preferences preference[]
+  suspension  suspension[]
+  transaction transaction[]
+}
+
+model transaction {
+  tid            BigInt    @id @default(autoincrement())
+  uid            String    @db.Uuid
+  t_date         DateTime  @db.Date
+  importer_code  String    @db.VarChar(3)
+  exporter_code  String?   @db.VarChar(3)
+  hs6code        String    @db.VarChar(6)
+  trade_original Decimal   @db.Decimal(38, 2)
+  net_weight     Decimal?  @db.Decimal(38, 2)
+  trade_final    Decimal   @db.Decimal(38, 2)
+  applied_rate   Json      @db.Json
+  exporter       country?  @relation("exporter_transactions", fields: [exporter_code], references: [country_code], onDelete: NoAction)
+  product        product   @relation(fields: [hs6code], references: [hs6code], onDelete: Cascade)
+  importer       country   @relation("importer_transactions", fields: [importer_code], references: [country_code], onDelete: NoAction)
+  user           user_info @relation(fields: [uid], references: [uid], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model measure {
+  measure_id           Int       @id @default(autoincrement())
+  importer_code        String    @db.VarChar(3)
+  product_code         String    @db.VarChar(6)
+  valid_from           DateTime  @db.Date
+  valid_to             DateTime? @db.Date
+  mfn_adval_rate       Decimal?  @db.Decimal(38, 2)
+  specific_rate_per_kg Decimal?  @db.Decimal(38, 2)
+  importer             country   @relation(fields: [importer_code], references: [country_code])
+  product              product   @relation(fields: [product_code], references: [hs6code])
+
+  @@unique([importer_code, product_code, valid_from], map: "measure_unique")
+  @@unique([valid_from, importer_code, product_code], map: "ukqtp5bxiv2xr34y42hhsura1iv")
+}
+
+model preference {
+  preference_id   Int       @id @default(autoincrement())
+  importer_code   String    @db.VarChar(3)
+  exporter_code   String    @db.VarChar(3)
+  product_code    String    @db.VarChar(6)
+  valid_from      DateTime  @db.Date
+  valid_to        DateTime? @db.Date
+  pref_adval_rate Decimal   @db.Decimal(38, 2)
+  exporter        country   @relation("exporter_preferences", fields: [exporter_code], references: [country_code])
+  importer        country   @relation("importer_preferences", fields: [importer_code], references: [country_code])
+  product         product   @relation(fields: [product_code], references: [hs6code])
+
+  @@unique([importer_code, exporter_code, product_code, valid_from], map: "preferences_unique")
+  @@unique([importer_code, exporter_code, product_code, valid_from], map: "ukalpa7o2q2wlhx5l9ajv87mr3b")
+}
+
+model suspension {
+  suspension_id   Int       @id @default(autoincrement())
+  importer_code   String    @db.VarChar(3)
+  product_code    String    @db.VarChar(6)
+  valid_from      DateTime  @db.Date
+  valid_to        DateTime? @db.Date
+  suspension_flag Boolean
+  suspension_note String    @db.VarChar(255)
+  suspension_rate String?
+  product         product   @relation(fields: [product_code], references: [hs6code], onDelete: NoAction, onUpdate: NoAction, map: "fkbljtvabnc81rpapefl9f26qsq")
+  importer        country   @relation(fields: [importer_code], references: [country_code])
+
+  @@unique([importer_code, product_code, valid_from], map: "suspension_unique")
+  @@unique([importer_code, product_code, valid_from], map: "uklp1ejvgfyudwgyifnnuftjph8")
+}
+
+model user_info {
+  uid         String        @id @db.Uuid
+  email       String        @unique @db.VarChar(255)
+  name        String?       @db.VarChar(255)
+  password    String        @db.VarChar(255)
+  roles       String        @db.VarChar(255)
+  timestamp   DateTime?     @default(now()) @db.Timestamp(6)
+  transaction transaction[]
+}

@@ -2,6 +2,7 @@ export interface Country {
   country_code: string;
   name: string;
   numeric_code: string;
+  city?: string | null;
 }
 
 export interface Tariff {
