@@ -1,7 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import {
+  getTotalCalculations,
+  getCountriesCount,
+  getAverageTariffRate,
+  getTotalProducts,
+} from "../utils/actions";
 
 interface StatisticItem {
   label: string;
@@ -16,26 +21,33 @@ export function StatisticsOverview() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        // Simulated data - replace with actual API call
+        // Fetch real data from database
+        const [totalCalc, countries, avgRate, totalProds] = await Promise.all([
+          getTotalCalculations(),
+          getCountriesCount(),
+          getAverageTariffRate(),
+          getTotalProducts(),
+        ]);
+
         setStats([
           {
             label: "Total Calculations",
-            value: "8,542",
+            value: totalCalc.totalCalculations.toLocaleString(),
             description: "Tariff calculations performed",
           },
           {
             label: "Countries Tracked",
-            value: "195",
+            value: countries.countriesCount,
             description: "Total countries in database",
           },
           {
             label: "Average Tariff Rate",
-            value: "9.8%",
+            value: `${avgRate.averageRate}%`,
             description: "Mean across all products",
           },
           {
             label: "Product Categories",
-            value: "12,847",
+            value: totalProds.totalProducts.toLocaleString(),
             description: "HS6 codes available",
           },
         ]);
@@ -53,12 +65,10 @@ export function StatisticsOverview() {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {[...Array(4)].map((_, i) => (
-          <Card key={i} className="border border-gray-200">
-            <CardContent className="p-6">
-              <div className="h-12 bg-gray-100 rounded animate-pulse mb-3"></div>
-              <div className="h-4 bg-gray-100 rounded animate-pulse w-3/4"></div>
-            </CardContent>
-          </Card>
+          <div key={i} className="border border-gray-200 p-6 rounded-xl bg-white">
+            <div className="h-10 bg-gray-200 animate-pulse mb-4 rounded"></div>
+            <div className="h-4 bg-gray-200 animate-pulse w-3/4 rounded"></div>
+          </div>
         ))}
       </div>
     );
@@ -67,22 +77,20 @@ export function StatisticsOverview() {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
       {stats.map((stat) => (
-        <Card
+        <div
           key={stat.label}
-          className="border border-gray-200 bg-white hover:border-gray-400 transition-colors"
+          className="border border-gray-200 bg-white p-6 rounded-xl hover:border-gray-300 transition-colors"
         >
-          <CardContent className="p-6">
-            <div className="space-y-3">
-              <p className="text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                {stat.label}
-              </p>
-              <div className="space-y-1">
-                <p className="text-2xl font-bold text-black">{stat.value}</p>
-                <p className="text-xs text-gray-500">{stat.description}</p>
-              </div>
+          <div className="space-y-3">
+            <p className="text-xs font-semibold text-gray-700 uppercase tracking-wider">
+              {stat.label}
+            </p>
+            <div className="space-y-2">
+              <p className="text-3xl font-bold text-gray-900">{stat.value}</p>
+              <p className="text-xs text-gray-600">{stat.description}</p>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       ))}
     </div>
   );

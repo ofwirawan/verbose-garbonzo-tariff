@@ -1,8 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
   BarChart,
   Bar,
@@ -11,15 +9,16 @@ import {
   CartesianGrid,
   XAxis,
   YAxis,
-  CartesianAxis,
   ResponsiveContainer,
   Tooltip as ChartTooltip,
 } from "recharts";
+import { getTopProducts, getCalculationTrends } from "../utils/actions";
 
 interface ProductInsight {
   product: string;
   calculations: number;
-  avgRate: number;
+  avgRate?: number;
+  description?: string;
 }
 
 interface TrendData {
@@ -35,28 +34,14 @@ export function TariffInsights() {
   useEffect(() => {
     const fetchInsights = async () => {
       try {
-        // Simulated data - replace with actual API calls
-        setTopProducts([
-          { product: "290110", calculations: 1243, avgRate: 12.5 },
-          { product: "847130", calculations: 987, avgRate: 5.2 },
-          { product: "854232", calculations: 856, avgRate: 8.9 },
-          { product: "271019", calculations: 742, avgRate: 15.3 },
-          { product: "870323", calculations: 689, avgRate: 6.7 },
-          { product: "392690", calculations: 623, avgRate: 11.2 },
+        // Fetch real data from database
+        const [productsData, trendsData] = await Promise.all([
+          getTopProducts(6),
+          getCalculationTrends(),
         ]);
 
-        setTrends([
-          { month: "Jan", calculations: 620 },
-          { month: "Feb", calculations: 745 },
-          { month: "Mar", calculations: 890 },
-          { month: "Apr", calculations: 1023 },
-          { month: "May", calculations: 1156 },
-          { month: "Jun", calculations: 1243 },
-          { month: "Jul", calculations: 1089 },
-          { month: "Aug", calculations: 1312 },
-          { month: "Sep", calculations: 1428 },
-          { month: "Oct", calculations: 1542 },
-        ]);
+        setTopProducts(productsData.topProducts);
+        setTrends(trendsData.trends);
       } catch (error) {
         console.error("Error fetching insights:", error);
       } finally {
@@ -70,24 +55,24 @@ export function TariffInsights() {
   if (isLoading) {
     return (
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="border border-gray-200">
-          <CardHeader className="border-b border-gray-200">
-            <Skeleton className="h-6 w-40" />
-            <Skeleton className="h-4 w-60 mt-2" />
-          </CardHeader>
-          <CardContent className="p-6">
-            <Skeleton className="h-[300px] w-full" />
-          </CardContent>
-        </Card>
-        <Card className="border border-gray-200">
-          <CardHeader className="border-b border-gray-200">
-            <Skeleton className="h-6 w-40" />
-            <Skeleton className="h-4 w-60 mt-2" />
-          </CardHeader>
-          <CardContent className="p-6">
-            <Skeleton className="h-[300px] w-full" />
-          </CardContent>
-        </Card>
+        <div className="border border-gray-200 bg-white rounded-xl">
+          <div className="p-6 border-b border-gray-200">
+            <div className="h-6 bg-gray-200 animate-pulse mb-2 w-40 rounded"></div>
+            <div className="h-4 bg-gray-200 animate-pulse w-60 rounded"></div>
+          </div>
+          <div className="p-6">
+            <div className="h-80 bg-gray-200 animate-pulse rounded"></div>
+          </div>
+        </div>
+        <div className="border border-gray-200 bg-white rounded-xl">
+          <div className="p-6 border-b border-gray-200">
+            <div className="h-6 bg-gray-200 animate-pulse mb-2 w-40 rounded"></div>
+            <div className="h-4 bg-gray-200 animate-pulse w-60 rounded"></div>
+          </div>
+          <div className="p-6">
+            <div className="h-80 bg-gray-200 animate-pulse rounded"></div>
+          </div>
+        </div>
       </div>
     );
   }
@@ -95,16 +80,12 @@ export function TariffInsights() {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       {/* Top Products Chart */}
-      <Card className="border border-gray-200 bg-white">
-        <CardHeader className="border-b border-gray-200">
-          <CardTitle className="text-lg font-semibold text-black">
-            Top Products
-          </CardTitle>
-          <CardDescription className="text-xs text-gray-600">
-            Most frequently calculated HS6 codes
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="p-6">
+      <div className="border border-gray-200 bg-white rounded-xl">
+        <div className="p-6 border-b border-gray-200">
+          <h2 className="text-lg font-bold text-gray-900">Top Products</h2>
+          <p className="text-xs text-gray-600 mt-1">Most frequently calculated HS6 codes</p>
+        </div>
+        <div className="p-6">
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={topProducts}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
@@ -133,24 +114,20 @@ export function TariffInsights() {
             </BarChart>
           </ResponsiveContainer>
           <div className="mt-4">
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-gray-600">
               Products ranked by total calculations performed
             </p>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Trends Chart */}
-      <Card className="border border-gray-200 bg-white">
-        <CardHeader className="border-b border-gray-200">
-          <CardTitle className="text-lg font-semibold text-black">
-            Calculation Trends
-          </CardTitle>
-          <CardDescription className="text-xs text-gray-600">
-            Monthly calculation volume over time
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="p-6">
+      <div className="border border-gray-200 bg-white rounded-xl">
+        <div className="p-6 border-b border-gray-200">
+          <h2 className="text-lg font-bold text-gray-900">Calculation Trends</h2>
+          <p className="text-xs text-gray-600 mt-1">Monthly calculation volume over time</p>
+        </div>
+        <div className="p-6">
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={trends}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
@@ -181,12 +158,12 @@ export function TariffInsights() {
             </LineChart>
           </ResponsiveContainer>
           <div className="mt-4">
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-gray-600">
               Steady growth in tariff calculation requests
             </p>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }
