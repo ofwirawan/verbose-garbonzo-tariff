@@ -86,7 +86,7 @@ export function TariffInsights() {
           <p className="text-xs text-gray-600 mt-1">Most frequently calculated HS6 codes</p>
         </div>
         <div className="p-6">
-          <ResponsiveContainer width="100%" height={300}>
+          <ResponsiveContainer width="100%" height={350}>
             <BarChart data={topProducts}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
               <XAxis
@@ -128,7 +128,7 @@ export function TariffInsights() {
           <p className="text-xs text-gray-600 mt-1">Monthly calculation volume over time</p>
         </div>
         <div className="p-6">
-          <ResponsiveContainer width="100%" height={300}>
+          <ResponsiveContainer width="100%" height={350}>
             <LineChart data={trends}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
               <XAxis

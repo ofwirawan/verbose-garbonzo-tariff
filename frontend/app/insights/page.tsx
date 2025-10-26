@@ -25,7 +25,7 @@ export default function InsightsPage() {
         <SiteHeader />
         <div className="flex flex-1 flex-col overflow-hidden">
           <div className="@container/main flex-1 overflow-auto">
-            <div className="flex flex-col gap-6 p-4 md:p-8 mx-auto">
+            <div className="flex flex-col gap-6 p-4 md:p-8 mx-auto w-full">
               {/* Page Header */}
               <div>
                 <h1 className="text-3xl font-bold text-gray-900 mb-2">
@@ -40,19 +40,21 @@ export default function InsightsPage() {
               <StatisticsOverview />
 
               {/* Alerts Section */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <TariffHotspots />
-                <TariffChanges />
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-2">
+                  <TariffHotspots />
+                </div>
+                <div>
+                  <TariffChanges />
+                </div>
               </div>
 
               {/* News */}
               <TariffNews />
 
               {/* Data Sections */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <GlobalTariffComparison />
-                <TariffInsights />
-              </div>
+              <GlobalTariffComparison />
+              <TariffInsights />
 
               {/* Footer */}
               <div className="mt-8 pt-6 border-t border-gray-200">
