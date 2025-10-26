@@ -110,7 +110,7 @@ export async function getFreightQuote(
     const modeMap: Record<string, string[]> = {
       air: ["air"],
       ocean: ["LCL", "FCL"],
-      express: ["express", "air"],
+      express: ["express", "courier", "priority"],
     };
 
     const requestedMode = request.mode || "air";

@@ -192,7 +192,9 @@ function CostSummary({
                   d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                 />
               </svg>
-              <div className="text-xs text-gray-400">No freight costs</div>
+              <div className="text-xs text-gray-400">
+                No freight data available for this route
+              </div>
             </div>
           </div>
         )}
@@ -218,8 +220,8 @@ function CostSummary({
               result.freightCostMin &&
               result.freightCostMax && (
                 <div className="text-xs text-gray-400 mt-1">
-                  Freight range: ${result.freightCostMin.toFixed(0)}-$
-                  {result.freightCostMax.toFixed(0)}
+                  Freight range: ${Number(result.freightCostMin).toLocaleString("en-US", { maximumFractionDigits: 0 })}-$
+                  {Number(result.freightCostMax).toLocaleString("en-US", { maximumFractionDigits: 0 })}
                 </div>
               )}
           </div>
@@ -367,9 +369,7 @@ function DetailsSection({
                   label="Cost Range"
                   value={
                     result.freightCostMin && result.freightCostMax
-                      ? `$${result.freightCostMin.toFixed(
-                          0
-                        )}-$${result.freightCostMax.toFixed(0)}`
+                      ? `$${Number(result.freightCostMin).toLocaleString("en-US", { maximumFractionDigits: 0 })}-$${Number(result.freightCostMax).toLocaleString("en-US", { maximumFractionDigits: 0 })}`
                       : "—"
                   }
                 />

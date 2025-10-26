@@ -53,7 +53,7 @@ interface TariffChartFormProps {
   tradeValue: string;
   netWeight: string;
   includeFreight: boolean;
-  freightMode: "air" | "ocean" | "express";
+  freightMode: "air" | "ocean";
   countryOptions: DropdownOption[];
   productOptions: DropdownOption[];
   isCalculating: boolean;
@@ -64,7 +64,7 @@ interface TariffChartFormProps {
   onTradeValueChange: (value: string) => void;
   onNetWeightChange: (value: string) => void;
   onIncludeFreightChange: (value: boolean) => void;
-  onFreightModeChange: (value: "air" | "ocean" | "express") => void;
+  onFreightModeChange: (value: "air" | "ocean") => void;
   onCalculate: () => void;
 }
 
@@ -345,7 +345,7 @@ function TariffChartForm({
               <Label className="text-xs font-medium text-gray-600 uppercase tracking-wide mb-3 block">
                 Select Shipping Mode
               </Label>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <label className="flex items-start gap-3 cursor-pointer p-4 rounded-lg border-2 border-gray-300 hover:border-gray-900 transition-all bg-white">
                   <input
                     type="radio"
@@ -386,27 +386,6 @@ function TariffChartForm({
                       Economical option
                     </p>
                     <p className="text-xs text-gray-400">20-45 days</p>
-                  </div>
-                </label>
-                <label className="flex items-start gap-3 cursor-pointer p-4 rounded-lg border-2 border-gray-300 hover:border-gray-900 transition-all bg-white">
-                  <input
-                    type="radio"
-                    name="freightMode"
-                    value="express"
-                    checked={freightMode === "express"}
-                    onChange={(e) =>
-                      onFreightModeChange(e.target.value as "express")
-                    }
-                    className="w-4 h-4 mt-0.5 text-gray-900 border-gray-300 focus:ring-gray-900"
-                  />
-                  <div className="flex-1">
-                    <span className="text-sm font-semibold text-gray-900 block">
-                      Express
-                    </span>
-                    <p className="text-xs text-gray-500 mt-0.5">
-                      Fastest delivery
-                    </p>
-                    <p className="text-xs text-gray-400">1-3 days</p>
                   </div>
                 </label>
               </div>
@@ -483,7 +462,7 @@ export default function TariffChart({
   const [netWeight, setNetWeight] = useState("");
   const [transactionDate, setTransactionDate] = useState<Date>(new Date());
   const [includeFreight, setIncludeFreight] = useState(false);
-  const [freightMode, setFreightMode] = useState<"air" | "ocean" | "express">(
+  const [freightMode, setFreightMode] = useState<"air" | "ocean">(
     "air"
   );
 
