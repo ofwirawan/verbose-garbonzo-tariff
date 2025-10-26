@@ -4,12 +4,18 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon, InfoIcon } from "lucide-react";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -29,7 +35,10 @@ import {
   MissingRateWarning,
   Combobox,
 } from "./SharedComponents";
-import { CalculationResults } from "./ResultComponents";
+import {
+  CalculationResults,
+  CalculationResultsSkeleton,
+} from "./ResultComponents";
 import { useTariffData, useTariffCalculation } from "./utils/hooks";
 import {
   convertCountriesToOptions,
@@ -43,6 +52,8 @@ interface TariffChartFormProps {
   productCode: string;
   tradeValue: string;
   netWeight: string;
+  includeFreight: boolean;
+  freightMode: "air" | "ocean";
   countryOptions: DropdownOption[];
   productOptions: DropdownOption[];
   isCalculating: boolean;
@@ -52,6 +63,8 @@ interface TariffChartFormProps {
   onProductCodeChange: (value: string) => void;
   onTradeValueChange: (value: string) => void;
   onNetWeightChange: (value: string) => void;
+  onIncludeFreightChange: (value: boolean) => void;
+  onFreightModeChange: (value: "air" | "ocean") => void;
   onCalculate: () => void;
 }
 
@@ -62,6 +75,8 @@ function TariffChartForm({
   productCode,
   tradeValue,
   netWeight,
+  includeFreight,
+  freightMode,
   countryOptions,
   productOptions,
   isCalculating,
@@ -71,39 +86,184 @@ function TariffChartForm({
   onProductCodeChange,
   onTradeValueChange,
   onNetWeightChange,
+  onIncludeFreightChange,
+  onFreightModeChange,
   onCalculate,
 }: TariffChartFormProps) {
   const [datePopoverOpen, setDatePopoverOpen] = useState(false);
 
   return (
     <div className="space-y-6">
-      {/* Single unified form container */}
-      <div className="bg-white rounded-lg p-8 border border-gray-200">
-        {/* Transaction Date & Product */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          <div className="space-y-3">
-            <Label
-              htmlFor="transactionDate"
-              className="text-sm font-bold text-black uppercase tracking-wide"
-            >
-              Transaction Date
-            </Label>
+      {/* Two-column split layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+        {/* LEFT COLUMN - Product & Countries */}
+        <div className="bg-white rounded-lg p-4 sm:p-5 md:p-6 border border-gray-200 space-y-5">
+          <div className="pb-3 border-b border-gray-200">
+            <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">
+              Product & Trade Partners
+            </h3>
+          </div>
+
+          {/* Product */}
+          <div className="space-y-2">
+            <div className="h-6 flex items-center">
+              <Label
+                htmlFor="productCode"
+                className="text-sm font-medium text-gray-700"
+              >
+                Product Code
+              </Label>
+            </div>
+            <Combobox
+              value={productCode}
+              onValueChange={onProductCodeChange}
+              placeholder="Select HS6 code"
+              id="productCode"
+              options={productOptions}
+              searchPlaceholder="Search products..."
+              emptyText="No product found."
+              showSecondaryText={true}
+            />
+          </div>
+
+          {/* Importing Country */}
+          <div className="space-y-2">
+            <div className="h-6 flex items-center">
+              <Label
+                htmlFor="importingCountry"
+                className="text-sm font-medium text-gray-700 flex items-center gap-2 flex-1"
+              >
+                Importing Country
+                <span className="text-xs bg-black text-white px-2 py-0.5 rounded font-medium ml-auto">
+                  Sets Rate
+                </span>
+              </Label>
+            </div>
+            <Combobox
+              value={importingCountry}
+              onValueChange={onImportingCountryChange}
+              placeholder="Select country"
+              id="importingCountry"
+              options={countryOptions}
+              searchPlaceholder="Search countries..."
+              emptyText="No country found."
+            />
+          </div>
+
+          {/* Exporting Country */}
+          <div className="space-y-2">
+            <div className="h-6 flex items-center">
+              <Label
+                htmlFor="exportingCountry"
+                className="text-sm font-medium text-gray-700 flex items-center gap-2 flex-1"
+              >
+                Exporting Country
+                <span className="text-xs bg-white text-black border border-gray-300 px-2 py-0.5 rounded font-medium ml-auto">
+                  Pays Duty
+                </span>
+              </Label>
+            </div>
+            <Combobox
+              value={exportingCountry}
+              onValueChange={onExportingCountryChange}
+              placeholder="Select country"
+              id="exportingCountry"
+              options={countryOptions}
+              searchPlaceholder="Search countries..."
+              emptyText="No country found."
+            />
+          </div>
+        </div>
+
+        {/* RIGHT COLUMN - Values & Details */}
+        <div className="bg-white rounded-lg p-4 sm:p-5 md:p-6 border border-gray-200 space-y-5">
+          <div className="pb-3 border-b border-gray-200">
+            <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">
+              Transaction Values
+            </h3>
+          </div>
+
+          {/* Trade Value */}
+          <div className="space-y-2">
+            <div className="h-6 flex items-center">
+              <Label
+                htmlFor="tradeValue"
+                className="text-sm font-medium text-gray-700"
+              >
+                Trade Value
+              </Label>
+            </div>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
+                $
+              </span>
+              <Input
+                id="tradeValue"
+                type="number"
+                min="0"
+                step="0.01"
+                value={tradeValue}
+                onChange={(e) => onTradeValueChange(e.target.value)}
+                placeholder="10000"
+                className="h-11 pl-7 pr-4 border-gray-300"
+              />
+            </div>
+          </div>
+
+          {/* Net Weight */}
+          <div className="space-y-2">
+            <div className="h-6 flex items-center">
+              <Label
+                htmlFor="netWeight"
+                className="text-sm font-medium text-gray-700 flex items-center gap-2 flex-1"
+              >
+                Net Weight
+                <span className="text-xs bg-gray-100 text-gray-600 px-2 rounded font-medium ml-auto">
+                  Optional
+                </span>
+              </Label>
+            </div>
+            <div className="relative">
+              <Input
+                id="netWeight"
+                type="number"
+                min="0"
+                step="0.01"
+                value={netWeight}
+                onChange={(e) => onNetWeightChange(e.target.value)}
+                placeholder="100"
+                className="h-11 pr-12 border-gray-300"
+              />
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">
+                kg
+              </span>
+            </div>
+          </div>
+
+          {/* Transaction Date */}
+          <div className="space-y-2">
+            <div className="h-6 flex items-center">
+              <Label
+                htmlFor="transactionDate"
+                className="text-sm font-medium text-gray-700"
+              >
+                Transaction Date
+              </Label>
+            </div>
             <Popover open={datePopoverOpen} onOpenChange={setDatePopoverOpen}>
               <PopoverTrigger asChild>
                 <Button
                   id="transactionDate"
                   variant="outline"
                   className={cn(
-                    "w-full justify-start text-left font-medium h-12 px-4 bg-white border border-gray-300 hover:bg-gray-50 transition-all",
-                    !transactionDate && "text-muted-foreground"
+                    "w-full justify-start text-left h-11 px-3 border-gray-300 hover:bg-gray-50 font-normal",
+                    !transactionDate && "text-gray-500"
                   )}
                 >
-                  <CalendarIcon className="mr-2.5 h-4 w-4" />
-                  {transactionDate ? (
-                    format(transactionDate, "MMM d, yyyy")
-                  ) : (
-                    <span>Select date</span>
-                  )}
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {transactionDate
+                    ? format(transactionDate, "MMM d, yyyy")
+                    : "Select date"}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
@@ -124,124 +284,113 @@ function TariffChartForm({
               </PopoverContent>
             </Popover>
           </div>
-
-          <div className="space-y-3">
-            <Label
-              htmlFor="productCode"
-              className="text-sm font-bold text-black uppercase tracking-wide"
-            >
-              Product Code
-            </Label>
-            <Combobox
-              value={productCode}
-              onValueChange={onProductCodeChange}
-              placeholder="Select product code"
-              id="productCode"
-              options={productOptions}
-              searchPlaceholder="Search products..."
-              emptyText="No product found."
-              showSecondaryText={true}
-            />
-          </div>
         </div>
+      </div>
 
-        {/* Trade Partners */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          <div className="space-y-3">
-            <Label
-              htmlFor="importingCountry"
-              className="text-sm font-bold text-black uppercase tracking-wide flex items-center gap-2"
-            >
-              Importing Country
-              <span className="text-xs bg-black text-white px-2 py-0.5 rounded font-medium ml-auto normal-case">
-                Sets Rate
-              </span>
-            </Label>
-            <Combobox
-              value={importingCountry}
-              onValueChange={onImportingCountryChange}
-              placeholder="Select importing country"
-              id="importingCountry"
-              options={countryOptions}
-              searchPlaceholder="Search countries..."
-              emptyText="No country found."
+      {/* Freight Options - Full Width Below */}
+      <div className="bg-gray-50 rounded-lg p-4 sm:p-5 md:p-6 border border-gray-200">
+        <div className="space-y-4">
+          <div className="flex items-center gap-3">
+            <input
+              type="checkbox"
+              id="includeFreight"
+              checked={includeFreight}
+              onChange={(e) => onIncludeFreightChange(e.target.checked)}
+              className="w-4 h-4 text-gray-900 border-gray-300 rounded focus:ring-gray-900"
             />
+            <Label
+              htmlFor="includeFreight"
+              className="text-sm font-medium text-gray-700 cursor-pointer"
+            >
+              Include freight cost estimation
+            </Label>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    className="text-gray-400 hover:text-gray-600 transition-colors"
+                    aria-label="Freight calculation information"
+                  >
+                    <InfoIcon className="w-4 h-4" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs p-4 bg-black text-white">
+                  <div className="space-y-2 text-xs">
+                    <p className="font-semibold">
+                      How freight costs are calculated:
+                    </p>
+                    <ul className="space-y-1 list-disc list-inside">
+                      <li>
+                        Estimates calculated using Freightos marketplace rates
+                      </li>
+                      <li>
+                        Package dimensions auto-estimated from weight (200kg/m³
+                        density)
+                      </li>
+                      <li>Costs shown as min-max range with average</li>
+                    </ul>
+                    <p className="text-gray-300 italic mt-2">
+                      Note: Actual shipping costs may vary based on carrier,
+                      exact location, package size, and current market rates.
+                    </p>
+                  </div>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
 
-          <div className="space-y-3">
-            <Label
-              htmlFor="exportingCountry"
-              className="text-sm font-bold text-black uppercase tracking-wide flex items-center gap-2"
-            >
-              Exporting Country
-              <span className="text-xs bg-white text-black border border-gray-300 px-2 py-0.5 rounded font-medium ml-auto normal-case">
-                Pays Duty
-              </span>
-            </Label>
-            <Combobox
-              value={exportingCountry}
-              onValueChange={onExportingCountryChange}
-              placeholder="Select exporting country"
-              id="exportingCountry"
-              options={countryOptions}
-              searchPlaceholder="Search countries..."
-              emptyText="No country found."
-            />
-          </div>
-        </div>
-
-        {/* Trade Values */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="space-y-3">
-            <Label
-              htmlFor="tradeValue"
-              className="text-sm font-bold text-black uppercase tracking-wide"
-            >
-              Trade Value
-            </Label>
-            <div className="relative">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-black text-base font-bold">
-                $
-              </span>
-              <Input
-                id="tradeValue"
-                type="number"
-                min="0"
-                step="0.01"
-                value={tradeValue}
-                onChange={(e) => onTradeValueChange(e.target.value)}
-                placeholder="0.00"
-                className="h-12 pl-9 pr-4 bg-white border border-gray-300 hover:bg-gray-50 focus:ring-2 focus:ring-gray-400 focus:border-gray-400 transition-all font-semibold text-base"
-              />
+          {includeFreight && (
+            <div className="pt-2 border-t border-gray-300">
+              <Label className="text-xs font-medium text-gray-600 uppercase tracking-wide mb-3 block">
+                Select Shipping Mode
+              </Label>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <label className="flex items-start gap-3 cursor-pointer p-4 rounded-lg border-2 border-gray-300 hover:border-gray-900 transition-all bg-white">
+                  <input
+                    type="radio"
+                    name="freightMode"
+                    value="air"
+                    checked={freightMode === "air"}
+                    onChange={(e) =>
+                      onFreightModeChange(e.target.value as "air")
+                    }
+                    className="w-4 h-4 mt-0.5 text-gray-900 border-gray-300 focus:ring-gray-900"
+                  />
+                  <div className="flex-1">
+                    <span className="text-sm font-semibold text-gray-900 block">
+                      Air Freight
+                    </span>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      Fast delivery
+                    </p>
+                    <p className="text-xs text-gray-400">3-7 days</p>
+                  </div>
+                </label>
+                <label className="flex items-start gap-3 cursor-pointer p-4 rounded-lg border-2 border-gray-300 hover:border-gray-900 transition-all bg-white">
+                  <input
+                    type="radio"
+                    name="freightMode"
+                    value="ocean"
+                    checked={freightMode === "ocean"}
+                    onChange={(e) =>
+                      onFreightModeChange(e.target.value as "ocean")
+                    }
+                    className="w-4 h-4 mt-0.5 text-gray-900 border-gray-300 focus:ring-gray-900"
+                  />
+                  <div className="flex-1">
+                    <span className="text-sm font-semibold text-gray-900 block">
+                      Ocean Freight
+                    </span>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      Economical option
+                    </p>
+                    <p className="text-xs text-gray-400">20-45 days</p>
+                  </div>
+                </label>
+              </div>
             </div>
-          </div>
-
-          <div className="space-y-3">
-            <Label
-              htmlFor="netWeight"
-              className="text-sm font-bold text-black uppercase tracking-wide flex items-center gap-2"
-            >
-              Net Weight
-              <span className="text-xs bg-gray-100 text-gray-600 px-2 rounded font-medium ml-auto normal-case">
-                Optional
-              </span>
-            </Label>
-            <div className="relative">
-              <Input
-                id="netWeight"
-                type="number"
-                min="0"
-                step="0.01"
-                value={netWeight}
-                onChange={(e) => onNetWeightChange(e.target.value)}
-                placeholder="0.00"
-                className="h-12 px-4 pr-12 bg-white border border-gray-300 hover:bg-gray-50 focus:ring-2 focus:ring-gray-400 focus:border-gray-400 transition-all font-semibold text-base"
-              />
-              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-600 text-base font-bold">
-                kg
-              </span>
-            </div>
-          </div>
+          )}
         </div>
       </div>
 
@@ -297,6 +446,7 @@ export default function TariffChart({
     suspensionNote,
     missingRateYears,
     hasError,
+    errorMessage,
     calculateTariff,
   } = useTariffCalculation();
 
@@ -311,12 +461,22 @@ export default function TariffChart({
   const [tradeValue, setTradeValue] = useState("10000");
   const [netWeight, setNetWeight] = useState("");
   const [transactionDate, setTransactionDate] = useState<Date>(new Date());
+  const [includeFreight, setIncludeFreight] = useState(false);
+  const [freightMode, setFreightMode] = useState<"air" | "ocean">("air");
 
   // Derived state
   const countryOptions = convertCountriesToOptions(countries);
   const productOptions = convertProductsToOptions(product);
 
   const handleCalculate = () => {
+    // Find the full country objects for freight city lookup
+    const importingCountryObj = countries.find(
+      (c) => c.country_code === importingCountry
+    );
+    const exportingCountryObj = countries.find(
+      (c) => c.country_code === exportingCountry
+    );
+
     calculateTariff({
       importingCountry,
       exportingCountry,
@@ -324,15 +484,22 @@ export default function TariffChart({
       tradeValue,
       netWeight,
       transactionDate,
+      includeFreight,
+      freightMode,
+      importingCountryObj,
+      exportingCountryObj,
     });
   };
 
   return (
     <Card className="@container/card shadow-sm">
-      <CardHeader className="border-b bg-gradient-to-r from-gray-50 to-gray-100/50 pb-4">
-        <CardTitle className="text-lg font-semibold">{chartTitle}</CardTitle>
-        <CardDescription className="text-sm mt-1">
-          Calculate tariff duties for a specific transaction
+      <CardHeader className="border-b border-gray-200 pb-6 pt-6">
+        <CardTitle className="text-xl font-bold text-gray-900">
+          {chartTitle}
+        </CardTitle>
+        <CardDescription className="text-sm mt-2 text-gray-600">
+          Enter transaction details and shipping options to calculate import
+          duties and freight costs
         </CardDescription>
       </CardHeader>
 
@@ -348,6 +515,8 @@ export default function TariffChart({
               productCode={productCode}
               tradeValue={tradeValue}
               netWeight={netWeight}
+              includeFreight={includeFreight}
+              freightMode={freightMode}
               countryOptions={countryOptions}
               productOptions={productOptions}
               isCalculating={isCalculating}
@@ -357,6 +526,8 @@ export default function TariffChart({
               onProductCodeChange={setProductCode}
               onTradeValueChange={setTradeValue}
               onNetWeightChange={setNetWeight}
+              onIncludeFreightChange={setIncludeFreight}
+              onFreightModeChange={setFreightMode}
               onCalculate={handleCalculate}
             />
 
@@ -366,7 +537,9 @@ export default function TariffChart({
               </div>
             )}
 
-            {calculationResult && (
+            {isCalculating && <CalculationResultsSkeleton />}
+
+            {!isCalculating && calculationResult && (
               <div className="mt-6 pt-6 border-t border-gray-200">
                 <CalculationResults
                   result={calculationResult}
@@ -375,12 +548,65 @@ export default function TariffChart({
               </div>
             )}
 
+            {!isCalculating && calculationResult?.warning && (
+              <div className="mt-6 pt-6 border-t border-gray-200">
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-6">
+                  <div className="flex items-start gap-3">
+                    <svg
+                      className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                      />
+                    </svg>
+                    <div className="flex-1">
+                      <h3 className="text-sm font-semibold text-amber-900 mb-1">
+                        Notice
+                      </h3>
+                      <p className="text-sm text-amber-800 leading-relaxed">
+                        {calculationResult.warning}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {hasError && (
               <div className="mt-6 pt-6 border-t border-gray-200">
-                <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-center">
-                  <p className="text-red-600 text-sm font-medium">
-                    Failed to fetch tariff data. Please try again.
-                  </p>
+                <div className="bg-gray-50 border border-gray-300 rounded-lg p-6">
+                  <div className="flex items-start gap-3">
+                    <svg
+                      className="h-5 w-5 text-gray-600 flex-shrink-0 mt-0.5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                      />
+                    </svg>
+                    <div className="flex-1">
+                      <h3 className="text-sm font-semibold text-gray-900 mb-1">
+                        {errorMessage?.includes("Net weight cannot be used")
+                          ? "Net Weight Not Applicable"
+                          : "No Tariff Data Available"}
+                      </h3>
+                      <p className="text-sm text-gray-700 leading-relaxed">
+                        {errorMessage ||
+                          "No tariff data available for the specified transaction. This data may not be available in the WITS database for this combination."}
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}

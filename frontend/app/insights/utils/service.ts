@@ -4,7 +4,7 @@ import {
   Country,
   DropdownOption,
   MissingRateYear,
-} from "@/app/dashboard/components/utils/types";
+} from "@/app/insights/utils/types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
