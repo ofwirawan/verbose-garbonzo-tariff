@@ -114,15 +114,15 @@ function CostSummary({
   return (
     <div className="space-y-4">
       {/* Visual Cost Breakdown Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {/* Trade Value Card */}
-        <div className="bg-white rounded-lg border border-gray-200 p-5">
+        <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-5 md:p-6">
           <div className="flex items-start justify-between mb-2">
             <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">
               Trade Value
             </div>
           </div>
-          <div className="text-2xl font-bold text-gray-900">
+          <div className="text-lg sm:text-2xl font-bold text-gray-900 break-words">
             $
             {Number(result.tradeOriginal).toLocaleString("en-US", {
               minimumFractionDigits: 2,
@@ -134,7 +134,7 @@ function CostSummary({
         </div>
 
         {/* Tariff Duty Card */}
-        <div className="bg-white rounded-lg border border-gray-200 p-5">
+        <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-5 md:p-6">
           <div className="flex items-start justify-between mb-2">
             <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">
               Tariff Duty
@@ -145,7 +145,7 @@ function CostSummary({
               </span>
             )}
           </div>
-          <div className="text-2xl font-bold text-gray-900">
+          <div className="text-lg sm:text-2xl font-bold text-gray-900 break-words">
             ${dutyAmount.toLocaleString("en-US", { minimumFractionDigits: 2 })}
           </div>
           <div className="text-xs text-gray-500 mt-1">
@@ -155,13 +155,13 @@ function CostSummary({
 
         {/* Freight Card (if applicable) */}
         {hasFreightData ? (
-          <div className="bg-white rounded-lg border border-gray-200 p-5">
+          <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-5 md:p-6">
             <div className="flex items-start justify-between mb-2">
               <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">
                 Freight Cost
               </div>
             </div>
-            <div className="text-2xl font-bold text-gray-900">
+            <div className="text-lg sm:text-2xl font-bold text-gray-900 break-words">
               $
               {Number(result.freightCost).toLocaleString("en-US", {
                 minimumFractionDigits: 2,
@@ -177,7 +177,7 @@ function CostSummary({
             </div>
           </div>
         ) : (
-          <div className="bg-gray-50 rounded-lg border border-dashed border-gray-300 p-5 flex items-center justify-center">
+          <div className="bg-gray-50 rounded-lg border border-dashed border-gray-300 p-4 sm:p-5 md:p-6 flex items-center justify-center">
             <div className="text-center">
               <svg
                 className="w-8 h-8 text-gray-300 mx-auto mb-2"
@@ -201,27 +201,33 @@ function CostSummary({
       </div>
 
       {/* Total Landed Cost - Prominent Display */}
-      <div className="bg-gray-100 rounded-lg p-6">
-        <div className="flex items-center justify-between">
+      <div className="bg-gray-100 rounded-lg p-4 sm:p-5 md:p-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <div className="text-sm font-medium text-black uppercase tracking-wide mb-1">
               Total Landed Cost
             </div>
-            <div className="text-xs text-black">
+            <div className="text-xs text-black break-words">
               {result.hs6} · {result.importerCode} ←{" "}
               {result.exporterCode || "—"}
             </div>
           </div>
-          <div className="text-right">
-            <div className="text-4xl font-bold text-black">
+          <div className="sm:text-right">
+            <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-black break-words">
               ${totalCost.toLocaleString("en-US", { minimumFractionDigits: 2 })}
             </div>
             {hasFreightData &&
               result.freightCostMin &&
               result.freightCostMax && (
                 <div className="text-xs text-gray-400 mt-1">
-                  Freight range: ${Number(result.freightCostMin).toLocaleString("en-US", { maximumFractionDigits: 0 })}-$
-                  {Number(result.freightCostMax).toLocaleString("en-US", { maximumFractionDigits: 0 })}
+                  Freight range: $
+                  {Number(result.freightCostMin).toLocaleString("en-US", {
+                    maximumFractionDigits: 0,
+                  })}
+                  -$
+                  {Number(result.freightCostMax).toLocaleString("en-US", {
+                    maximumFractionDigits: 0,
+                  })}
                 </div>
               )}
           </div>
@@ -279,13 +285,13 @@ function DetailsSection({
 
       {/* Expandable Content */}
       {isExpanded && (
-        <div className="p-6 space-y-6 bg-gray-50">
+        <div className="p-4 sm:p-5 md:p-6 space-y-6 bg-gray-50">
           {/* Transaction Info Section */}
-          <div className="bg-white rounded-lg p-5 border border-gray-200">
+          <div className="bg-white rounded-lg p-4 sm:p-5 md:p-6 border border-gray-200">
             <h5 className="text-xs font-bold text-gray-700 uppercase tracking-wide mb-4 flex items-center gap-2">
               Transaction Information
             </h5>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <InfoItem label="Product Code" value={result.hs6} />
               <InfoItem
                 label="Transaction Date"
@@ -309,17 +315,17 @@ function DetailsSection({
           {(appliedRate.mfnAdval !== undefined ||
             appliedRate.prefAdval !== undefined ||
             appliedRate.specific !== undefined) && (
-            <div className="bg-white rounded-lg p-5 border border-gray-200">
+            <div className="bg-white rounded-lg p-4 sm:p-5 md:p-6 border border-gray-200">
               <h5 className="text-xs font-bold text-gray-700 uppercase tracking-wide mb-4 flex items-center gap-2">
                 Tariff Rate Breakdown
               </h5>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {appliedRate.prefAdval !== undefined && (
                   <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
                     <div className="text-xs text-gray-600 font-medium mb-1">
                       Preferential Rate (FTA)
                     </div>
-                    <div className="text-2xl font-bold text-gray-900">
+                    <div className="text-lg sm:text-2xl font-bold text-gray-900">
                       {appliedRate.prefAdval.toFixed(2)}%
                     </div>
                   </div>
@@ -329,7 +335,7 @@ function DetailsSection({
                     <div className="text-xs text-gray-600 font-medium mb-1">
                       MFN Ad-valorem
                     </div>
-                    <div className="text-2xl font-bold text-gray-900">
+                    <div className="text-lg sm:text-2xl font-bold text-gray-900">
                       {appliedRate.mfnAdval.toFixed(2)}%
                     </div>
                   </div>
@@ -339,7 +345,7 @@ function DetailsSection({
                     <div className="text-xs text-gray-600 font-medium mb-1">
                       Specific Duty
                     </div>
-                    <div className="text-2xl font-bold text-gray-900">
+                    <div className="text-lg sm:text-2xl font-bold text-gray-900">
                       ${appliedRate.specific.toFixed(2)}/kg
                     </div>
                   </div>
@@ -350,11 +356,11 @@ function DetailsSection({
 
           {/* Freight Details Section */}
           {hasFreightData && (
-            <div className="bg-white rounded-lg p-5 border border-gray-200">
+            <div className="bg-white rounded-lg p-4 sm:p-5 md:p-6 border border-gray-200">
               <h5 className="text-xs font-bold text-gray-700 uppercase tracking-wide mb-4 flex items-center gap-2">
                 Shipping Information
               </h5>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <InfoItem
                   label="Shipping Method"
                   value={
@@ -369,7 +375,13 @@ function DetailsSection({
                   label="Cost Range"
                   value={
                     result.freightCostMin && result.freightCostMax
-                      ? `$${Number(result.freightCostMin).toLocaleString("en-US", { maximumFractionDigits: 0 })}-$${Number(result.freightCostMax).toLocaleString("en-US", { maximumFractionDigits: 0 })}`
+                      ? `$${Number(result.freightCostMin).toLocaleString(
+                          "en-US",
+                          { maximumFractionDigits: 0 }
+                        )}-$${Number(result.freightCostMax).toLocaleString(
+                          "en-US",
+                          { maximumFractionDigits: 0 }
+                        )}`
                       : "—"
                   }
                 />
@@ -389,7 +401,7 @@ function DetailsSection({
 
           {/* Suspension Note */}
           {suspensionNote && (
-            <div className="bg-black rounded-lg p-5 border-l-4 border-white">
+            <div className="bg-black rounded-lg p-4 sm:p-5 md:p-6 border-l-4 border-white">
               <div className="flex items-start gap-3">
                 <svg
                   className="w-5 h-5 text-white mt-0.5 flex-shrink-0"
@@ -425,7 +437,9 @@ function InfoItem({ label, value }: { label: string; value: string }) {
   return (
     <div>
       <div className="text-xs text-gray-500 font-medium mb-1">{label}</div>
-      <div className="text-sm text-gray-900 font-semibold">{value}</div>
+      <div className="text-sm text-gray-900 font-semibold break-words">
+        {value}
+      </div>
     </div>
   );
 }

@@ -95,9 +95,9 @@ function TariffChartForm({
   return (
     <div className="space-y-6">
       {/* Two-column split layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         {/* LEFT COLUMN - Product & Countries */}
-        <div className="bg-white rounded-lg p-6 border border-gray-200 space-y-5">
+        <div className="bg-white rounded-lg p-4 sm:p-5 md:p-6 border border-gray-200 space-y-5">
           <div className="pb-3 border-b border-gray-200">
             <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">
               Product & Trade Partners
@@ -176,7 +176,7 @@ function TariffChartForm({
         </div>
 
         {/* RIGHT COLUMN - Values & Details */}
-        <div className="bg-white rounded-lg p-6 border border-gray-200 space-y-5">
+        <div className="bg-white rounded-lg p-4 sm:p-5 md:p-6 border border-gray-200 space-y-5">
           <div className="pb-3 border-b border-gray-200">
             <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">
               Transaction Values
@@ -288,7 +288,7 @@ function TariffChartForm({
       </div>
 
       {/* Freight Options - Full Width Below */}
-      <div className="bg-gray-50 rounded-lg p-6 border border-gray-200">
+      <div className="bg-gray-50 rounded-lg p-4 sm:p-5 md:p-6 border border-gray-200">
         <div className="space-y-4">
           <div className="flex items-center gap-3">
             <input
@@ -462,9 +462,7 @@ export default function TariffChart({
   const [netWeight, setNetWeight] = useState("");
   const [transactionDate, setTransactionDate] = useState<Date>(new Date());
   const [includeFreight, setIncludeFreight] = useState(false);
-  const [freightMode, setFreightMode] = useState<"air" | "ocean">(
-    "air"
-  );
+  const [freightMode, setFreightMode] = useState<"air" | "ocean">("air");
 
   // Derived state
   const countryOptions = convertCountriesToOptions(countries);
