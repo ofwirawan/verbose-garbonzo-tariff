@@ -47,6 +47,11 @@ const data = {
       icon: IconDashboard,
     },
     {
+      title: "Insights",
+      url: "/insights",
+      icon: IconChartBar,
+    },
+    {
       title: "User History",
       url: "/userhistory",
       icon: IconListDetails,

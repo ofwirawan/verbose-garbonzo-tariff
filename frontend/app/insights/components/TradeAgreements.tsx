@@ -10,7 +10,6 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { IconAlertCircle, IconCheck } from "@tabler/icons-react";
 
 interface Agreement {
   id: string;
@@ -81,21 +80,19 @@ export function TradeAgreements() {
     switch (status) {
       case "active":
         return (
-          <Badge variant="outline" className="border-green-600 text-green-600">
-            <IconCheck className="w-3 h-3 mr-1" />
+          <Badge variant="outline" className="border-black text-black bg-white">
             Active
           </Badge>
         );
       case "expiring":
         return (
-          <Badge variant="outline" className="border-amber-600 text-amber-600">
-            <IconAlertCircle className="w-3 h-3 mr-1" />
+          <Badge variant="outline" className="border-black text-black bg-white">
             Expiring Soon
           </Badge>
         );
       default:
         return (
-          <Badge variant="outline">
+          <Badge variant="outline" className="border-black text-black bg-white">
             Inactive
           </Badge>
         );
@@ -103,14 +100,16 @@ export function TradeAgreements() {
   };
 
   return (
-    <Card className="h-full flex flex-col">
-      <CardHeader>
-        <CardTitle>Trade Agreements</CardTitle>
-        <CardDescription>
+    <Card className="h-full flex flex-col border border-gray-200 bg-white">
+      <CardHeader className="border-b border-gray-200">
+        <CardTitle className="text-lg font-semibold text-black">
+          Trade Agreements
+        </CardTitle>
+        <CardDescription className="text-xs text-gray-600">
           Active preferential trade agreements and suspensions
         </CardDescription>
       </CardHeader>
-      <CardContent className="flex-1 overflow-auto">
+      <CardContent className="flex-1 overflow-auto p-6">
         {isLoading ? (
           <div className="space-y-4">
             {[...Array(5)].map((_, i) => (
@@ -122,26 +121,26 @@ export function TradeAgreements() {
             {agreements.map((agreement) => (
               <div
                 key={agreement.id}
-                className="p-4 border rounded-lg hover:bg-accent transition-colors"
+                className="p-4 border border-gray-200 rounded-lg hover:border-gray-400 transition-colors bg-white"
               >
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex-1">
-                    <h4 className="font-semibold text-sm mb-1">
+                    <h4 className="font-semibold text-sm text-black mb-1">
                       {agreement.name}
                     </h4>
-                    <p className="text-xs text-muted-foreground mb-2">
+                    <p className="text-xs text-gray-600 mb-2">
                       {agreement.countries.join(", ")}
                     </p>
                   </div>
                   {getStatusBadge(agreement.status)}
                 </div>
                 <div className="flex items-center justify-between text-xs">
-                  <span className="text-muted-foreground">
+                  <span className="text-gray-700">
                     <strong>{agreement.suspendedTariffs}</strong> suspended
                     tariffs
                   </span>
                   {agreement.expiryDate && (
-                    <span className="text-amber-600 font-medium">
+                    <span className="text-black font-medium">
                       Expires: {agreement.expiryDate}
                     </span>
                   )}

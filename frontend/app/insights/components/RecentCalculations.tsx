@@ -103,23 +103,46 @@ export function RecentCalculations() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "suspended":
-        return <Badge variant="outline" className="border-green-600 text-green-600">Suspended</Badge>;
+        return (
+          <Badge
+            variant="outline"
+            className="border-black text-black bg-white"
+          >
+            Suspended
+          </Badge>
+        );
       case "preferential":
-        return <Badge variant="outline" className="border-blue-600 text-blue-600">Preferential</Badge>;
+        return (
+          <Badge
+            variant="outline"
+            className="border-black text-black bg-white"
+          >
+            Preferential
+          </Badge>
+        );
       default:
-        return <Badge variant="outline">Active</Badge>;
+        return (
+          <Badge
+            variant="outline"
+            className="border-black text-black bg-white"
+          >
+            Active
+          </Badge>
+        );
     }
   };
 
   return (
-    <Card className="h-full flex flex-col">
-      <CardHeader>
-        <CardTitle>Recent Calculations</CardTitle>
-        <CardDescription>
+    <Card className="h-full flex flex-col border border-gray-200 bg-white">
+      <CardHeader className="border-b border-gray-200">
+        <CardTitle className="text-lg font-semibold text-black">
+          Recent Calculations
+        </CardTitle>
+        <CardDescription className="text-xs text-gray-600">
           Latest tariff calculations performed on the system
         </CardDescription>
       </CardHeader>
-      <CardContent className="flex-1 overflow-auto">
+      <CardContent className="flex-1 overflow-auto p-6">
         {isLoading ? (
           <div className="space-y-3">
             {[...Array(5)].map((_, i) => (
@@ -130,27 +153,48 @@ export function RecentCalculations() {
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Route</TableHead>
-                  <TableHead>Product (HS6)</TableHead>
-                  <TableHead>Rate</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Status</TableHead>
+                <TableRow className="border-b border-gray-200">
+                  <TableHead className="text-xs font-semibold text-black">
+                    Date
+                  </TableHead>
+                  <TableHead className="text-xs font-semibold text-black">
+                    Route
+                  </TableHead>
+                  <TableHead className="text-xs font-semibold text-black">
+                    Product (HS6)
+                  </TableHead>
+                  <TableHead className="text-xs font-semibold text-black">
+                    Rate
+                  </TableHead>
+                  <TableHead className="text-xs font-semibold text-black">
+                    Type
+                  </TableHead>
+                  <TableHead className="text-xs font-semibold text-black">
+                    Status
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {calculations.map((calc) => (
-                  <TableRow key={calc.id}>
-                    <TableCell className="font-medium">{calc.date}</TableCell>
-                    <TableCell>
+                  <TableRow
+                    key={calc.id}
+                    className="border-b border-gray-100 hover:bg-gray-50"
+                  >
+                    <TableCell className="font-medium text-sm text-gray-900">
+                      {calc.date}
+                    </TableCell>
+                    <TableCell className="text-sm text-gray-700">
                       {calc.importer} → {calc.exporter}
                     </TableCell>
-                    <TableCell>{calc.product}</TableCell>
-                    <TableCell className="font-semibold">
+                    <TableCell className="text-sm text-gray-700">
+                      {calc.product}
+                    </TableCell>
+                    <TableCell className="font-semibold text-sm text-black">
                       {calc.rate === 0 ? "0%" : `${calc.rate}%`}
                     </TableCell>
-                    <TableCell>{calc.type}</TableCell>
+                    <TableCell className="text-sm text-gray-700">
+                      {calc.type}
+                    </TableCell>
                     <TableCell>{getStatusBadge(calc.status)}</TableCell>
                   </TableRow>
                 ))}

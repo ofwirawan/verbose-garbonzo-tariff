@@ -47,14 +47,16 @@ export function RegionalComparison() {
   const maxRate = Math.max(...regions.map((r) => r.avgRate), 20);
 
   return (
-    <Card className="h-full flex flex-col">
-      <CardHeader>
-        <CardTitle>Regional Tariff Comparison</CardTitle>
-        <CardDescription>
+    <Card className="h-full flex flex-col border border-gray-200 bg-white">
+      <CardHeader className="border-b border-gray-200">
+        <CardTitle className="text-lg font-semibold text-black">
+          Regional Tariff Comparison
+        </CardTitle>
+        <CardDescription className="text-xs text-gray-600">
           Average tariff rates by geographic region
         </CardDescription>
       </CardHeader>
-      <CardContent className="flex-1">
+      <CardContent className="flex-1 p-6">
         {isLoading ? (
           <div className="space-y-4">
             {[...Array(6)].map((_, i) => (
@@ -68,10 +70,10 @@ export function RegionalComparison() {
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-sm font-medium">
+                      <span className="text-sm font-medium text-black">
                         {region.region}
                       </span>
-                      <span className="text-sm font-bold">
+                      <span className="text-sm font-bold text-black">
                         {region.avgRate}%
                       </span>
                     </div>
@@ -80,7 +82,7 @@ export function RegionalComparison() {
                       className="h-2"
                     />
                     <div className="flex items-center justify-between mt-1">
-                      <span className="text-xs text-muted-foreground">
+                      <span className="text-xs text-gray-500">
                         {region.totalRoutes} active routes
                       </span>
                       <span
