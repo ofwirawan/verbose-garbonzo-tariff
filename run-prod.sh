@@ -1,6 +1,9 @@
 #!/bin/bash
 set -e
 
+export JAVA_HOME=/usr/lib/jvm/default-java
+export PATH=$JAVA_HOME/bin:$PATH
+
 echo "Building backend..."
 cd tariff
 ./mvnw clean install -DskipTests

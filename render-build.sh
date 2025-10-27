@@ -1,7 +1,11 @@
 #!/bin/bash
 set -e
 
-export JAVA_HOME=/usr/lib/jvm/java-21-openjdk
+echo "Installing Java 21..."
+apt-get update
+apt-get install -y default-jdk
+
+export JAVA_HOME=/usr/lib/jvm/default-java
 export PATH=$JAVA_HOME/bin:$PATH
 
 echo "Checking Java installation..."
