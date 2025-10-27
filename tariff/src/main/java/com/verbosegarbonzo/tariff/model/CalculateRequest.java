@@ -19,7 +19,7 @@ public class CalculateRequest {
     @NotBlank
     private String importerCode;
 
-    private String exporterCode; //optional
+    private String exporterCode; // optional
 
     @DecimalMin(value = "0.01")
     @Digits(integer = 18, fraction = 2)
@@ -27,8 +27,14 @@ public class CalculateRequest {
     private BigDecimal tradeOriginal;
 
     @DecimalMin(value = "0.0", inclusive = false)
-    private BigDecimal netWeight; //optional, for specific/compound tariffs
+    private BigDecimal netWeight; // optional, for specific/compound tariffs
 
     @NotNull
     private LocalDate transactionDate;
+
+    private boolean includeFreight;
+    private String freightMode; // "air", "ocean"
+    
+    private boolean includeInsurance;
+    private BigDecimal insuranceRate;
 }

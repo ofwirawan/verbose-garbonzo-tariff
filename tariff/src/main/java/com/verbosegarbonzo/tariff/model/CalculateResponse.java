@@ -24,9 +24,18 @@ public class CalculateResponse {
     private LocalDate transactionDate;
 
     private BigDecimal tradeOriginal;
-    private BigDecimal tradeFinal;   //after duty applied
+    private BigDecimal tradeFinal; // after duty applied
     private BigDecimal netWeight;
 
     private JsonNode appliedRate;
-    private String warning;  // Optional warning message for user
+    private String warning; // Optional warning message for user
+
+    private BigDecimal freightCost;
+    private String freightType;
+
+    private BigDecimal insuranceRate;
+    private BigDecimal insuranceCost;
+    private String valuationBasis;
+
+    private BigDecimal totalLandedCost; // tradeFinal + freight + insurance
 }
