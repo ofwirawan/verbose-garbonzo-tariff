@@ -39,7 +39,6 @@ yarn-error.log*
 .pnpm-debug.log*
 
 # env files (can opt-in for committing if needed)
-src/main/resources/application.properties
 .env*
 
 # vercel
