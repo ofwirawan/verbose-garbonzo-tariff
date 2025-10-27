@@ -55,13 +55,14 @@ public class TariffService {
     private final SuspensionRepository suspensionRepo;
     private final WebClient tariffWebClient;
     private final WitsProperties witsProperties;
+    private final FreightService freightService;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     public TariffService(PreferenceRepository preferenceRepo, MeasureRepository measureRepo,
             SuspensionRepository suspensionRepo, CountryRepository countryRepository,
             ProductRepository productRepository,
             @Qualifier("tariffWebClient") WebClient tariffWebClient,
-            WitsProperties witsProperties) {
+            WitsProperties witsProperties, FreightService freightService) {
         this.preferenceRepo = preferenceRepo;
         this.measureRepo = measureRepo;
         this.suspensionRepo = suspensionRepo;
@@ -69,6 +70,7 @@ public class TariffService {
         this.productRepository = productRepository;
         this.tariffWebClient = tariffWebClient;
         this.witsProperties = witsProperties;
+        this.freightService = freightService;
     }
 
     public CalculateResponse calculate(CalculateRequest req) {
@@ -274,12 +276,11 @@ public class TariffService {
 
         // 4. Still nothing found
         throw new RateNotFoundException(
-            "No tariff data available for the specified transaction. " +
-            "Importer: " + req.getImporterCode() + ", " +
-            "Product: " + req.getHs6() + ", " +
-            "Date: " + date + ". " +
-            "This data may not be available in the WITS database for this combination."
-        );
+                "No tariff data available for the specified transaction. " +
+                        "Importer: " + req.getImporterCode() + ", " +
+                        "Product: " + req.getHs6() + ", " +
+                        "Date: " + date + ". " +
+                        "This data may not be available in the WITS database for this combination.");
     }
 
     private BigDecimal fetchMfnRateFromWits(Country importer, Product product, LocalDate date) {
@@ -321,9 +322,9 @@ public class TariffService {
     }
 
     private BigDecimal fetchPreferentialRateFromWits(Country importer, Country exporter,
-                                                     Product product, LocalDate date) {
+            Product product, LocalDate date) {
         if (importer.getNumericCode() == null || importer.getNumericCode().isBlank() ||
-            exporter.getNumericCode() == null || exporter.getNumericCode().isBlank()) {
+                exporter.getNumericCode() == null || exporter.getNumericCode().isBlank()) {
             log.warn("Cannot fetch preferential rate: Missing numeric codes");
             return null;
         }
@@ -425,7 +426,7 @@ public class TariffService {
     }
 
     private void savePreferenceToDatabase(Country importer, Country exporter,
-                                         Product product, BigDecimal rate, LocalDate date) {
+            Product product, BigDecimal rate, LocalDate date) {
         try {
             // Check if already exists to avoid duplicates
             Optional<Preference> existing = preferenceRepo.findValidRate(importer, exporter, product, date);
@@ -459,21 +460,9 @@ public class TariffService {
             BigDecimal rateAdval,
             BigDecimal rateSpecific,
             BigDecimal ratePref,
-            BigDecimal rateSup) {
-        return buildResponse(req, uid, duty, rateAdval, rateSpecific, ratePref, rateSup, null);
-    }
-
-    private CalculateResponse buildResponse(
-            CalculateRequest req,
-            UUID uid,
-            BigDecimal duty,
-            BigDecimal rateAdval,
-            BigDecimal rateSpecific,
-            BigDecimal ratePref,
             BigDecimal rateSup,
             String warning) {
 
-        // generate tid temporarily (later use DB sequence)
         long tid = System.currentTimeMillis();
 
         CalculateResponse resp = new CalculateResponse();
@@ -483,28 +472,95 @@ public class TariffService {
         resp.setImporterCode(req.getImporterCode());
         resp.setExporterCode(req.getExporterCode());
         resp.setTransactionDate(req.getTransactionDate());
-
         resp.setTradeOriginal(req.getTradeOriginal());
         resp.setNetWeight(req.getNetWeight());
         resp.setTradeFinal(req.getTradeOriginal().add(duty));
 
-        // build applied_rate JSON
+        // Set default valuation basis (CIF, CFR, FOB)
+        Country importer = countryRepository.findById(req.getImporterCode()).orElse(null);
+        String basisDeclared = importer != null && importer.getValuationBasis() != null
+                ? importer.getValuationBasis().toUpperCase()
+                : "CIF";
+        resp.setValuationBasisDeclared(basisDeclared);
+
+        // Start with base trade + duty
+        BigDecimal totalCost = req.getTradeOriginal().add(duty);
+        BigDecimal freightCost = BigDecimal.ZERO;
+        BigDecimal insuranceCost = BigDecimal.ZERO;
+        BigDecimal insuranceRate = req.getInsuranceRate() != null ? req.getInsuranceRate() : BigDecimal.ONE;
+
+        String valuationApplied = basisDeclared;
+
+        try {
+            // === FREIGHT CALCULATION ===
+            if (req.isIncludeFreight()) {
+                BigDecimal weight = (req.getNetWeight() != null && req.getNetWeight().compareTo(BigDecimal.ZERO) > 0)
+                        ? req.getNetWeight()
+                        : new BigDecimal("100"); // fallback estimated weight
+
+                FreightService.FreightQuote quote = freightService.getFreightQuote(
+                        req.getExporterCode(),
+                        req.getImporterCode(),
+                        weight,
+                        req.getFreightMode());
+
+                if (quote.isSuccess()) {
+                    freightCost = quote.getAvgCost();
+                    resp.setFreightCost(freightCost);
+                    resp.setFreightType(quote.getMode());
+                    totalCost = totalCost.add(freightCost);
+                } else if (basisDeclared.equals("CIF") || basisDeclared.equals("CFR")) {
+                    warning = appendWarning(warning,
+                            "Freight cost could not be fetched, but the importing country uses " + basisDeclared +
+                                    " valuation. Customs value may be understated.");
+                    valuationApplied = "FOB"; // effectively treated as FOB due to missing freight
+                }
+            } else if (basisDeclared.equals("CIF") || basisDeclared.equals("CFR")) {
+                warning = appendWarning(warning,
+                        "Freight cost excluded by user, but " + basisDeclared +
+                                " valuation typically requires it.");
+                valuationApplied = "FOB";
+            }
+
+            // === INSURANCE CALCULATION ===
+            if (req.isIncludeInsurance()) {
+                insuranceCost = req.getTradeOriginal()
+                        .multiply(insuranceRate)
+                        .divide(BigDecimal.valueOf(100), 2, BigDecimal.ROUND_HALF_UP);
+                totalCost = totalCost.add(insuranceCost);
+            } else if (basisDeclared.equals("CIF")) {
+                warning = appendWarning(warning,
+                        "Insurance excluded by user, but CIF valuation normally includes insurance.");
+                valuationApplied = "FOB";
+            }
+
+        } catch (Exception e) {
+            log.error("Error calculating freight/insurance: {}", e.getMessage(), e);
+        }
+
+        resp.setInsuranceRate(insuranceRate);
+        resp.setInsuranceCost(insuranceCost);
+        resp.setValuationBasisApplied(valuationApplied);
+        resp.setTotalLandedCost(totalCost);
+
+        // applied rate JSON
         ObjectNode rateNode = objectMapper.createObjectNode();
-        if (ratePref != null) {
+        if (ratePref != null)
             rateNode.set("prefAdval", objectMapper.getNodeFactory().numberNode(ratePref));
-        }
-        if (rateAdval != null) {
+        if (rateAdval != null)
             rateNode.set("mfnAdval", objectMapper.getNodeFactory().numberNode(rateAdval));
-        }
-        if (rateSpecific != null) {
+        if (rateSpecific != null)
             rateNode.set("specific", objectMapper.getNodeFactory().numberNode(rateSpecific));
-        }
-        if (rateSup != null) {
+        if (rateSup != null)
             rateNode.set("suspension", objectMapper.getNodeFactory().numberNode(rateSup));
-        }
 
         resp.setAppliedRate(rateNode);
         resp.setWarning(warning);
         return resp;
+    }
+
+    private String appendWarning(String existing, String newMessage) {
+        if (existing == null || existing.isBlank()) return newMessage;
+        return existing + " " + newMessage;
     }
 }
