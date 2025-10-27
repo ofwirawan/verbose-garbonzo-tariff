@@ -5,6 +5,14 @@ set -e
 PROJECT_ROOT=$(pwd)
 
 echo "================================"
+echo "Environment Info"
+echo "================================"
+echo "HOME: $HOME"
+echo "PWD: $PWD"
+echo "PROJECT_ROOT: $PROJECT_ROOT"
+echo ""
+
+echo "================================"
 echo "Setting up Java..."
 echo "================================"
 
@@ -19,10 +27,6 @@ if ! command -v java &> /dev/null; then
     export JAVA_HOME
     export PATH=$JAVA_HOME/bin:$PATH
 
-    # Save JAVA_HOME to a file for the start script
-    echo "export JAVA_HOME=$JAVA_HOME" > $HOME/.java_env.sh
-    echo "export PATH=$JAVA_HOME/bin:\$PATH" >> $HOME/.java_env.sh
-
     echo "Java installed at: $JAVA_HOME"
     $JAVA_HOME/bin/java -version
 
@@ -31,6 +35,8 @@ if ! command -v java &> /dev/null; then
 else
     echo "Java is available"
     java -version
+    JAVA_HOME=$(dirname $(dirname $(readlink -f $(which java))))
+    export JAVA_HOME
 fi
 
 echo ""
@@ -49,6 +55,16 @@ cd $PROJECT_ROOT/frontend
 bun install
 bun run build
 cd $PROJECT_ROOT
+
+echo ""
+echo "================================"
+echo "Saving Java configuration..."
+echo "================================"
+# Save Java path to a file that will be readable at runtime
+mkdir -p $PROJECT_ROOT/.java-runtime
+echo "$JAVA_HOME" > $PROJECT_ROOT/.java-runtime/java_home.txt
+echo "Java path saved to: $PROJECT_ROOT/.java-runtime/java_home.txt"
+cat $PROJECT_ROOT/.java-runtime/java_home.txt
 
 echo ""
 echo "================================"

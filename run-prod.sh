@@ -5,30 +5,29 @@ echo "================================"
 echo "Loading Java environment..."
 echo "================================"
 
-# Try to source the Java environment file first
-if [ -f $HOME/.java_env.sh ]; then
-    echo "Found Java environment file, sourcing it..."
-    source $HOME/.java_env.sh
-    echo "JAVA_HOME from file: $JAVA_HOME"
+# Get project root (current directory when script starts)
+PROJECT_ROOT=$(pwd)
+JAVA_HOME_FILE="$PROJECT_ROOT/.java-runtime/java_home.txt"
+
+# Read Java home from the file saved during build
+if [ -f "$JAVA_HOME_FILE" ]; then
+    export JAVA_HOME=$(cat "$JAVA_HOME_FILE")
+    export PATH=$JAVA_HOME/bin:$PATH
+    echo "Loaded JAVA_HOME from build: $JAVA_HOME"
+else
+    echo "ERROR: Java home file not found at: $JAVA_HOME_FILE"
+    echo "Available files in project root:"
+    ls -la $PROJECT_ROOT/.java-runtime 2>/dev/null || echo "No .java-runtime directory found"
+    exit 1
 fi
 
-# Check if Java exists at the expected location
-if [ ! -d "$JAVA_HOME" ]; then
-    echo "JAVA_HOME directory not found at: $JAVA_HOME"
-    echo "Searching for Java installation..."
-
-    # Try common locations
-    if [ -d "$HOME/.java/jdk-21.0.1+12" ]; then
-        export JAVA_HOME=$HOME/.java/jdk-21.0.1+12
-        export PATH=$JAVA_HOME/bin:$PATH
-        echo "Found Java at: $JAVA_HOME"
-    else
-        echo "ERROR: Could not find Java installation!"
-        exit 1
-    fi
+# Verify Java exists
+if [ ! -x "$JAVA_HOME/bin/java" ]; then
+    echo "ERROR: Java executable not found at: $JAVA_HOME/bin/java"
+    exit 1
 fi
 
-echo "Verifying Java..."
+echo "Verifying Java installation..."
 $JAVA_HOME/bin/java -version
 
 echo ""
