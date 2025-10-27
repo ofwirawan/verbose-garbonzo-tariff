@@ -35,7 +35,8 @@ public class CalculateResponse {
 
     private BigDecimal insuranceRate;
     private BigDecimal insuranceCost;
-    private String valuationBasis;
+    private String valuationBasisDeclared;
+    private String valuationBasisApplied;
 
     private BigDecimal totalLandedCost; // tradeFinal + freight + insurance
 }
