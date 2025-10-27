@@ -40,6 +40,7 @@ cd $PROJECT_ROOT
 echo ""
 echo "Building frontend..."
 cd $PROJECT_ROOT/frontend
+rm -rf .next node_modules/.cache
 bun install --frozen-lockfile
 bun run build
 echo "Frontend built successfully"
