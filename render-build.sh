@@ -8,11 +8,11 @@ echo "================================"
 # Check if Java is already available
 if ! command -v java &> /dev/null; then
     echo "Java not found, downloading JDK 21..."
-    cd /tmp
+    mkdir -p $HOME/.java
+    cd $HOME/.java
     wget https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.1%2B12/OpenJDK21U-jdk_x64_linux_hotspot_21.0.1_12.tar.gz
     tar -xzf OpenJDK21U-jdk_x64_linux_hotspot_21.0.1_12.tar.gz
-    mv jdk-21.0.1+12 /opt/java-21
-    export JAVA_HOME=/opt/java-21
+    export JAVA_HOME=$HOME/.java/jdk-21.0.1+12
     export PATH=$JAVA_HOME/bin:$PATH
     cd -
 else

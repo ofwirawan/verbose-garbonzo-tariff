@@ -2,7 +2,7 @@
 set -e
 
 # Set JAVA_HOME if Java was downloaded during build
-export JAVA_HOME=${JAVA_HOME:-/opt/java-21}
+export JAVA_HOME=${JAVA_HOME:-$HOME/.java/jdk-21.0.1+12}
 export PATH=$JAVA_HOME/bin:$PATH
 
 echo ""
