@@ -1,19 +1,9 @@
 #!/bin/bash
 set -e
 
-export JAVA_HOME=/usr/lib/jvm/default-java
+# Set JAVA_HOME if Java was downloaded during build
+export JAVA_HOME=${JAVA_HOME:-/opt/java-21}
 export PATH=$JAVA_HOME/bin:$PATH
-
-echo "Building backend..."
-cd tariff
-./mvnw clean install -DskipTests
-cd ..
-
-echo "Building frontend..."
-cd frontend
-bun install
-bun run build
-cd ..
 
 echo ""
 echo "================================"
