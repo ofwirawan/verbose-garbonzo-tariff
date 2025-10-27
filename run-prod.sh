@@ -2,33 +2,52 @@
 set -e
 
 echo "================================"
-echo "Loading Java environment..."
+echo "Setting up Java runtime..."
 echo "================================"
 
-# Get project root (current directory when script starts)
-PROJECT_ROOT=$(pwd)
-JAVA_HOME_FILE="$PROJECT_ROOT/.java-runtime/java_home.txt"
+# Function to find Java
+find_java() {
+    # Check if java command exists
+    if command -v java &> /dev/null; then
+        echo "Found java in PATH"
+        return 0
+    fi
 
-# Read Java home from the file saved during build
-if [ -f "$JAVA_HOME_FILE" ]; then
-    export JAVA_HOME=$(cat "$JAVA_HOME_FILE")
+    # Check common locations
+    local locations=(
+        "/opt/render/.java/jdk-21.0.1+12/bin/java"
+        "$HOME/.java/jdk-21.0.1+12/bin/java"
+        "/usr/lib/jvm/java-21-openjdk/bin/java"
+        "/usr/lib/jvm/default-java/bin/java"
+    )
+
+    for loc in "${locations[@]}"; do
+        if [ -x "$loc" ]; then
+            echo "Found java at: $loc"
+            export JAVA_HOME=$(dirname $(dirname "$loc"))
+            export PATH=$JAVA_HOME/bin:$PATH
+            return 0
+        fi
+    done
+
+    return 1
+}
+
+# Try to find existing Java
+if ! find_java; then
+    echo "Java not found, downloading JDK 21..."
+    mkdir -p $HOME/.java-runtime
+    cd $HOME/.java-runtime
+    wget -q https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.1%2B12/OpenJDK21U-jdk_x64_linux_hotspot_21.0.1_12.tar.gz
+    tar -xzf OpenJDK21U-jdk_x64_linux_hotspot_21.0.1_12.tar.gz
+    export JAVA_HOME=$HOME/.java-runtime/jdk-21.0.1+12
     export PATH=$JAVA_HOME/bin:$PATH
-    echo "Loaded JAVA_HOME from build: $JAVA_HOME"
-else
-    echo "ERROR: Java home file not found at: $JAVA_HOME_FILE"
-    echo "Available files in project root:"
-    ls -la $PROJECT_ROOT/.java-runtime 2>/dev/null || echo "No .java-runtime directory found"
-    exit 1
+    cd -
+    echo "Java downloaded and installed"
 fi
 
-# Verify Java exists
-if [ ! -x "$JAVA_HOME/bin/java" ]; then
-    echo "ERROR: Java executable not found at: $JAVA_HOME/bin/java"
-    exit 1
-fi
-
-echo "Verifying Java installation..."
-$JAVA_HOME/bin/java -version
+echo "Verifying Java..."
+java -version
 
 echo ""
 echo "================================"
@@ -38,7 +57,7 @@ echo ""
 
 echo "Starting backend on port 8080..."
 cd tariff
-$JAVA_HOME/bin/java -jar target/tariff-0.0.1-SNAPSHOT.jar &
+java -jar target/tariff-0.0.1-SNAPSHOT.jar &
 BACKEND_PID=$!
 cd ..
 
