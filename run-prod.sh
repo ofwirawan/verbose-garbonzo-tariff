@@ -4,6 +4,25 @@ set -e
 PROJECT_ROOT=$(pwd)
 
 echo "================================"
+echo "Configuring Java for runtime..."
+echo "================================"
+
+# Set JAVA_HOME if Java was downloaded during build
+if [ -d "$HOME/.java-render/jdk-21.0.1+12" ]; then
+    export JAVA_HOME=$HOME/.java-render/jdk-21.0.1+12
+    export PATH=$JAVA_HOME/bin:$PATH
+    echo "Using Java at: $JAVA_HOME"
+elif command -v java &> /dev/null; then
+    echo "Java already in PATH"
+else
+    echo "ERROR: Java not found!"
+    exit 1
+fi
+
+java -version
+
+echo ""
+echo "================================"
 echo "Starting services..."
 echo "================================"
 echo ""
