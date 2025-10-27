@@ -23,7 +23,8 @@ export async function POST(request: NextRequest) {
       headers['Authorization'] = authHeader;
     }
 
-    const res = await fetch('http://localhost:8080/api/history', {
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL || '';
+    const res = await fetch(`${backendUrl}/api/history`, {
       method: 'POST',
       headers,
       body: JSON.stringify(body)
@@ -75,7 +76,8 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const res = await fetch('http://localhost:8080/api/history', {
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL || '';
+    const res = await fetch(`${backendUrl}/api/history`, {
       method: 'GET',
       headers
     });
@@ -164,7 +166,8 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    const backendUrl = `http://localhost:8080/api/history/${id}`;
+    const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || '';
+    const backendUrl = `${apiBaseUrl}/api/history/${id}`;
 
     const res = await fetch(backendUrl, {
       method: 'DELETE',
