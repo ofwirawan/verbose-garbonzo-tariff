@@ -224,7 +224,7 @@ export const columns: ColumnDef<HistoryItem>[] = [
   },
 ];
 
-export function HistoryTable({ data, onDelete }: HistoryTableProps) {
+export function HistoryTable({ data }: HistoryTableProps) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     []
@@ -254,17 +254,6 @@ export function HistoryTable({ data, onDelete }: HistoryTableProps) {
       rowSelection,
     },
   });
-
-  const handleBulkDelete = () => {
-    const selectedIds = table
-      .getSelectedRowModel()
-      .rows.map((row) => row.original.id);
-    if (selectedIds.length > 0) {
-      onDelete(selectedIds);
-      table.resetRowSelection();
-    }
-    toast.success("History Deleted Successfully!");
-  };
 
   return (
     <div className="w-full">
@@ -316,7 +305,7 @@ export function HistoryTable({ data, onDelete }: HistoryTableProps) {
 
                   try {
                     // Call backend DELETE for each row using query parameters
-                    const deletePromises = selected.map(async (row) => {
+                    selected.map(async (row) => {
                       const response = await authenticatedFetch(
                         `/api/history?id=${row.original.id}`,
                         {
@@ -326,7 +315,6 @@ export function HistoryTable({ data, onDelete }: HistoryTableProps) {
                       return response;
                     });
 
-                    const results = await Promise.all(deletePromises);
 
                     // Update frontend state
                     setHistory((prev) =>

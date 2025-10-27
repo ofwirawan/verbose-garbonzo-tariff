@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.verbosegarbonzo.tariff.model.Transaction;
 import com.verbosegarbonzo.tariff.model.UserInfo;
 import com.verbosegarbonzo.tariff.repository.CountryRepository;
+import com.verbosegarbonzo.tariff.repository.ProductRepository;
 import com.verbosegarbonzo.tariff.repository.TransactionRepository;
 import com.verbosegarbonzo.tariff.repository.UserInfoRepository;
 
@@ -28,6 +29,7 @@ public class HistoryController {
     private final TransactionRepository transactionRepository;
     private final UserInfoRepository userInfoRepository;
     private final CountryRepository countryRepository;
+    private final ProductRepository productRepository;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @GetMapping
@@ -93,14 +95,14 @@ public class HistoryController {
             Transaction transaction = new Transaction();
             transaction.setUser(userInfo); // Use UUID directly instead of toString()
             transaction.setTDate(LocalDate.parse(requestBody.get("t_date").toString()));
-            transaction.setImporter(countryRepository.findById(requestBody.get("importer_code").toString()).orElseThrow(null));
-            transaction.setExporter(countryRepository.findById(requestBody.get("hs6code").toString()).orElseThrow());
+            transaction.setImporter(countryRepository.findById(requestBody.get("importer_code").toString()).orElseThrow());
+            transaction.setProduct(productRepository.findById(requestBody.get("hs6code").toString()).orElseThrow());
             transaction.setTradeOriginal(new BigDecimal(requestBody.get("trade_original").toString()));
             transaction.setTradeFinal(new BigDecimal(requestBody.get("trade_final").toString()));
-            
+
             // Optional fields
             if (requestBody.containsKey("exporter_code") && requestBody.get("exporter_code") != null) {
-                transaction.setExporter(countryRepository.findById(requestBody.get("hs6code").toString()).orElseThrow());
+                transaction.setExporter(countryRepository.findById(requestBody.get("exporter_code").toString()).orElseThrow());
             }
             if (requestBody.containsKey("net_weight") && requestBody.get("net_weight") != null) {
                 transaction.setNetWeight(new BigDecimal(requestBody.get("net_weight").toString()));
