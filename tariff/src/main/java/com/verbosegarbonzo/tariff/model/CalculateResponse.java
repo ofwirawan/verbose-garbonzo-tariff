@@ -25,7 +25,8 @@ public class CalculateResponse {
 
     private BigDecimal tradeOriginal;
     private BigDecimal tradeFinal;   //after duty applied
-    private BigDecimal netWeight;    
+    private BigDecimal netWeight;
 
     private JsonNode appliedRate;
+    private String warning;  // Optional warning message for user
 }

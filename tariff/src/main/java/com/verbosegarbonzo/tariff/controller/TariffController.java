@@ -4,6 +4,7 @@ import com.verbosegarbonzo.tariff.model.CalculateRequest;
 import com.verbosegarbonzo.tariff.model.CalculateResponse;
 import com.verbosegarbonzo.tariff.service.TariffService;
 import com.verbosegarbonzo.tariff.exception.RateNotFoundException;
+import com.verbosegarbonzo.tariff.exception.InvalidRequestException;
 
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
@@ -34,6 +35,11 @@ public class TariffController {
     @ExceptionHandler(RateNotFoundException.class)
     public ResponseEntity<?> handleNotFound(RateNotFoundException ex) {
         return ResponseEntity.status(404).body(new ErrorPayload("RATE_NOT_FOUND", ex.getMessage()));
+    }
+
+    @ExceptionHandler(InvalidRequestException.class)
+    public ResponseEntity<?> handleInvalidRequest(InvalidRequestException ex) {
+        return ResponseEntity.status(400).body(new ErrorPayload("INVALID_REQUEST", ex.getMessage()));
     }
 
     record ErrorPayload(String error, String message) {}

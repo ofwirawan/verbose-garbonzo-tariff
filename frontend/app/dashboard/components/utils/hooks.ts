@@ -17,6 +17,7 @@ import {
   MissingRateYear,
   TariffCalculationResult,
 } from "@/app/dashboard/components/utils/types";
+import { calculateFreightCost } from "@/lib/freightos";
 
 const REFRESH_INTERVAL = 30000; // 30 seconds
 
@@ -75,6 +76,7 @@ export function useTariffCalculation() {
     []
   );
   const [hasError, setHasError] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string>("");
 
   // Helper function to format date without timezone conversion
   const formatDateForBackend = (date: Date): string => {
@@ -91,6 +93,11 @@ export function useTariffCalculation() {
     tradeValue: string;
     netWeight: string;
     transactionDate: Date;
+    includeFreight?: boolean;
+    freightMode?: 'air' | 'ocean' | 'express';
+    // Optional: pass full country objects for freight city lookup
+    importingCountryObj?: Country;
+    exportingCountryObj?: Country;
   }) => {
     const {
       importingCountry,
@@ -99,6 +106,10 @@ export function useTariffCalculation() {
       tradeValue,
       netWeight,
       transactionDate,
+      includeFreight,
+      freightMode,
+      importingCountryObj,
+      exportingCountryObj,
     } = params;
 
     if (!importingCountry || !tradeValue) {
@@ -110,6 +121,7 @@ export function useTariffCalculation() {
 
     try {
       setHasError(false);
+      setErrorMessage("");
       setCalculationResult(null);
       setMissingRateYears([]);
 
@@ -122,6 +134,35 @@ export function useTariffCalculation() {
         netWeight: netWeight ? Number(netWeight) : null,
         transactionDate: formatDateForBackend(transactionDate), // Use local date formatting
       });
+
+      // Calculate freight costs if requested and weight is available
+      if (includeFreight && exportingCountry && netWeight) {
+        try {
+          // Pass country objects if available, otherwise pass country codes
+          const freightQuote = await calculateFreightCost(
+            exportingCountryObj || exportingCountry,
+            importingCountryObj || importingCountry,
+            Number(netWeight),
+            freightMode || 'air'
+          );
+
+          if (freightQuote.success && freightQuote.data) {
+            // Add freight data to result
+            result.freightCost = freightQuote.data.avgCost;
+            result.freightCostMin = freightQuote.data.minCost;
+            result.freightCostMax = freightQuote.data.maxCost;
+            result.freightMode = freightMode || 'air';
+            result.transitDays = freightQuote.data.transitDays;
+            result.totalLandedCost = result.tradeFinal + freightQuote.data.avgCost;
+          } else {
+            console.warn('Freight calculation failed:', freightQuote.error);
+            // Don't fail the entire calculation, just skip freight
+          }
+        } catch (freightError) {
+          console.error('Error calculating freight:', freightError);
+          // Continue with tariff calculation even if freight fails
+        }
+      }
 
       // Store the calculation result
       setCalculationResult(result);
@@ -166,6 +207,15 @@ export function useTariffCalculation() {
     } catch (error) {
       console.error("Error calculating tariff:", error);
       setHasError(true);
+
+      // Extract meaningful error message from backend
+      if (error instanceof Error) {
+        setErrorMessage(error.message);
+      } else if (typeof error === "string") {
+        setErrorMessage(error);
+      } else {
+        setErrorMessage("Unable to calculate tariff for this transaction.");
+      }
     } finally {
       setIsCalculating(false);
     }
@@ -178,6 +228,7 @@ export function useTariffCalculation() {
     suspensionNote,
     missingRateYears,
     hasError,
+    errorMessage,
     calculateTariff: calculateTariffData,
   };
 }

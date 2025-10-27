@@ -21,340 +21,445 @@ interface CalculationResultsProps {
   suspensionNote: string | null;
 }
 
+export function CalculationResultsSkeleton() {
+  return (
+    <div className="mt-6 pt-6 border-t border-gray-200">
+      <div className="mt-8 space-y-4 animate-pulse">
+        {/* Cost Summary Skeleton */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {[...Array(3)].map((_, i) => (
+            <div
+              key={i}
+              className="bg-gray-50 p-6 rounded-lg border border-gray-200"
+            >
+              <div className="h-3 w-24 bg-gray-200 rounded mb-3"></div>
+              <div className="h-8 w-32 bg-gray-200 rounded mb-2"></div>
+              <div className="h-3 w-20 bg-gray-200 rounded"></div>
+            </div>
+          ))}
+        </div>
+
+        {/* Details Skeleton */}
+        <div className="bg-gray-50 p-6 rounded-lg border border-gray-200">
+          <div className="h-4 w-32 bg-gray-200 rounded mb-4"></div>
+          <div className="space-y-3">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="flex justify-between">
+                <div className="h-3 w-24 bg-gray-200 rounded"></div>
+                <div className="h-3 w-32 bg-gray-200 rounded"></div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function CalculationResults({
   result,
   suspensionNote,
 }: CalculationResultsProps) {
+  const hasFreightData =
+    result.freightCost !== undefined && result.freightCost > 0;
+  const dutyAmount = Number(result.tradeFinal) - Number(result.tradeOriginal);
+
   return (
-    <div className="mt-8 p-6 rounded-lg bg-white border border-gray-200">
-      <ResultHeader result={result} />
-      <SuspensionNotice result={result} />
-      <ResultSummaryCards result={result} />
-      <RateDetails result={result} suspensionNote={suspensionNote} />
-      <TransactionInfo result={result} />
-      <ChartLegend result={result} />
+    <div className="mt-8 space-y-6">
+      {/* Main Cost Summary - Always Visible */}
+      <CostSummary
+        result={result}
+        dutyAmount={dutyAmount}
+        hasFreightData={hasFreightData}
+      />
+
+      {/* Collapsible Details Section */}
+      <DetailsSection
+        result={result}
+        suspensionNote={suspensionNote}
+        hasFreightData={hasFreightData}
+      />
+
+      {/* Save Button */}
+      <SaveHistoryButton result={result} />
     </div>
   );
 }
 
-function ResultHeader({ result }: { result: TariffCalculationResult }) {
-  return (
-    <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gray-200">
-      <h3 className="text-xl font-bold text-gray-900">Calculation Results</h3>
-      {result.suspensionActive === true && (
-        <span className="bg-gray-900 text-white text-xs font-medium px-3 py-1 rounded uppercase tracking-wide">
-          Suspension Active
-        </span>
-      )}
-      {result.suspensionActive === false && (
-        <span className="bg-gray-400 text-white text-xs font-medium px-3 py-1 rounded uppercase tracking-wide">
-          Suspension Inactive
-        </span>
-      )}
-    </div>
-  );
-}
-
-function SuspensionNotice({ result }: { result: TariffCalculationResult }) {
-  if (result.suspensionActive === true) {
-    return (
-      <div className="mb-6 p-4 bg-gray-50 border-l-4 border-gray-900 rounded">
-        <p className="text-sm text-gray-900">
-          <strong>Tariff Suspension Active:</strong> This trade relationship has
-          an active tariff suspension, meaning no duties are charged on this
-          product from the specified exporter to importer.
-        </p>
-        {result.suspensionNote && (
-          <p className="text-sm text-gray-600 mt-2 italic">
-            {result.suspensionNote}
-          </p>
-        )}
-      </div>
-    );
-  }
-
-  if (result.suspensionActive === false) {
-    return (
-      <div className="mb-6 p-4 bg-gray-50 border-l-4 border-gray-400 rounded">
-        <p className="text-sm text-gray-900">
-          <strong>Historical Suspension Record:</strong> This trade relationship
-          had a tariff suspension in the past, but it is currently inactive or
-          expired. No tariff rate data is available.
-        </p>
-        {result.suspensionNote && (
-          <p className="text-sm text-gray-600 mt-2 italic">
-            {result.suspensionNote}
-          </p>
-        )}
-      </div>
-    );
-  }
-
-  return null;
-}
-
-function ResultSummaryCards({
+function CostSummary({
   result,
+  dutyAmount,
+  hasFreightData,
 }: {
   result: TariffCalculationResult;
+  dutyAmount: number;
+  hasFreightData: boolean;
 }) {
   const appliedRate = result.appliedRate || {};
-
-  return (
-    <div className="grid gap-4 mb-6 grid-cols-2 md:grid-cols-4">
-      <AppliedRateCard appliedRate={appliedRate} />
-      <div className="bg-gray-50 p-5 rounded-lg border border-gray-200">
-        <div className="text-xs text-gray-500 uppercase tracking-wide font-medium mb-2">
-          Original Trade Value
-        </div>
-        <div className="text-2xl font-bold text-gray-900">
-          ${Number(result.tradeOriginal).toLocaleString()}
-        </div>
-      </div>
-      <DutyAmountCard result={result} />
-      <div className="bg-gray-50 p-5 rounded-lg border border-gray-200">
-        <div className="text-xs text-gray-500 uppercase tracking-wide font-medium mb-2">
-          Final Amount
-        </div>
-        <div className="text-2xl font-bold text-gray-900">
-          $
-          {Number(result.tradeFinal).toLocaleString("en-US", {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-          })}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function AppliedRateCard({
-  appliedRate,
-}: {
-  appliedRate: TariffCalculationResult["appliedRate"];
-}) {
-  const getRate = () => {
-    if (appliedRate?.suspension !== undefined) {
-      return Number(appliedRate.suspension).toFixed(2);
-    }
-    if (appliedRate?.prefAdval !== undefined) {
-      return Number(appliedRate.prefAdval).toFixed(2);
-    }
-    if (appliedRate?.mfnAdval !== undefined) {
-      return Number(appliedRate.mfnAdval).toFixed(2);
-    }
-    if (appliedRate?.specific !== undefined) {
-      return `$${Number(appliedRate.specific).toFixed(2)}/kg`;
-    }
-    return "N/A";
+  const getRateInfo = () => {
+    if (appliedRate.suspension !== undefined)
+      return { rate: appliedRate.suspension, type: "Suspended" };
+    if (appliedRate.prefAdval !== undefined)
+      return { rate: appliedRate.prefAdval, type: "Preferential (FTA)" };
+    if (appliedRate.mfnAdval !== undefined)
+      return { rate: appliedRate.mfnAdval, type: "MFN Standard" };
+    return { rate: 0, type: "No Rate" };
   };
 
-  const getLabel = () => {
-    if (appliedRate?.suspension !== undefined) return "Suspended";
-    if (appliedRate?.prefAdval !== undefined) return "Preferential (FTA)";
-    if (
-      appliedRate?.mfnAdval !== undefined &&
-      appliedRate?.specific !== undefined
-    )
-      return "Compound (MFN+Specific)";
-    if (appliedRate?.mfnAdval !== undefined) return "MFN (Standard)";
-    if (appliedRate?.specific !== undefined) return "Specific Duty";
-    return "See Rate Details";
-  };
+  const rateInfo = getRateInfo();
+  const totalCost = hasFreightData
+    ? Number(result.totalLandedCost)
+    : Number(result.tradeFinal);
 
   const isPercentage = appliedRate?.suspension !== undefined ||
                        appliedRate?.prefAdval !== undefined ||
                        appliedRate?.mfnAdval !== undefined;
 
   return (
-    <div className="bg-gray-50 p-5 rounded-lg border border-gray-200">
-      <div className="text-xs text-gray-500 uppercase tracking-wide font-medium mb-2">
-        Applied Rate
+    <div className="space-y-4">
+      {/* Visual Cost Breakdown Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {/* Trade Value Card */}
+        <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-5 md:p-6">
+          <div className="flex items-start justify-between mb-2">
+            <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+              Trade Value
+            </div>
+          </div>
+          <div className="text-lg sm:text-2xl font-bold text-gray-900 break-words">
+            $
+            {Number(result.tradeOriginal).toLocaleString("en-US", {
+              minimumFractionDigits: 2,
+            })}
+          </div>
+          <div className="text-xs text-gray-500 mt-1">
+            Base transaction value
+          </div>
+        </div>
+
+        {/* Tariff Duty Card */}
+        <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-5 md:p-6">
+          <div className="flex items-start justify-between mb-2">
+            <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+              Tariff Duty
+            </div>
+            {result.suspensionActive === true && (
+              <span className="bg-black text-white text-[10px] font-bold px-2 py-0.5 rounded uppercase">
+                Suspended
+              </span>
+            )}
+          </div>
+          <div className="text-lg sm:text-2xl font-bold text-gray-900 break-words">
+            ${dutyAmount.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+          </div>
+          <div className="text-xs text-gray-500 mt-1">
+            {rateInfo.rate.toFixed(2)}% · {rateInfo.type}
+          </div>
+        </div>
+
+        {/* Freight Card (if applicable) */}
+        {hasFreightData ? (
+          <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-5 md:p-6">
+            <div className="flex items-start justify-between mb-2">
+              <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                Freight Cost
+              </div>
+            </div>
+            <div className="text-lg sm:text-2xl font-bold text-gray-900 break-words">
+              $
+              {Number(result.freightCost).toLocaleString("en-US", {
+                minimumFractionDigits: 2,
+              })}
+            </div>
+            <div className="text-xs text-gray-500 mt-1">
+              {result.freightMode === "air"
+                ? "Air Freight"
+                : result.freightMode === "ocean"
+                ? "Ocean Freight"
+                : "Express Delivery"}
+              {result.transitDays && ` · ${result.transitDays} days`}
+            </div>
+          </div>
+        ) : (
+          <div className="bg-gray-50 rounded-lg border border-dashed border-gray-300 p-4 sm:p-5 md:p-6 flex items-center justify-center">
+            <div className="text-center">
+              <svg
+                className="w-8 h-8 text-gray-300 mx-auto mb-2"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                />
+              </svg>
+              <div className="text-xs text-gray-400">
+                No freight data available for this route
+              </div>
+            </div>
+          </div>
+        )}
       </div>
-      <div className="text-2xl font-bold text-gray-900">
-        {isPercentage ? `${getRate()}%` : getRate()}
+
+      {/* Total Landed Cost - Prominent Display */}
+      <div className="bg-gray-100 rounded-lg p-4 sm:p-5 md:p-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <div className="text-sm font-medium text-black uppercase tracking-wide mb-1">
+              Total Landed Cost
+            </div>
+            <div className="text-xs text-black break-words">
+              {result.hs6} · {result.importerCode} ←{" "}
+              {result.exporterCode || "—"}
+            </div>
+          </div>
+          <div className="sm:text-right">
+            <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-black break-words">
+              ${totalCost.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+            </div>
+            {hasFreightData &&
+              result.freightCostMin &&
+              result.freightCostMax && (
+                <div className="text-xs text-gray-400 mt-1">
+                  Freight range: $
+                  {Number(result.freightCostMin).toLocaleString("en-US", {
+                    maximumFractionDigits: 0,
+                  })}
+                  -$
+                  {Number(result.freightCostMax).toLocaleString("en-US", {
+                    maximumFractionDigits: 0,
+                  })}
+                </div>
+              )}
+          </div>
+        </div>
       </div>
-      <div className="text-xs text-gray-600 mt-1 font-medium">{getLabel()}</div>
     </div>
   );
 }
 
-function DutyAmountCard({ result }: { result: TariffCalculationResult }) {
-  const dutyAmount = Number(result.tradeFinal) - Number(result.tradeOriginal);
-  const appliedRate = result.appliedRate || {};
-
-  const getDutyLabel = () => {
-    if (dutyAmount === 0 && appliedRate.suspension !== undefined) {
-      return (
-        <div className="text-xs text-gray-600 mt-1 font-medium">
-          No duty - Suspended
-        </div>
-      );
-    }
-    if (dutyAmount === 0 && appliedRate.prefAdval !== undefined) {
-      return (
-        <div className="text-xs text-gray-600 mt-1 font-medium">
-          No duty - FTA
-        </div>
-      );
-    }
-    if (dutyAmount > 0 && appliedRate.prefAdval !== undefined) {
-      return (
-        <div className="text-xs text-gray-600 mt-1 font-medium">
-          Reduced - FTA
-        </div>
-      );
-    }
-    return null;
-  };
-
-  return (
-    <div className="bg-gray-50 p-5 rounded-lg border border-gray-200">
-      <div className="text-xs text-gray-500 uppercase tracking-wide font-medium mb-2">
-        Duty Amount
-      </div>
-      <div className="text-2xl font-bold text-gray-900">
-        $
-        {dutyAmount.toLocaleString("en-US", {
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2,
-        })}
-      </div>
-      {getDutyLabel()}
-    </div>
-  );
-}
-
-function RateDetails({
+function DetailsSection({
   result,
   suspensionNote,
+  hasFreightData,
 }: {
   result: TariffCalculationResult;
   suspensionNote: string | null;
+  hasFreightData: boolean;
 }) {
+  const [isExpanded, setIsExpanded] = useState(false);
   const appliedRate = result.appliedRate || {};
 
   return (
-    <div className="p-5 bg-gray-50 rounded-lg border border-gray-200">
-      <h4 className="font-bold text-gray-900 mb-4 text-sm uppercase tracking-wide">
-        Rate Details
-      </h4>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-        {appliedRate.suspension !== undefined && (
-          <div className="bg-white p-4 rounded-lg border border-gray-200">
-            <div className="text-xs text-gray-500 uppercase tracking-wide mb-1">
-              Suspension Rate
-            </div>
-            <div className="font-bold text-gray-900 text-lg">
-              {Number(appliedRate.suspension).toFixed(2)}%
-            </div>
-            <div className="text-xs text-gray-600 mt-2">Tariff suspended</div>
-          </div>
-        )}
-        {appliedRate.prefAdval !== undefined && (
-          <div className="bg-white p-4 rounded-lg border border-gray-200">
-            <div className="text-xs text-gray-500 uppercase tracking-wide mb-1">
-              Preferential Rate
-            </div>
-            <div className="font-bold text-gray-900 text-lg">
-              {Number(appliedRate.prefAdval).toFixed(2)}%
-            </div>
-            <div className="text-xs text-gray-600 mt-2">
-              From trade agreement between {result.importerCode} and{" "}
-              {result.exporterCode}
-            </div>
-          </div>
-        )}
-        {appliedRate.mfnAdval !== undefined && (
-          <div className="bg-white p-4 rounded-lg border border-gray-200">
-            <div className="text-xs text-gray-500 uppercase tracking-wide mb-1">
-              MFN Ad-valorem
-            </div>
-            <div className="font-bold text-gray-900 text-lg">
-              {Number(appliedRate.mfnAdval).toFixed(2)}%
-            </div>
-            <div className="text-xs text-gray-600 mt-2">Standard MFN rate</div>
-          </div>
-        )}
-        {appliedRate.specific !== undefined && (
-          <div className="bg-white p-4 rounded-lg border border-gray-200">
-            <div className="text-xs text-gray-500 uppercase tracking-wide mb-1">
-              Specific Duty
-            </div>
-            <div className="font-bold text-gray-900 text-lg">
-              ${Number(appliedRate.specific).toFixed(2)}/kg
-            </div>
-            <div className="text-xs text-gray-600 mt-2">Per kilogram rate</div>
-          </div>
-        )}
-      </div>
-      {suspensionNote && (
-        <div className="mt-4 pt-4 border-t border-gray-200">
-          <span className="text-xs text-gray-500 uppercase tracking-wide font-medium">
-            Note:
+    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+      {/* Collapsible Header */}
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors border-b border-gray-100"
+      >
+        <div className="flex items-center gap-2">
+          <h4 className="text-sm font-semibold text-gray-900">
+            Transaction Details
+          </h4>
+        </div>
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-gray-500">
+            {isExpanded ? "Hide details" : "View details"}
           </span>
-          <p className="mt-2 text-sm text-gray-700 italic">{suspensionNote}</p>
+          <svg
+            className={`w-5 h-5 text-gray-400 transition-transform ${
+              isExpanded ? "rotate-180" : ""
+            }`}
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M19 9l-7 7-7-7"
+            />
+          </svg>
+        </div>
+      </button>
+
+      {/* Expandable Content */}
+      {isExpanded && (
+        <div className="p-4 sm:p-5 md:p-6 space-y-6 bg-gray-50">
+          {/* Transaction Info Section */}
+          <div className="bg-white rounded-lg p-4 sm:p-5 md:p-6 border border-gray-200">
+            <h5 className="text-xs font-bold text-gray-700 uppercase tracking-wide mb-4 flex items-center gap-2">
+              Transaction Information
+            </h5>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <InfoItem label="Product Code" value={result.hs6} />
+              <InfoItem
+                label="Transaction Date"
+                value={result.transactionDate}
+              />
+              <InfoItem label="Importing Country" value={result.importerCode} />
+              <InfoItem
+                label="Exporting Country"
+                value={result.exporterCode || "—"}
+              />
+            </div>
+            <div className="mt-4 pt-4 border-t border-gray-100">
+              <p className="text-xs text-gray-500">
+                <span className="font-semibold">Transaction ID:</span>{" "}
+                <span className="font-mono">{result.transactionId}</span>
+              </p>
+            </div>
+          </div>
+
+          {/* Rate Details Section */}
+          {(appliedRate.mfnAdval !== undefined ||
+            appliedRate.prefAdval !== undefined ||
+            appliedRate.specific !== undefined) && (
+            <div className="bg-white rounded-lg p-4 sm:p-5 md:p-6 border border-gray-200">
+              <h5 className="text-xs font-bold text-gray-700 uppercase tracking-wide mb-4 flex items-center gap-2">
+                Tariff Rate Breakdown
+              </h5>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {appliedRate.prefAdval !== undefined && (
+                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                    <div className="text-xs text-gray-600 font-medium mb-1">
+                      Preferential Rate (FTA)
+                    </div>
+                    <div className="text-lg sm:text-2xl font-bold text-gray-900">
+                      {appliedRate.prefAdval.toFixed(2)}%
+                    </div>
+                  </div>
+                )}
+                {appliedRate.mfnAdval !== undefined && (
+                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                    <div className="text-xs text-gray-600 font-medium mb-1">
+                      MFN Ad-valorem
+                    </div>
+                    <div className="text-lg sm:text-2xl font-bold text-gray-900">
+                      {appliedRate.mfnAdval.toFixed(2)}%
+                    </div>
+                  </div>
+                )}
+                {appliedRate.specific !== undefined && (
+                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                    <div className="text-xs text-gray-600 font-medium mb-1">
+                      Specific Duty
+                    </div>
+                    <div className="text-lg sm:text-2xl font-bold text-gray-900">
+                      ${appliedRate.specific.toFixed(2)}/kg
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Freight Details Section */}
+          {hasFreightData && (
+            <div className="bg-white rounded-lg p-4 sm:p-5 md:p-6 border border-gray-200">
+              <h5 className="text-xs font-bold text-gray-700 uppercase tracking-wide mb-4 flex items-center gap-2">
+                Shipping Information
+              </h5>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <InfoItem
+                  label="Shipping Method"
+                  value={
+                    result.freightMode === "air"
+                      ? "Air Freight"
+                      : result.freightMode === "ocean"
+                      ? "Ocean Freight"
+                      : "Express Courier"
+                  }
+                />
+                <InfoItem
+                  label="Cost Range"
+                  value={
+                    result.freightCostMin && result.freightCostMax
+                      ? `$${Number(result.freightCostMin).toLocaleString(
+                          "en-US",
+                          { maximumFractionDigits: 0 }
+                        )}-$${Number(result.freightCostMax).toLocaleString(
+                          "en-US",
+                          { maximumFractionDigits: 0 }
+                        )}`
+                      : "—"
+                  }
+                />
+                <InfoItem
+                  label="Transit Time"
+                  value={
+                    result.transitDays ? `${result.transitDays} days` : "—"
+                  }
+                />
+                <InfoItem
+                  label="Shipment Weight"
+                  value={result.netWeight ? `${result.netWeight} kg` : "—"}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Suspension Note */}
+          {suspensionNote && (
+            <div className="bg-black rounded-lg p-4 sm:p-5 md:p-6 border-l-4 border-white">
+              <div className="flex items-start gap-3">
+                <svg
+                  className="w-5 h-5 text-white mt-0.5 flex-shrink-0"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+                <div>
+                  <p className="text-xs font-bold text-white uppercase tracking-wide mb-2">
+                    Tariff Suspension Notice
+                  </p>
+                  <p className="text-sm text-gray-300 leading-relaxed">
+                    {suspensionNote}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
   );
 }
 
-function TransactionInfo({ result }: { result: TariffCalculationResult }) {
+function InfoItem({ label, value }: { label: string; value: string }) {
   return (
-    <div className="mt-6 pt-6 border-t border-gray-200">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
-        <div>
-          <div className="text-xs text-gray-500 uppercase tracking-wide font-medium mb-1">
-            Product
-          </div>
-          <div className="text-gray-900 font-medium">{result.hs6}</div>
-        </div>
-        <div>
-          <div className="text-xs text-gray-500 uppercase tracking-wide font-medium mb-1">
-            Transaction Date
-          </div>
-          <div className="text-gray-900 font-medium">
-            {result.transactionDate}
-          </div>
-        </div>
-        <div>
-          <div className="text-xs text-gray-500 uppercase tracking-wide font-medium mb-1">
-            Importer
-          </div>
-          <div className="text-gray-900 font-medium">{result.importerCode}</div>
-        </div>
-        <div>
-          <div className="text-xs text-gray-500 uppercase tracking-wide font-medium mb-1">
-            Exporter
-          </div>
-          <div className="text-gray-900 font-medium">
-            {result.exporterCode || "Not specified"}
-          </div>
-        </div>
-      </div>
-      <div className="mt-4 text-xs text-gray-500">
-        <span className="font-medium">Transaction ID:</span>{" "}
-        {result.transactionId}
+    <div>
+      <div className="text-xs text-gray-500 font-medium mb-1">{label}</div>
+      <div className="text-sm text-gray-900 font-semibold break-words">
+        {value}
       </div>
     </div>
   );
 }
 
-function ChartLegend({ result }: { result: TariffCalculationResult }) {
+function SaveHistoryButton({ result }: { result: TariffCalculationResult }) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [canSaveHistory, setCanSaveHistory] = useState(true);
-  const appliedRate = result.appliedRate || {};
 
   async function handleSaveHistory() {
     if (!result) return;
 
     try {
-      // Use the transaction date from the result instead of today's date
-      const formattedDate = result.transactionDate; // This is already in YYYY-MM-DD format
+      const appliedRate = result.appliedRate || {};
 
       const requestBody = {
-        t_date: formattedDate,
+        t_date: result.transactionDate,
         importer_code: result.importerCode,
         exporter_code: result.exporterCode,
         hs6code: result.hs6,
@@ -373,7 +478,6 @@ function ChartLegend({ result }: { result: TariffCalculationResult }) {
       });
 
       const data = await response.json();
-      console.log(data);
 
       if (!response.ok) {
         throw new Error(
@@ -395,123 +499,30 @@ function ChartLegend({ result }: { result: TariffCalculationResult }) {
     }
   }
 
-  const isSuspended = appliedRate.suspension !== undefined;
-  const isPreferential = appliedRate.prefAdval !== undefined;
-  const isMFN = appliedRate.mfnAdval !== undefined;
-  const isSpecific = appliedRate.specific !== undefined;
-
   return (
     <>
-      <div className="mt-6 pt-6 border-t border-gray-200">
-        <h5 className="text-xs font-bold text-gray-900 mb-3 uppercase tracking-wide">
-          Rate Types Applied
-        </h5>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
-          <div
-            className={`flex items-center gap-2 p-2 rounded border transition-all ${
-              isSuspended
-                ? "bg-gray-700 border-gray-700 shadow-md"
-                : "bg-gray-50 border-gray-200 opacity-40"
-            }`}
-          >
-            <div
-              className={`w-2 h-2 border-2 rounded-full flex-shrink-0 ${
-                isSuspended ? "border-white" : "border-gray-400"
-              }`}
-            ></div>
-            <span
-              className={`font-medium ${
-                isSuspended ? "text-white" : "text-gray-500"
-              }`}
-            >
-              Suspended
-            </span>
-          </div>
-          <div
-            className={`flex items-center gap-2 p-2 rounded border transition-all ${
-              isPreferential
-                ? "bg-gray-700 border-gray-700 shadow-md"
-                : "bg-gray-50 border-gray-200 opacity-40"
-            }`}
-          >
-            <div
-              className={`w-2 h-2 border-2 rounded-full flex-shrink-0 ${
-                isPreferential ? "border-white" : "border-gray-400"
-              }`}
-            ></div>
-            <span
-              className={`font-medium ${
-                isPreferential ? "text-white" : "text-gray-500"
-              }`}
-            >
-              Preferential (FTA)
-            </span>
-          </div>
-          <div
-            className={`flex items-center gap-2 p-2 rounded border transition-all ${
-              isMFN
-                ? "bg-gray-700 border-gray-700 shadow-md"
-                : "bg-gray-50 border-gray-200 opacity-40"
-            }`}
-          >
-            <div
-              className={`w-2 h-2 border-2 rounded-full flex-shrink-0 ${
-                isMFN ? "border-white" : "border-gray-400"
-              }`}
-            ></div>
-            <span
-              className={`font-medium ${
-                isMFN ? "text-white" : "text-gray-500"
-              }`}
-            >
-              MFN (Standard)
-            </span>
-          </div>
-          <div
-            className={`flex items-center gap-2 p-2 rounded border transition-all ${
-              isSpecific
-                ? "bg-gray-700 border-gray-700 shadow-md"
-                : "bg-gray-50 border-gray-200 opacity-40"
-            }`}
-          >
-            <div
-              className={`w-2 h-2 border-2 rounded-full flex-shrink-0 ${
-                isSpecific ? "border-white" : "border-gray-400"
-              }`}
-            ></div>
-            <span
-              className={`font-medium ${
-                isSpecific ? "text-white" : "text-gray-500"
-              }`}
-            >
-              Specific Duty
-            </span>
-          </div>
-        </div>
-        <div className="mt-6 flex justify-end">
-          <Button
-            onClick={() => setIsDialogOpen(true)}
-            disabled={!canSaveHistory}
-            className="w-full sm:w-auto bg-black text-white hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed h-10 px-6 font-semibold text-sm uppercase tracking-wide transition-all duration-200"
-          >
-            Save History
-          </Button>
-        </div>
+      <div className="flex justify-end">
+        <Button
+          onClick={() => setIsDialogOpen(true)}
+          disabled={!canSaveHistory}
+          className="bg-black text-white hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed px-6 py-2 font-semibold text-sm uppercase tracking-wide"
+        >
+          Save to History
+        </Button>
       </div>
 
       <AlertDialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Confirm Save</AlertDialogTitle>
+            <AlertDialogTitle>Save Calculation</AlertDialogTitle>
             <AlertDialogDescription>
-              You are about to save this calculation to history. Are you sure
-              you want to continue?
+              Save this tariff calculation to your history for future reference?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleSaveHistory}>
-              Yes, Save it
+              Save
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
