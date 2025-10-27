@@ -1,6 +1,9 @@
 #!/bin/bash
 set -e
 
+# Store the project root directory
+PROJECT_ROOT=$(pwd)
+
 echo "================================"
 echo "Setting up Java..."
 echo "================================"
@@ -22,6 +25,9 @@ if ! command -v java &> /dev/null; then
 
     echo "Java installed at: $JAVA_HOME"
     $JAVA_HOME/bin/java -version
+
+    # Return to project root
+    cd $PROJECT_ROOT
 else
     echo "Java is available"
     java -version
@@ -31,18 +37,18 @@ echo ""
 echo "================================"
 echo "Building backend..."
 echo "================================"
-cd tariff
+cd $PROJECT_ROOT/tariff
 ./mvnw clean package -DskipTests
-cd ..
+cd $PROJECT_ROOT
 
 echo ""
 echo "================================"
 echo "Building frontend..."
 echo "================================"
-cd frontend
+cd $PROJECT_ROOT/frontend
 bun install
 bun run build
-cd ..
+cd $PROJECT_ROOT
 
 echo ""
 echo "================================"
