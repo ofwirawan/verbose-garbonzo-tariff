@@ -1,7 +1,6 @@
 #!/bin/bash
 set -e
 
-# Set JAVA_HOME for Render
 export JAVA_HOME=/usr/lib/jvm/java-21-openjdk
 export PATH=$JAVA_HOME/bin:$PATH
 
