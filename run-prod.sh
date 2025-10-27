@@ -1,9 +1,19 @@
 #!/bin/bash
 set -e
 
-# Set JAVA_HOME if Java was downloaded during build
-export JAVA_HOME=${JAVA_HOME:-$HOME/.java/jdk-21.0.1+12}
-export PATH=$JAVA_HOME/bin:$PATH
+# Source Java environment if it was downloaded during build
+if [ -f $HOME/.java_env.sh ]; then
+    echo "Loading Java environment..."
+    source $HOME/.java_env.sh
+else
+    # Fallback to checking standard locations
+    export JAVA_HOME=${JAVA_HOME:-$HOME/.java/jdk-21.0.1+12}
+    export PATH=$JAVA_HOME/bin:$PATH
+fi
+
+echo "JAVA_HOME: $JAVA_HOME"
+echo "PATH: $PATH"
+java -version
 
 echo ""
 echo "================================"

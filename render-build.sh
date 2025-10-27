@@ -12,9 +12,16 @@ if ! command -v java &> /dev/null; then
     cd $HOME/.java
     wget https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.1%2B12/OpenJDK21U-jdk_x64_linux_hotspot_21.0.1_12.tar.gz
     tar -xzf OpenJDK21U-jdk_x64_linux_hotspot_21.0.1_12.tar.gz
-    export JAVA_HOME=$HOME/.java/jdk-21.0.1+12
+    JAVA_HOME=$HOME/.java/jdk-21.0.1+12
+    export JAVA_HOME
     export PATH=$JAVA_HOME/bin:$PATH
-    cd -
+
+    # Save JAVA_HOME to a file for the start script
+    echo "export JAVA_HOME=$JAVA_HOME" > $HOME/.java_env.sh
+    echo "export PATH=$JAVA_HOME/bin:\$PATH" >> $HOME/.java_env.sh
+
+    echo "Java installed at: $JAVA_HOME"
+    $JAVA_HOME/bin/java -version
 else
     echo "Java is available"
     java -version
