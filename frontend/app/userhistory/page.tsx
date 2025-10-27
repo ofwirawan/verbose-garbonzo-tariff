@@ -6,7 +6,7 @@ import { SiteHeader } from "@/components/site-header"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import { HistoryTable } from "./components/HistoryTable"
 import { HistoryItem, BackendTransaction, transformTransactionToHistoryItem } from "./types"
-import { authenticatedFetch, getToken } from "@/lib/auth"
+import { authenticatedFetch } from "@/lib/auth"
 
 export default function HistoryPage() {
   const [history, setHistory] = useState<HistoryItem[]>([])

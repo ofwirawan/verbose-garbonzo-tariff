@@ -7,6 +7,8 @@ import lombok.*;
 import java.time.LocalDate;
 import java.math.BigDecimal;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.vladmihalcea.hibernate.type.json.JsonType;
 import org.hibernate.annotations.Type;
@@ -17,9 +19,11 @@ import org.hibernate.annotations.Type;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Transaction {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "tid")
     private Integer tid;
 
@@ -30,6 +34,7 @@ public class Transaction {
 
     @Column(name = "t_date", nullable = false)
     @NotNull
+    @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate tDate;
 
     @ManyToOne(fetch = FetchType.LAZY)

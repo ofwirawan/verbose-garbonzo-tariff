@@ -38,24 +38,19 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             token = authHeader.substring(7);
 
-            
             try {
                 username = jwtService.extractUsername(token);
             } catch (Exception e) {
-                System.err.println("❌ JWT Filter Debug - Failed to extract username: " + e.getMessage());
-                e.printStackTrace();
+                // Token extraction failed
             }
-        } else {
-            System.out.println("🔍 JWT Filter Debug - No valid Authorization header found");
         }
 
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            
             try {
                 UserDetails userDetails = userDetailsService.loadUserByUsername(username);
-                
+
                 boolean isTokenValid = jwtService.validateToken(token, userDetails);
-                
+
                 if (isTokenValid) {
                     UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                             userDetails,
@@ -63,24 +58,14 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                             userDetails.getAuthorities());
                     authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(authToken);
-
                 } else {
-                    System.err.println("❌ JWT Filter Debug - Token validation failed for user: " + username);
-                    // Clear any existing authentication
                     SecurityContextHolder.clearContext();
                 }
             } catch (Exception e) {
-                System.err.println("❌ JWT Filter Debug - Authentication error: " + e.getMessage());
-                e.printStackTrace();
                 SecurityContextHolder.clearContext();
             }
-        } else if (username == null) {
-            System.out.println("🔍 JWT Filter Debug - No username extracted from token");
-        } else {
-            System.out.println("🔍 JWT Filter Debug - User already authenticated: " + SecurityContextHolder.getContext().getAuthentication().getName());
         }
 
-        
         filterChain.doFilter(request, response);
         
     }

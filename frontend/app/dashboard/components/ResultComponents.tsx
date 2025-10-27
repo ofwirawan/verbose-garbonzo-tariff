@@ -25,19 +25,11 @@ export function CalculationResults({
   result,
   suspensionNote,
 }: CalculationResultsProps) {
-  const appliedRate = result.appliedRate || {};
-  const hasAppliedRateCard = !(
-    appliedRate.specific !== undefined && appliedRate.mfnAdval === undefined
-  );
-
   return (
     <div className="mt-8 p-6 rounded-lg bg-white border border-gray-200">
       <ResultHeader result={result} />
       <SuspensionNotice result={result} />
-      <ResultSummaryCards
-        result={result}
-        hasAppliedRateCard={hasAppliedRateCard}
-      />
+      <ResultSummaryCards result={result} />
       <RateDetails result={result} suspensionNote={suspensionNote} />
       <TransactionInfo result={result} />
       <ChartLegend result={result} />
@@ -103,22 +95,14 @@ function SuspensionNotice({ result }: { result: TariffCalculationResult }) {
 
 function ResultSummaryCards({
   result,
-  hasAppliedRateCard,
 }: {
   result: TariffCalculationResult;
-  hasAppliedRateCard: boolean;
 }) {
   const appliedRate = result.appliedRate || {};
 
   return (
-    <div
-      className={`grid gap-4 mb-6 ${
-        hasAppliedRateCard
-          ? "grid-cols-2 md:grid-cols-4"
-          : "grid-cols-1 md:grid-cols-3"
-      }`}
-    >
-      {hasAppliedRateCard && <AppliedRateCard appliedRate={appliedRate} />}
+    <div className="grid gap-4 mb-6 grid-cols-2 md:grid-cols-4">
+      <AppliedRateCard appliedRate={appliedRate} />
       <div className="bg-gray-50 p-5 rounded-lg border border-gray-200">
         <div className="text-xs text-gray-500 uppercase tracking-wide font-medium mb-2">
           Original Trade Value
@@ -159,7 +143,10 @@ function AppliedRateCard({
     if (appliedRate?.mfnAdval !== undefined) {
       return Number(appliedRate.mfnAdval).toFixed(2);
     }
-    return "0.00";
+    if (appliedRate?.specific !== undefined) {
+      return `$${Number(appliedRate.specific).toFixed(2)}/kg`;
+    }
+    return "N/A";
   };
 
   const getLabel = () => {
@@ -171,15 +158,22 @@ function AppliedRateCard({
     )
       return "Compound (MFN+Specific)";
     if (appliedRate?.mfnAdval !== undefined) return "MFN (Standard)";
-    return "No Rate";
+    if (appliedRate?.specific !== undefined) return "Specific Duty";
+    return "See Rate Details";
   };
+
+  const isPercentage = appliedRate?.suspension !== undefined ||
+                       appliedRate?.prefAdval !== undefined ||
+                       appliedRate?.mfnAdval !== undefined;
 
   return (
     <div className="bg-gray-50 p-5 rounded-lg border border-gray-200">
       <div className="text-xs text-gray-500 uppercase tracking-wide font-medium mb-2">
         Applied Rate
       </div>
-      <div className="text-2xl font-bold text-gray-900">{getRate()}%</div>
+      <div className="text-2xl font-bold text-gray-900">
+        {isPercentage ? `${getRate()}%` : getRate()}
+      </div>
       <div className="text-xs text-gray-600 mt-1 font-medium">{getLabel()}</div>
     </div>
   );
