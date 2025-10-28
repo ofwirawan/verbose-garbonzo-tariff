@@ -2,86 +2,94 @@ package com.verbosegarbonzo.tariff.service;
 
 import com.verbosegarbonzo.tariff.model.Country;
 import com.verbosegarbonzo.tariff.repository.CountryRepository;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
-import org.xml.sax.InputSource;
-
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import org.w3c.dom.Document;
-import java.io.StringReader;
+import org.springframework.web.util.UriComponentsBuilder;
 
 @Service
 public class FreightService {
 
     @Value("${freight.api.url}")
-    private String freightApiUrl;
+    private String freightApiUrl; // e.g. https://ship.freightos.com/api/shippingCalculator
 
     private final CountryRepository countryRepository;
     private final RestTemplate restTemplate = new RestTemplate();
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     public FreightService(CountryRepository countryRepository) {
         this.countryRepository = countryRepository;
     }
 
     /**
-     * Calculates freight using Freightos city-based API.
-     * Throws exceptions if data is missing or the API fails.
+     * Calculates freight cost using Freightos GET API (JSON mode).
+     * Uses city names stored in the Country entity.
      */
-
     public Double calculateFreight(String mode, String importerCode, String exporterCode, double weight) {
-        // Look up importer/exporter countries
         Country importer = countryRepository.findById(importerCode)
                 .orElseThrow(() -> new IllegalArgumentException("Importer not found: " + importerCode));
         Country exporter = countryRepository.findById(exporterCode)
                 .orElseThrow(() -> new IllegalArgumentException("Exporter not found: " + exporterCode));
 
-        String originCity = exporter.getCity();
-        String destinationCity = importer.getCity();
-
-        if (originCity == null || destinationCity == null) {
-            throw new IllegalStateException("Missing city for exporter/importer in database");
+        if (importer.getCity() == null || exporter.getCity() == null) {
+            throw new IllegalStateException("City missing for importer or exporter in database");
         }
 
-        // Build XML payload
-        String xmlPayload = """
-            <?xml version="1.0" encoding="UTF-8"?>
-            <shippingCalculatorRequest>
-                <origin>%s</origin>
-                <destination>%s</destination>
-                <mode>%s</mode>
-                <weight>%.2f</weight>
-                <weightUnit>kg</weightUnit>
-            </shippingCalculatorRequest>
-            """.formatted(originCity, destinationCity, mode, weight);
+        String origin = exporter.getCity();      // already formatted as “City,Country”
+        String destination = importer.getCity(); // already formatted as “City,Country”
 
         try {
-            // Send request to Freightos
+            // Build query URL
+            String url = UriComponentsBuilder.fromHttpUrl(freightApiUrl)
+                    .queryParam("loadtype", "boxes")
+                    .queryParam("weight", weight)
+                    .queryParam("width", 50)
+                    .queryParam("length", 50)
+                    .queryParam("height", 50)
+                    .queryParam("quantity", 1)
+                    .queryParam("origin", origin)
+                    .queryParam("destination", destination)
+                    .queryParam("mode", mode)
+                    .toUriString();
+
             HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_XML);
-            headers.setAccept(java.util.List.of(MediaType.APPLICATION_XML));
-            HttpEntity<String> request = new HttpEntity<>(xmlPayload, headers);
+            headers.setAccept(java.util.List.of(MediaType.APPLICATION_JSON));
 
-            ResponseEntity<String> response = restTemplate.postForEntity(freightApiUrl, request, String.class);
+            HttpEntity<Void> requestEntity = new HttpEntity<>(headers);
+            ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.GET, requestEntity, String.class);
 
-            String body = response.getBody();
-            if (body == null) {
-                throw new RuntimeException("Empty response from Freight API");
+            if (response.getStatusCode() != HttpStatus.OK || response.getBody() == null) {
+                throw new RuntimeException("Freight API returned status: " + response.getStatusCode());
             }
 
-            // Extract <price> safely using XML parser
-            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-            DocumentBuilder builder = factory.newDocumentBuilder();
-            Document doc = builder.parse(new InputSource(new StringReader(body)));
-            var priceNode = doc.getElementsByTagName("price").item(0);
+            // Parse JSON response
+            JsonNode root = objectMapper.readTree(response.getBody());
+            JsonNode estimated = root.path("response").path("estimatedFreightRates");
 
-            if (priceNode == null) {
-                throw new RuntimeException("Freight API did not return a <price> element. Response: " + body);
+            if (estimated.path("numQuotes").asInt() == 0) {
+                throw new RuntimeException("No freight quotes available for route: " + origin + " → " + destination);
             }
 
-            return Double.parseDouble(priceNode.getTextContent());
+            JsonNode modeNode = estimated.path("mode");
+            // handle array or object
+            if (modeNode.isArray() && modeNode.size() > 0) {
+                modeNode = modeNode.get(0);
+            }
+
+            JsonNode priceNode = modeNode.path("price");
+            JsonNode minNode = priceNode.path("min").path("moneyAmount").path("amount");
+            JsonNode maxNode = priceNode.path("max").path("moneyAmount").path("amount");
+
+            if (minNode.isMissingNode() || maxNode.isMissingNode()) {
+                throw new RuntimeException("Freight API response missing expected price fields");
+            }
+
+            double min = minNode.asDouble();
+            double max = maxNode.asDouble();
+            return (min + max) / 2.0; // average cost between min and max
 
         } catch (Exception e) {
             throw new RuntimeException("Freight service failed: " + e.getMessage(), e);

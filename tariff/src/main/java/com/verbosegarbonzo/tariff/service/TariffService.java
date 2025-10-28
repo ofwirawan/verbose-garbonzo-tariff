@@ -493,7 +493,7 @@ public class TariffService {
 
         try {
             // === FREIGHT CALCULATION ===
-            if (req.isIncludeFreight()) {
+            if (req.isIncludeFreight() && (basisDeclared.equals("CIF") || basisDeclared.equals("CFR"))) {
                 BigDecimal weight = (req.getNetWeight() != null && req.getNetWeight().compareTo(BigDecimal.ZERO) > 0)
                         ? req.getNetWeight()
                         : new BigDecimal("100"); // fallback estimated weight
@@ -523,6 +523,40 @@ public class TariffService {
                         "Freight cost excluded by user, but " + basisDeclared +
                                 " valuation typically requires it.");
                 valuationApplied = "FOB";
+            }
+
+            // === INSURANCE CALCULATION ===
+            if (basisDeclared.equals("CIF")) {
+                // CIF requires insurance
+                insuranceCost = req.getTradeOriginal()
+                        .multiply(insuranceRate)
+                        .divide(BigDecimal.valueOf(100), 2, BigDecimal.ROUND_HALF_UP);
+                totalCost = totalCost.add(insuranceCost);
+
+            } else if (basisDeclared.equals("CFR")) {
+                // CFR includes freight but excludes insurance
+                if (req.isIncludeInsurance()) {
+                    warning = appendWarning(warning,
+                            "Insurance selected by user, but CFR valuation excludes insurance.");
+                }
+                insuranceCost = BigDecimal.ZERO;
+
+            } else if (basisDeclared.equals("FOB")) {
+                // FOB excludes both freight and insurance
+                if (req.isIncludeInsurance()) {
+                    warning = appendWarning(warning,
+                            "Insurance selected by user, but FOB valuation excludes insurance.");
+                }
+                insuranceCost = BigDecimal.ZERO;
+
+            } else {
+                // fallback for unrecognized valuation basis
+                if (req.isIncludeInsurance()) {
+                    insuranceCost = req.getTradeOriginal()
+                            .multiply(insuranceRate)
+                            .divide(BigDecimal.valueOf(100), 2, BigDecimal.ROUND_HALF_UP);
+                    totalCost = totalCost.add(insuranceCost);
+                }
             }
 
         } catch (Exception e) {
