@@ -2,9 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
-export async function POST(request: NextRequest, { params }: { params: { proxy: string[] } }) {
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ proxy: string[] }> }
+) {
   try {
-    const endpoint = params.proxy.join('/');
+    const resolvedParams = await params;
+    const endpoint = resolvedParams.proxy.join('/');
     const backendUrl = `${BACKEND_URL}/${endpoint}`;
 
     console.log(`[API Proxy] POST ${endpoint} -> ${backendUrl}`);
@@ -44,9 +48,13 @@ export async function POST(request: NextRequest, { params }: { params: { proxy: 
   }
 }
 
-export async function GET(request: NextRequest, { params }: { params: { proxy: string[] } }) {
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ proxy: string[] }> }
+) {
   try {
-    const endpoint = params.proxy.join('/');
+    const resolvedParams = await params;
+    const endpoint = resolvedParams.proxy.join('/');
     const backendUrl = `${BACKEND_URL}/${endpoint}`;
 
     const authHeader = request.headers.get('Authorization');
@@ -86,9 +94,13 @@ export async function GET(request: NextRequest, { params }: { params: { proxy: s
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: { proxy: string[] } }) {
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ proxy: string[] }> }
+) {
   try {
-    const endpoint = params.proxy.join('/');
+    const resolvedParams = await params;
+    const endpoint = resolvedParams.proxy.join('/');
     const backendUrl = `${BACKEND_URL}/${endpoint}`;
 
     const authHeader = request.headers.get('Authorization');
