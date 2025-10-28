@@ -5,11 +5,12 @@ const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 export async function POST(request: NextRequest) {
   try {
     const { pathname } = new URL(request.url);
-    const endpoint = pathname.replace('/api/auth/', '');
+    // Remove /api/ prefix to get the endpoint (e.g., "auth/addNewUser" or "auth/generateToken")
+    const endpoint = pathname.replace('/api/', '');
 
     const body = await request.json();
 
-    const backendUrl = `${BACKEND_URL}/auth/${endpoint}`;
+    const backendUrl = `${BACKEND_URL}/${endpoint}`;
 
     console.log(`[Auth Proxy] Proxying POST to: ${backendUrl}`);
 

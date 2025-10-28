@@ -1,4 +1,4 @@
-const API_BASE_URL = "/api/auth";
+const API_BASE_URL = "/api";
 
 export interface LoginCredentials {
   username: string;
