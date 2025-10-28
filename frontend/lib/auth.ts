@@ -16,7 +16,7 @@ export interface RegisterData {
 export async function login(credentials: LoginCredentials): Promise<string> {
   console.log("Login attempt with email:", credentials.username);
 
-  const response = await fetch(`${API_BASE_URL}/auth/generateToken`, {
+  const response = await fetch(`${API_BASE_URL}/auth/token`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -69,7 +69,7 @@ export async function register(data: RegisterData): Promise<string> {
     email: data.email,
   });
 
-  const response = await fetch(`${API_BASE_URL}/auth/addNewUser`, {
+  const response = await fetch(`${API_BASE_URL}/auth/register`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

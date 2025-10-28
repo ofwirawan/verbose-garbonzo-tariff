@@ -25,24 +25,24 @@ public class UserController {
     private final AuthenticationManager authenticationManager;
 
 
-    @GetMapping("/user/userProfile")
-    public String userProfile(@AuthenticationPrincipal org.springframework.security.core.userdetails.User principal){
+    @GetMapping("/profile")
+    public String profile(@AuthenticationPrincipal org.springframework.security.core.userdetails.User principal){
         return principal.getUsername();
     }
 
-    @PostMapping("/addNewUser")
-    public String addNewUser(@RequestBody UserInfo userInfo) {
+    @PostMapping("/register")
+    public String register(@RequestBody UserInfo userInfo) {
         return service.addUser(userInfo);
     }
 
     // Removed the role checks here as they are already managed in SecurityConfig
 
-    @PostMapping("/generateToken")
+    @PostMapping("/token")
     public String authenticateAndGetToken(@RequestBody AuthRequest authRequest) {
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(authRequest.getUsername(), authRequest.getPassword()));
         if (authentication.isAuthenticated()) {
-            return jwtService.generateToken(authRequest.getUsername());
+            return jwtService.token(authRequest.getUsername());
         } else {
             throw new UsernameNotFoundException("Invalid user request!");
         }

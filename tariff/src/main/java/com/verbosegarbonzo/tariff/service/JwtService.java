@@ -29,7 +29,7 @@ public class JwtService {
         JwtService.SECRET = jwtsecret;
     }
 
-    public String generateToken(String email) { // Use email as username
+    public String token(String email) { // Use email as username
         Map<String, Object> claims = new HashMap<>();
         return createToken(claims, email);
     }
