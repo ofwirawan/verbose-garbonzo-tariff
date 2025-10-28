@@ -1,5 +1,6 @@
 package com.verbosegarbonzo.tariff.service;
 
+import com.verbosegarbonzo.tariff.exception.FreightCalculationException;
 import com.verbosegarbonzo.tariff.model.Country;
 import com.verbosegarbonzo.tariff.repository.CountryRepository;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -92,7 +93,7 @@ public class FreightService {
             return (min + max) / 2.0; // average cost between min and max
 
         } catch (Exception e) {
-            throw new RuntimeException("Freight service failed: " + e.getMessage(), e);
+            throw new FreightCalculationException("Freight API call failed: " + e.getMessage(), e);
         }
     }
 }

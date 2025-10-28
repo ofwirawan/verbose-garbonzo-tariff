@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import com.verbosegarbonzo.tariff.exception.RateNotFoundException;
 import com.verbosegarbonzo.tariff.exception.WeightRequiredException;
+import com.verbosegarbonzo.tariff.exception.FreightCalculationException;
 import com.verbosegarbonzo.tariff.exception.InvalidRateException;
 import com.verbosegarbonzo.tariff.exception.InvalidRequestException;
 
