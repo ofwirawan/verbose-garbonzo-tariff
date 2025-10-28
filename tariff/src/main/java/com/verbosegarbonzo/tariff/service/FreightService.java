@@ -1,97 +1,90 @@
 package com.verbosegarbonzo.tariff.service;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.Getter;
-import lombok.Setter;
+import com.verbosegarbonzo.tariff.model.Country;
+import com.verbosegarbonzo.tariff.repository.CountryRepository;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.*;
 import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.client.WebClient;
-import reactor.core.publisher.Mono;
+import org.springframework.web.client.RestTemplate;
+import org.xml.sax.InputSource;
 
-import java.math.BigDecimal;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import org.w3c.dom.Document;
+import java.io.StringReader;
 
 @Service
 public class FreightService {
 
-    private final WebClient webClient;
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    @Value("${freight.api.url}")
+    private String freightApiUrl;
 
-    public FreightService(WebClient.Builder builder) {
-        this.webClient = builder.baseUrl("https://ship.freightos.com/api").build();
+    private final CountryRepository countryRepository;
+    private final RestTemplate restTemplate = new RestTemplate();
+
+    public FreightService(CountryRepository countryRepository) {
+        this.countryRepository = countryRepository;
     }
 
-    @Getter @Setter
-    public static class FreightQuote {
-        private boolean success;
-        private BigDecimal avgCost;
-        private String mode;
-    }
+    /**
+     * Calculates freight using Freightos city-based API.
+     * Throws exceptions if data is missing or the API fails.
+     */
 
-    public FreightQuote getFreightQuote(String originCode,
-                                        String destinationCode,
-                                        BigDecimal weight,
-                                        String requestedMode) {
-        FreightQuote quote = new FreightQuote();
-        quote.setMode(requestedMode != null ? requestedMode : "air");
-        quote.setSuccess(false);
-        quote.setAvgCost(BigDecimal.ZERO);
+    public Double calculateFreight(String mode, String importerCode, String exporterCode, double weight) {
+        // Look up importer/exporter countries
+        Country importer = countryRepository.findById(importerCode)
+                .orElseThrow(() -> new IllegalArgumentException("Importer not found: " + importerCode));
+        Country exporter = countryRepository.findById(exporterCode)
+                .orElseThrow(() -> new IllegalArgumentException("Exporter not found: " + exporterCode));
+
+        String originCity = exporter.getCity();
+        String destinationCity = importer.getCity();
+
+        if (originCity == null || destinationCity == null) {
+            throw new IllegalStateException("Missing city for exporter/importer in database");
+        }
+
+        // Build XML payload
+        String xmlPayload = """
+            <?xml version="1.0" encoding="UTF-8"?>
+            <shippingCalculatorRequest>
+                <origin>%s</origin>
+                <destination>%s</destination>
+                <mode>%s</mode>
+                <weight>%.2f</weight>
+                <weightUnit>kg</weightUnit>
+            </shippingCalculatorRequest>
+            """.formatted(originCity, destinationCity, mode, weight);
 
         try {
-            String uri = String.format("/shippingCalculator?origin=%s&destination=%s&weight=%s&loadtype=boxes&quantity=1",
-                    originCode, destinationCode, weight.toPlainString());
+            // Send request to Freightos
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_XML);
+            headers.setAccept(java.util.List.of(MediaType.APPLICATION_XML));
+            HttpEntity<String> request = new HttpEntity<>(xmlPayload, headers);
 
-            String responseBody = webClient.get()
-                    .uri(uri)
-                    .retrieve()
-                    .bodyToMono(String.class)
-                    .onErrorResume(e -> Mono.empty())
-                    .block();
+            ResponseEntity<String> response = restTemplate.postForEntity(freightApiUrl, request, String.class);
 
-            if (responseBody == null) {
-                return quote;
+            String body = response.getBody();
+            if (body == null) {
+                throw new RuntimeException("Empty response from Freight API");
             }
 
-            JsonNode root = objectMapper.readTree(responseBody);
-            JsonNode ratesArray = root.path("estimatedFreightRates");
-            if (!ratesArray.isArray() || ratesArray.size() == 0) {
-                return quote;
+            // Extract <price> safely using XML parser
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            DocumentBuilder builder = factory.newDocumentBuilder();
+            Document doc = builder.parse(new InputSource(new StringReader(body)));
+            var priceNode = doc.getElementsByTagName("price").item(0);
+
+            if (priceNode == null) {
+                throw new RuntimeException("Freight API did not return a <price> element. Response: " + body);
             }
 
-            // Pick the first rate matching the mode or just the first
-            JsonNode selectedRateNode = null;
-            for (JsonNode rateNode : ratesArray) {
-                String modeVal = rateNode.path("mode").asText("");
-                if (modeVal.equalsIgnoreCase(requestedMode)) {
-                    selectedRateNode = rateNode;
-                    break;
-                }
-            }
-            if (selectedRateNode == null) {
-                selectedRateNode = ratesArray.get(0);
-            }
-
-            JsonNode priceNode = selectedRateNode.path("price");
-            JsonNode minAmountNode = priceNode.path("min").path("moneyAmount").path("amount");
-            JsonNode maxAmountNode = priceNode.path("max").path("moneyAmount").path("amount");
-
-            BigDecimal minCost = minAmountNode.isNumber()
-                    ? new BigDecimal(minAmountNode.asText())
-                    : BigDecimal.ZERO;
-            BigDecimal maxCost = maxAmountNode.isNumber()
-                    ? new BigDecimal(maxAmountNode.asText())
-                    : minCost;
-
-            // compute average
-            BigDecimal avgCost = minCost.add(maxCost).divide(BigDecimal.valueOf(2), 2, BigDecimal.ROUND_HALF_UP);
-
-            quote.setSuccess(true);
-            quote.setAvgCost(avgCost);
-            quote.setMode(selectedRateNode.path("mode").asText(quote.getMode()));
-            return quote;
+            return Double.parseDouble(priceNode.getTextContent());
 
         } catch (Exception e) {
-            //throw a custom exception (for future scaling)
-            return quote;
+            throw new RuntimeException("Freight service failed: " + e.getMessage(), e);
         }
     }
 }

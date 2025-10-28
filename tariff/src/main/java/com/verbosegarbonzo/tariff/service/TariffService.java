@@ -498,39 +498,30 @@ public class TariffService {
                         ? req.getNetWeight()
                         : new BigDecimal("100"); // fallback estimated weight
 
-                FreightService.FreightQuote quote = freightService.getFreightQuote(
-                        req.getExporterCode(),
-                        req.getImporterCode(),
-                        weight,
-                        req.getFreightMode());
+                try {
+                    Double freightValue = freightService.calculateFreight(
+                            req.getFreightMode(),
+                            req.getImporterCode(),
+                            req.getExporterCode(),
+                            weight.doubleValue());
 
-                if (quote.isSuccess()) {
-                    freightCost = quote.getAvgCost();
+                    freightCost = BigDecimal.valueOf(freightValue);
                     resp.setFreightCost(freightCost);
-                    resp.setFreightType(quote.getMode());
+                    resp.setFreightType(req.getFreightMode());
                     totalCost = totalCost.add(freightCost);
-                } else if (basisDeclared.equals("CIF") || basisDeclared.equals("CFR")) {
+
+                } catch (Exception ex) {
+                    log.warn("Freight calculation failed: {}", ex.getMessage());
                     warning = appendWarning(warning,
-                            "Freight cost could not be fetched, but the importing country uses " + basisDeclared +
-                                    " valuation. Customs value may be understated.");
-                    valuationApplied = "FOB"; // effectively treated as FOB due to missing freight
+                            "Freight cost could not be fetched (" + ex.getMessage() + "). " +
+                                    "Calculation continues without freight adjustment.");
+                    valuationApplied = "FOB";
                 }
+
             } else if (basisDeclared.equals("CIF") || basisDeclared.equals("CFR")) {
                 warning = appendWarning(warning,
                         "Freight cost excluded by user, but " + basisDeclared +
                                 " valuation typically requires it.");
-                valuationApplied = "FOB";
-            }
-
-            // === INSURANCE CALCULATION ===
-            if (req.isIncludeInsurance()) {
-                insuranceCost = req.getTradeOriginal()
-                        .multiply(insuranceRate)
-                        .divide(BigDecimal.valueOf(100), 2, BigDecimal.ROUND_HALF_UP);
-                totalCost = totalCost.add(insuranceCost);
-            } else if (basisDeclared.equals("CIF")) {
-                warning = appendWarning(warning,
-                        "Insurance excluded by user, but CIF valuation normally includes insurance.");
                 valuationApplied = "FOB";
             }
 
@@ -560,7 +551,8 @@ public class TariffService {
     }
 
     private String appendWarning(String existing, String newMessage) {
-        if (existing == null || existing.isBlank()) return newMessage;
+        if (existing == null || existing.isBlank())
+            return newMessage;
         return existing + " " + newMessage;
     }
 }
