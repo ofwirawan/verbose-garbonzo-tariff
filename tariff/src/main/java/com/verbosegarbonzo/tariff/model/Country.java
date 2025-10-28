@@ -36,6 +36,10 @@ public class Country {
     @Size(min = 3, max = 3, message = "Numeric code must be exactly 3 characters")
     private String numericCode;
 
+    @Column(name = "city", length = 100)
+    @NotBlank(message = "City cannot be blank")
+    private String city;
+
     @Column(name = "valuation_basis", length = 10)
     private String valuationBasis; // CIF, CFR, or FOB
 }
