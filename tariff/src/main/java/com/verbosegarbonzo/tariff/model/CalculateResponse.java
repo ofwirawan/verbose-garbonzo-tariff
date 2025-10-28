@@ -6,6 +6,7 @@ import lombok.Setter;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.UUID;
+import java.util.List;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
@@ -28,7 +29,7 @@ public class CalculateResponse {
     private BigDecimal netWeight;
 
     private JsonNode appliedRate;
-    private String warning; // Optional warning message for user
+    private List<String> warnings; // Optional warning message for user
 
     private BigDecimal freightCost;
     private String freightType;
