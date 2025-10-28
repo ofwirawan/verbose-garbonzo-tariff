@@ -43,6 +43,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.List;
 
+
 @Service
 public class TariffService {
 
@@ -73,6 +74,10 @@ public class TariffService {
         this.witsProperties = witsProperties;
         this.freightService = freightService;
     }
+
+    private BigDecimal scaleMoney(BigDecimal value) {
+    return (value == null) ? BigDecimal.ZERO : value.setScale(2, RoundingMode.HALF_UP);
+}
 
     public CalculateResponse calculate(CalculateRequest req) {
         List<String> errors = new ArrayList<>();
@@ -122,6 +127,7 @@ public class TariffService {
             BigDecimal ratePrefCalc = ratePref.multiply(BigDecimal.valueOf(0.01));
 
             BigDecimal duty = req.getTradeOriginal().multiply(ratePrefCalc);
+            duty = scaleMoney(duty);
 
             // Check if user provided net weight but preference only has ad-valorem rate
             List<String> warnings = new ArrayList<>();
@@ -149,6 +155,7 @@ public class TariffService {
             BigDecimal rateSuspCalc = rateSusp.multiply(BigDecimal.valueOf(0.01));
 
             BigDecimal duty = req.getTradeOriginal().multiply(rateSuspCalc);
+            duty = scaleMoney(duty);
 
             // Check if user provided net weight but suspension only has ad-valorem rate
             List<String> warnings = new ArrayList<>();
@@ -210,14 +217,17 @@ public class TariffService {
             if (rateAdval != null && rateSpecific != null && req.getNetWeight() != null) {
                 duty = req.getTradeOriginal().multiply(rateAdvalCalc)
                         .add(req.getNetWeight().multiply(rateSpecific));
+                duty = scaleMoney(duty);
             }
             // ad-valorem only
             else if (rateAdval != null && req.getTradeOriginal() != null) {
                 duty = req.getTradeOriginal().multiply(rateAdvalCalc);
+                duty = scaleMoney(duty);
             }
             // specific only
             else if (rateSpecific != null && req.getNetWeight() != null) {
                 duty = req.getNetWeight().multiply(rateSpecific);
+                duty = scaleMoney(duty);
             }
 
             return buildResponse(req, TEMP_USER_ID, duty, rateAdval, rateSpecific, null, null, warnings);
@@ -242,6 +252,7 @@ public class TariffService {
 
                 BigDecimal prefRateCalc = prefRate.multiply(BigDecimal.valueOf(0.01));
                 BigDecimal duty = req.getTradeOriginal().multiply(prefRateCalc);
+                duty = scaleMoney(duty);
 
                 // Check if user provided net weight - WITS only provides ad-valorem rates
                 List<String> warnings = new ArrayList<>();
@@ -264,6 +275,7 @@ public class TariffService {
 
             BigDecimal mfnRateCalc = mfnRate.multiply(BigDecimal.valueOf(0.01));
             BigDecimal duty = req.getTradeOriginal().multiply(mfnRateCalc);
+            duty = scaleMoney(duty);
 
             // Check if user provided net weight - WITS only provides ad-valorem rates
             List<String> warnings = new ArrayList<>();
@@ -473,9 +485,9 @@ public class TariffService {
         resp.setImporterCode(req.getImporterCode());
         resp.setExporterCode(req.getExporterCode());
         resp.setTransactionDate(req.getTransactionDate());
-        resp.setTradeOriginal(req.getTradeOriginal());
+        resp.setTradeOriginal(scaleMoney(req.getTradeOriginal()));
         resp.setNetWeight(req.getNetWeight());
-        resp.setTradeFinal(req.getTradeOriginal().add(duty));
+        resp.setTradeFinal(scaleMoney(req.getTradeOriginal().add(duty)));
 
         // Set default valuation basis (CIF, CFR, FOB)
         Country importer = countryRepository.findById(req.getImporterCode()).orElse(null);
@@ -507,7 +519,7 @@ public class TariffService {
                             weight.doubleValue());
 
                     freightCost = BigDecimal.valueOf(freightValue);
-                    resp.setFreightCost(freightCost);
+                    resp.setFreightCost(scaleMoney(freightCost));
                     resp.setFreightType(req.getFreightMode());
                     totalCost = totalCost.add(freightCost);
 
@@ -559,9 +571,9 @@ public class TariffService {
         }
 
         resp.setInsuranceRate(insuranceRate);
-        resp.setInsuranceCost(insuranceCost);
+        resp.setInsuranceCost(scaleMoney(insuranceCost));
         resp.setValuationBasisApplied(valuationApplied);
-        resp.setTotalLandedCost(totalCost);
+        resp.setTotalLandedCost(scaleMoney(totalCost));
 
         // applied rate JSON
         ObjectNode rateNode = objectMapper.createObjectNode();
