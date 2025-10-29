@@ -92,7 +92,8 @@ class AdminControllerTest {
                               {
                                 "countryCode": "NGK",
                                 "name": "Neghurtalia",
-                                "numericCode": "067"
+                                "numericCode": "067",
+                                "city": "Neghurti"
                               }
                               """;
         given()

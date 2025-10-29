@@ -40,6 +40,7 @@ public class UserInfoService implements UserDetailsService {
         UserInfo user = userInfo.get();
         return new User(user.getEmail(), user.getPassword(), List.of(user.getRoles().split(","))
                 .stream()
+                .map(String::trim)
                 .map(SimpleGrantedAuthority::new)
                 .collect(Collectors.toList()));
     }

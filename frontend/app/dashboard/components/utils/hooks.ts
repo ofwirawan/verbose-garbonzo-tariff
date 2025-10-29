@@ -17,7 +17,6 @@ import {
   MissingRateYear,
   TariffCalculationResult,
 } from "@/app/dashboard/components/utils/types";
-import { calculateFreightCost } from "@/lib/freightos";
 
 const REFRESH_INTERVAL = 30000; // 30 seconds
 
@@ -95,9 +94,6 @@ export function useTariffCalculation() {
     transactionDate: Date;
     includeFreight?: boolean;
     freightMode?: 'air' | 'ocean' | 'express';
-    // Optional: pass full country objects for freight city lookup
-    importingCountryObj?: Country;
-    exportingCountryObj?: Country;
   }) => {
     const {
       importingCountry,
@@ -108,8 +104,6 @@ export function useTariffCalculation() {
       transactionDate,
       includeFreight,
       freightMode,
-      importingCountryObj,
-      exportingCountryObj,
     } = params;
 
     if (!importingCountry || !tradeValue) {
@@ -133,36 +127,9 @@ export function useTariffCalculation() {
         tradeOriginal: Number(tradeValue),
         netWeight: netWeight ? Number(netWeight) : null,
         transactionDate: formatDateForBackend(transactionDate), // Use local date formatting
+        includeFreight: includeFreight || false,
+        freightMode: freightMode || 'air',
       });
-
-      // Calculate freight costs if requested and weight is available
-      if (includeFreight && exportingCountry && netWeight) {
-        try {
-          // Pass country objects if available, otherwise pass country codes
-          const freightQuote = await calculateFreightCost(
-            exportingCountryObj || exportingCountry,
-            importingCountryObj || importingCountry,
-            Number(netWeight),
-            freightMode || 'air'
-          );
-
-          if (freightQuote.success && freightQuote.data) {
-            // Add freight data to result
-            result.freightCost = freightQuote.data.avgCost;
-            result.freightCostMin = freightQuote.data.minCost;
-            result.freightCostMax = freightQuote.data.maxCost;
-            result.freightMode = freightMode || 'air';
-            result.transitDays = freightQuote.data.transitDays;
-            result.totalLandedCost = result.tradeFinal + freightQuote.data.avgCost;
-          } else {
-            console.warn('Freight calculation failed:', freightQuote.error);
-            // Don't fail the entire calculation, just skip freight
-          }
-        } catch (freightError) {
-          console.error('Error calculating freight:', freightError);
-          // Continue with tariff calculation even if freight fails
-        }
-      }
 
       // Store the calculation result
       setCalculationResult(result);

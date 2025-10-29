@@ -15,6 +15,10 @@ export interface CalculateTariffRequest {
   tradeOriginal: number;
   transactionDate: string;
   netWeight: number | null;
+  includeFreight?: boolean;
+  freightMode?: string;
+  includeInsurance?: boolean;
+  insuranceRate?: number;
 }
 
 /**
