@@ -111,6 +111,10 @@ function CostSummary({
     ? Number(result.totalLandedCost)
     : Number(result.tradeFinal);
 
+  const isPercentage = appliedRate?.suspension !== undefined ||
+                       appliedRate?.prefAdval !== undefined ||
+                       appliedRate?.mfnAdval !== undefined;
+
   return (
     <div className="space-y-4">
       {/* Visual Cost Breakdown Cards */}
