@@ -46,61 +46,53 @@ public class WitsMetadataClient {
 
     public void loadCountries() {
         final int BATCH = 100;
-
-        try {
-            int deleted = countryRepository.deleteAllCountries();
-            System.out.println("Deleted existing countries: " + deleted);
-        } catch (Exception e) {
-            System.err.println("Warning: failed to delete previous countries; continuing ingest");
-            e.printStackTrace();
-        }
-
+    
+        // --- Removed deletion: keep admin-added city & valuation_basis ---
+        System.out.println("Starting country sync without deleting existing records.");
+    
         final String url = props.getBaseUrl() + props.getMetadata().getCountry() + "/ALL";
-
+    
         final Flux<DataBuffer> body = webClient.get()
                 .uri(url)
                 .accept(org.springframework.http.MediaType.APPLICATION_XML)
                 .retrieve()
                 .bodyToFlux(DataBuffer.class);
-
+    
         final InputStream is = DataBufferUtils.join(body).map(db -> db.asInputStream(true)).block();
         if (is == null) {
             System.err.println("No XML received from WITS countries endpoint.");
             return;
         }
-
+    
         long seen = 0, queued = 0;
         final java.util.List<String[]> batch = new java.util.ArrayList<>(BATCH);
-
+    
         try (InputStream in = is) {
             XMLInputFactory f = XMLInputFactory.newFactory();
             f.setProperty(XMLInputFactory.IS_NAMESPACE_AWARE, true);
             XMLStreamReader r = f.createXMLStreamReader(in);
-
-            // per-country scratch
+    
             String iso3 = null;
             String name = null;
             String numeric = null;
-
+    
             while (r.hasNext()) {
                 int ev = r.next();
-
+    
                 if (ev == XMLStreamConstants.START_ELEMENT) {
                     String tag = r.getLocalName();
-
+    
                     if ("country".equalsIgnoreCase(tag)) {
                         seen++;
-
+    
                         for (int i = 0; i < r.getAttributeCount(); i++) {
                             String n = r.getAttributeLocalName(i);
                             String v = r.getAttributeValue(i);
-                            if (n == null || v == null)
-                                continue;
+                            if (n == null || v == null) continue;
                             n = n.toLowerCase();
                             v = v.trim();
-                            if (v.isEmpty())
-                                continue;
-
+                            if (v.isEmpty()) continue;
+    
                             if (n.contains("iso3")) {
                                 iso3 = v;
                             } else if (n.contains("name")) {
@@ -110,8 +102,8 @@ public class WitsMetadataClient {
                             }
                         }
                     }
-
-                    //some feeds put fields in child elements
+    
+                    // child elements handling
                     String lower = tag.toLowerCase();
                     if (lower.contains("iso3")) {
                         iso3 = safeReadElementText(r);
@@ -126,40 +118,36 @@ public class WitsMetadataClient {
                         continue;
                     }
                 }
-
+    
                 if (numeric != null && iso3 != null && numeric.equalsIgnoreCase(iso3)) {
-                    iso3 = null; 
-                    name = null; 
-                    numeric = null;
-                    continue; //skip if there is no numeric (group of countries)
+                    iso3 = name = numeric = null;
+                    continue; // skip invalid group-of-country entries
                 }
-
+    
                 if (ev == XMLStreamConstants.END_ELEMENT) {
                     String end = r.getLocalName();
-
+    
                     if ("country".equalsIgnoreCase(end)) {
-
-                        //normalize and validate
                         if (iso3 != null) {
                             iso3 = iso3.trim().toUpperCase();
                             if (iso3.length() > 3)
                                 iso3 = iso3.substring(0, 3);
-
+    
                             String fixed = NAME_FIXUPS.get(iso3);
-                            if (fixed != null) 
+                            if (fixed != null)
                                 name = fixed;
                         }
-
+    
                         if (name != null)
                             name = name.trim();
                         if (numeric != null)
                             numeric = numeric.trim();
-
+    
                         if (iso3 != null && iso3.length() == 3 && name != null && !name.isBlank()) {
-                            batch.add(new String[] { iso3, name,
-                                    (numeric == null || numeric.isBlank()) ? null : numeric });
+                            batch.add(new String[]{iso3, name,
+                                    (numeric == null || numeric.isBlank()) ? null : numeric});
                             queued++;
-
+    
                             if (batch.size() >= BATCH) {
                                 flushCountryBatch(batch);
                                 batch.clear();
@@ -169,28 +157,25 @@ public class WitsMetadataClient {
                             System.out.println("DEBUG missing country fields at #" + seen +
                                     " -> iso3=" + iso3 + ", name=" + name + ", numeric=" + numeric);
                         }
-
-                        iso3 = null;
-                        name = null;
-                        numeric = null;
+    
+                        iso3 = name = numeric = null;
                     }
                 }
             }
-
+    
             if (!batch.isEmpty()) {
                 flushCountryBatch(batch);
                 System.out.println("Final country batch upserted. Total rows: " + queued);
             }
-
+    
             System.out.println("Seen <country>: " + seen + ", queued rows: " + queued);
-            if (queued == 0) {
+            if (queued == 0)
                 System.out.println("Parsed 0 country rows.");
-            }
-
+    
         } catch (Exception e) {
             throw new RuntimeException("Failed to stream/parse countries XML", e);
         }
-    }
+    }    
 
     private static String safeReadElementText(XMLStreamReader r) throws Exception {
         //consumes the element text and its END_ELEMENT

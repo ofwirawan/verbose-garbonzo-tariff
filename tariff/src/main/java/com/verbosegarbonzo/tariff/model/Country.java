@@ -16,13 +16,13 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+@JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
 public class Country {
-//created to parse country list into Supabase
-//WITS -> Country -> Supabase
+    // created to parse country list into Supabase
+    // WITS -> Country -> Supabase
 
     @Id
-    @Column(name = "country_code", length = 3, nullable = false) //ISO alpha-3 (e.g., "SGP")
+    @Column(name = "country_code", length = 3, nullable = false) // ISO alpha-3 (e.g., "SGP")
     @NotBlank(message = "Country code cannot be blank")
     @Size(min = 3, max = 3, message = "Country code must be exactly 3 characters")
     private String countryCode;
@@ -31,8 +31,15 @@ public class Country {
     @NotBlank(message = "Country name cannot be blank")
     private String name;
 
-    @Column(name = "numeric_code", length = 3) //ISO numeric (e.g., "702")
+    @Column(name = "numeric_code", length = 3) // ISO numeric (e.g., "702")
     @NotBlank(message = "Numeric code cannot be blank")
     @Size(min = 3, max = 3, message = "Numeric code must be exactly 3 characters")
     private String numericCode;
+
+    @Column(name = "city", length = 100)
+    @NotBlank(message = "City cannot be blank")
+    private String city;
+
+    @Column(name = "valuation_basis", length = 10)
+    private String valuationBasis; // CIF, CFR, or FOB
 }

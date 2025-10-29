@@ -81,7 +81,7 @@ class AdminControllerTest {
         System.out.println(userInfoService.addUser(new UserInfo(null, "admin", "admin@email.com", "goodpassword", "ROLE_ADMIN")));
 
         // Authenticate using the actual AuthController and get JWT token
-        adminJwtToken = jwtService.generateToken("admin@email.com");
+        adminJwtToken = jwtService.token("admin@email.com");
         System.out.println("Bearer: " + adminJwtToken);
     }
 

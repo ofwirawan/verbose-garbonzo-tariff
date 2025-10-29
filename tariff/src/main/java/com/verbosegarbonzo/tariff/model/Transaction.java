@@ -19,7 +19,7 @@ import org.hibernate.annotations.Type;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+@JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
 public class Transaction {
 
     @Id
@@ -69,4 +69,16 @@ public class Transaction {
     @Type(JsonType.class)
     @NotNull
     private JsonNode appliedRate;
+
+    @Column(name = "freight_cost")
+    private BigDecimal freightCost;
+
+    @Column(name = "freight_type", length = 10)
+    private String freightType; // CIF, CFR, or FOB
+
+    @Column(name = "insurance_rate", precision = 5, scale = 2)
+    private BigDecimal insuranceRate; // percentage
+
+    @Column(name = "insurance_cost", precision = 12, scale = 2)
+    private BigDecimal insuranceCost;
 }
