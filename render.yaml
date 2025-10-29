@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: tariff-app
+    runtime: node
+    plan: free
+    buildCommand: bash render-build.sh
+    startCommand: bash run-prod.sh
+    envVars:
+      - key: JAVA_HOME
+        value: /opt/java/openjdk
+      - key: PATH
+        value: /opt/java/openjdk/bin:$PATH

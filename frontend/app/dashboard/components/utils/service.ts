@@ -6,7 +6,7 @@ import {
   MissingRateYear,
 } from "@/app/dashboard/components/utils/types";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
 export interface CalculateTariffRequest {
   importerCode: string;

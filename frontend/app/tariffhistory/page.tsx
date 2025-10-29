@@ -247,7 +247,17 @@ export default function TariffHistoryPage() {
         <SiteHeader />
         <div className="flex flex-1 flex-col overflow-hidden">
           <div className="@container/main flex-1 overflow-auto">
-            <div className="flex flex-col gap-6 p-4 md:p-6">
+            <div className="flex flex-col gap-6 p-4 md:p-8 mx-auto w-full">
+              {/* Page Header */}
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                  Tariff History
+                </h1>
+                <p className="text-sm text-gray-600">
+                  Explore historical tariff rate trends for chemical products
+                </p>
+              </div>
+
               <Card className="shadow-sm">
                 <CardHeader className="border-b bg-gradient-to-r from-gray-50 to-gray-100/50 pb-4">
                   <CardTitle className="text-lg font-semibold">
