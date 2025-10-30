@@ -49,17 +49,19 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // Public endpoints - allow all OPTIONS requests for CORS preflight
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .requestMatchers("/auth/addNewUser", "/auth/generateToken").permitAll()
+                        .requestMatchers("/auth/register", "/auth/token").permitAll()
 
                         // Swagger UI endpoints
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-resources/**", "/webjars/**").permitAll()
-                        // History endpoints now require authentication
-                        .requestMatchers("/api/history/**").authenticated()
 
                         // Role-based endpoints
+                        .requestMatchers(HttpMethod.POST, "/api/calculate").permitAll()
                         .requestMatchers("/auth/user/**").hasRole("USER")
                         .requestMatchers("/auth/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
+
+                        // History endpoints now require authentication
+                        .requestMatchers("/api/history/**").authenticated()
 
                         // All other endpoints require authentication
                         .anyRequest().authenticated())

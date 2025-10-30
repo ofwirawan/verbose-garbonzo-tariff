@@ -469,14 +469,6 @@ export default function TariffChart({
   const productOptions = convertProductsToOptions(product);
 
   const handleCalculate = () => {
-    // Find the full country objects for freight city lookup
-    const importingCountryObj = countries.find(
-      (c) => c.country_code === importingCountry
-    );
-    const exportingCountryObj = countries.find(
-      (c) => c.country_code === exportingCountry
-    );
-
     calculateTariff({
       importingCountry,
       exportingCountry,
@@ -486,8 +478,6 @@ export default function TariffChart({
       transactionDate,
       includeFreight,
       freightMode,
-      importingCountryObj,
-      exportingCountryObj,
     });
   };
 
