@@ -30,8 +30,8 @@ import java.util.UUID;
         "logging.level.org.springframework.security=WARN",
         "logging.level.csd.security=WARN"
 })
-@DisplayName("Admin Controller Integration Tests")
-class AdminControllerTest {
+@DisplayName("Admin Country Controller Integration Tests")
+class AdminCountryControllerTest {
     @LocalServerPort
     private int port;
 
@@ -158,6 +158,147 @@ class AdminControllerTest {
 
         var countries = countryRepository.findAll();
         assert countries.size() == 0;
+    }
+
+    @Test
+    @DisplayName("Should return 409 when creating country with duplicate numeric code")
+    void createCountry_ShouldReturn409WhenNumericCodeDuplicate() {
+        String firstCountry = """
+                              {
+                                "countryCode": "ABC",
+                                "name": "Firstland",
+                                "numericCode": "123"
+                              }
+                              """;
+        String duplicateNumeric = """
+                              {
+                                "countryCode": "DEF",
+                                "name": "Secondland",
+                                "numericCode": "123"
+                              }
+                              """;
+
+        // create first
+        given()
+            .auth().oauth2(adminJwtToken)
+            .contentType(ContentType.JSON)
+            .body(firstCountry)
+        .when()
+            .post("/api/admin/countries")
+        .then()
+            .statusCode(201);
+
+        // attempt duplicate
+        given()
+            .auth().oauth2(adminJwtToken)
+            .contentType(ContentType.JSON)
+            .body(duplicateNumeric)
+        .when()
+            .post("/api/admin/countries")
+        .then()
+            .statusCode(409);
+
+        var countries = countryRepository.findAll();
+        assert countries.size() == 1;
+    }
+
+    @Test
+    @DisplayName("Should get, update and delete a country")
+    void getUpdateDeleteFlow() {
+        String countryJson = """
+                              {
+                                "countryCode": "GHI",
+                                "name": "Flowland",
+                                "numericCode": "200"
+                              }
+                              """;
+
+        // Create
+        given()
+            .auth().oauth2(adminJwtToken)
+            .contentType(ContentType.JSON)
+            .body(countryJson)
+        .when()
+            .post("/api/admin/countries")
+        .then()
+            .statusCode(201);
+
+        // GET
+        given()
+            .auth().oauth2(adminJwtToken)
+            .when()
+            .get("/api/admin/countries/GHI")
+        .then()
+            .statusCode(200)
+            .body("countryCode", equalTo("GHI"))
+            .body("numericCode", equalTo("200"));
+
+        // UPDATE
+        String updated = """
+                              {
+                                "countryCode": "GHI",
+                                "name": "Flowlandia",
+                                "numericCode": "201"
+                              }
+                              """;
+
+        given()
+            .auth().oauth2(adminJwtToken)
+            .contentType(ContentType.JSON)
+            .body(updated)
+        .when()
+            .put("/api/admin/countries/GHI")
+        .then()
+            .statusCode(200)
+            .body("name", equalTo("Flowlandia"))
+            .body("numericCode", equalTo("201"));
+
+        // DELETE
+        given()
+            .auth().oauth2(adminJwtToken)
+            .when()
+            .delete("/api/admin/countries/GHI")
+        .then()
+            .statusCode(204);
+
+        assert countryRepository.existsById("GHI") == false;
+    }
+
+    @Test
+    @DisplayName("Should return 409 when updating country to a numeric code that already exists")
+    void updateCountry_ShouldReturn409WhenNumericConflict() {
+        // create two countries
+        countryRepository.save(new com.verbosegarbonzo.tariff.model.Country("AAA", "Aland", "111"));
+        countryRepository.save(new com.verbosegarbonzo.tariff.model.Country("BBB", "Bland", "222"));
+
+        // try to update BBB to numericCode 111 which is used by AAA
+        String updatePayload = """
+                              {
+                                "countryCode": "BBB",
+                                "name": "BlandUpdated",
+                                "numericCode": "111"
+                              }
+                              """;
+
+        given()
+            .auth().oauth2(adminJwtToken)
+            .contentType(ContentType.JSON)
+            .body(updatePayload)
+        .when()
+            .put("/api/admin/countries/BBB")
+        .then()
+            .statusCode(409);
+    }
+
+    @Test
+    @DisplayName("Delete non-existent country returns 404")
+    void deleteCountry_ShouldReturn404WhenNotFound() {
+        given()
+            .auth().oauth2(adminJwtToken)
+            .when()
+            .delete("/api/admin/countries/NOPE")
+        .then()
+            .statusCode(404);
     }
 
 }

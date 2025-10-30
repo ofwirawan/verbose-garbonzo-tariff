@@ -20,6 +20,7 @@ import org.hibernate.annotations.Type;
 public class Transaction {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "tid")
     private Integer tid;
 
