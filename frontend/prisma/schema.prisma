@@ -7,6 +7,12 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum ProfileType {
+  BUSINESS_OWNER   @map("business_owner")
+  POLICY_ANALYST   @map("policy_analyst")
+  STUDENT          @map("student")
+}
+
 model country {
   country_code          String        @id @db.VarChar(3)
   numeric_code          String        @unique @db.VarChar(3)
@@ -94,11 +100,14 @@ model suspension {
 }
 
 model user_info {
-  uid         String        @id @db.Uuid
-  email       String        @unique @db.VarChar(255)
-  name        String?       @db.VarChar(255)
-  password    String        @db.VarChar(255)
-  roles       String        @db.VarChar(255)
-  timestamp   DateTime?     @default(now()) @db.Timestamp(6)
-  transaction transaction[]
+  uid             String        @id @db.Uuid
+  email           String        @unique @db.VarChar(255)
+  name            String?       @db.VarChar(255)
+  password        String        @db.VarChar(255)
+  roles           String        @db.VarChar(255)
+  profile_type    ProfileType?
+  timestamp       DateTime?     @default(now()) @db.Timestamp(6)
+  transaction     transaction[]
+
+  @@map("user_info")
 }
