@@ -22,7 +22,6 @@ import com.verbosegarbonzo.tariff.service.JwtService;
 import com.verbosegarbonzo.tariff.model.UserInfo;
 
 import java.time.LocalDate;
-import java.math.BigDecimal;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @TestPropertySource(properties = {
@@ -45,15 +44,6 @@ class AdminPreferenceControllerTest {
 
     @Autowired
     private ProductRepository productRepository;
-
-    @Autowired
-    private com.verbosegarbonzo.tariff.repository.MeasureRepository measureRepository;
-
-    @Autowired
-    private com.verbosegarbonzo.tariff.repository.SuspensionRepository suspensionRepository;
-
-    @Autowired
-    private com.verbosegarbonzo.tariff.repository.TransactionRepository transactionRepository;
 
     @Autowired
     private UserInfoRepository userInfoRepository;

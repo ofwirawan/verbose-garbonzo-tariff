@@ -20,14 +20,8 @@ import com.verbosegarbonzo.tariff.repository.ProductRepository;
 import com.verbosegarbonzo.tariff.service.UserInfoService;
 import com.verbosegarbonzo.tariff.service.JwtService;
 import com.verbosegarbonzo.tariff.model.UserInfo;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.verbosegarbonzo.tariff.controller.admin.AdminTransactionController;
-import com.verbosegarbonzo.tariff.dto.TransactionDTO;
 
 import java.time.LocalDate;
-import java.math.BigDecimal;
-import java.util.UUID;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @TestPropertySource(properties = {
@@ -85,11 +79,11 @@ class AdminTransactionControllerTest {
     countryRepository.deleteAll();
     userInfoRepository.deleteAll();
 
-        var admin = userInfoService.addUser(new UserInfo(null, "admin", "admin@email.com", "goodpassword", "ROLE_ADMIN"));
+        userInfoService.addUser(new UserInfo(null, "admin", "admin@email.com", "goodpassword", "ROLE_ADMIN"));
         adminJwtToken = jwtService.generateToken("admin@email.com");
 
         // seed user (other than admin), country and product
-        var user = userInfoRepository.save(new com.verbosegarbonzo.tariff.model.UserInfo(null, "U", "u@x.com", "p", "ROLE_USER"));
+        userInfoRepository.save(new com.verbosegarbonzo.tariff.model.UserInfo(null, "U", "u@x.com", "p", "ROLE_USER"));
         countryRepository.save(new com.verbosegarbonzo.tariff.model.Country("IMP", "Importer", "001"));
         productRepository.save(new com.verbosegarbonzo.tariff.model.Product("PROD01", "Product 1"));
     }
@@ -110,15 +104,6 @@ class AdminTransactionControllerTest {
                   "appliedRate": {}
                 }
                 """, user.getUid().toString(), LocalDate.now().toString());
-
-        ObjectMapper objectMapper = new ObjectMapper();
-        JavaTimeModule javaTimeModule = new JavaTimeModule();
-        objectMapper.registerModule(javaTimeModule);
-        try {
-            TransactionDTO dto = objectMapper.readValue(payload, TransactionDTO.class);
-        } catch (Exception e) {
-            System.out.println("failed" + e.getMessage());
-        }
 
         given()
             .auth().oauth2(adminJwtToken)

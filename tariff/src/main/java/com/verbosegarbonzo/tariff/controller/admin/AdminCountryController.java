@@ -9,7 +9,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.data.domain.Pageable;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.HttpStatusCode;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.dao.DataIntegrityViolationException;
 

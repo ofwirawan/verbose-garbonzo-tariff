@@ -11,16 +11,14 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
-import org.springframework.security.core.userdetails.User;
 import org.springframework.test.context.TestPropertySource;
 
 
 import com.verbosegarbonzo.tariff.model.UserInfo;
-import com.verbosegarbonzo.tariff.repository.*;
+import com.verbosegarbonzo.tariff.repository.CountryRepository;
+import com.verbosegarbonzo.tariff.repository.UserInfoRepository;
 import com.verbosegarbonzo.tariff.service.JwtService;
 import com.verbosegarbonzo.tariff.service.UserInfoService;
-
-import java.util.UUID;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @TestPropertySource(properties = {
@@ -37,21 +35,6 @@ class AdminCountryControllerTest {
 
     @Autowired
     private CountryRepository countryRepository;
-
-    @Autowired
-    private MeasureRepository measureRepository;
-
-    @Autowired
-    private PreferenceRepository preferenceRepository;
-
-    @Autowired
-    private ProductRepository productRepository;
-
-    @Autowired
-    private SuspensionRepository suspensionRepository;
-
-    @Autowired
-    private TransactionRepository transactionRepository;
 
     @Autowired
     private UserInfoRepository userInfoRepository;
@@ -71,11 +54,6 @@ class AdminCountryControllerTest {
 
         // Clean database before each test
         countryRepository.deleteAll();
-        measureRepository.deleteAll();
-        preferenceRepository.deleteAll();
-        productRepository.deleteAll();
-        suspensionRepository.deleteAll();
-        transactionRepository.deleteAll();
         userInfoRepository.deleteAll();
         
         System.out.println(userInfoService.addUser(new UserInfo(null, "admin", "admin@email.com", "goodpassword", "ROLE_ADMIN")));

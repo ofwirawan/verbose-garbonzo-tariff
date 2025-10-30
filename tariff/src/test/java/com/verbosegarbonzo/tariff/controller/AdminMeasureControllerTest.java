@@ -23,7 +23,6 @@ import com.verbosegarbonzo.tariff.service.JwtService;
 import com.verbosegarbonzo.tariff.model.UserInfo;
 
 import java.time.LocalDate;
-import java.math.BigDecimal;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @TestPropertySource(properties = {
