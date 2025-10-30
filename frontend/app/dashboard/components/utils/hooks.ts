@@ -94,6 +94,8 @@ export function useTariffCalculation() {
     transactionDate: Date;
     includeFreight?: boolean;
     freightMode?: 'air' | 'ocean' | 'express';
+    includeInsurance?: boolean;
+    insuranceRate?: number;
   }) => {
     const {
       importingCountry,
@@ -104,6 +106,8 @@ export function useTariffCalculation() {
       transactionDate,
       includeFreight,
       freightMode,
+      includeInsurance,
+      insuranceRate,
     } = params;
 
     if (!importingCountry || !tradeValue) {
@@ -129,6 +133,8 @@ export function useTariffCalculation() {
         transactionDate: formatDateForBackend(transactionDate), // Use local date formatting
         includeFreight: includeFreight || false,
         freightMode: freightMode || 'air',
+        includeInsurance: includeInsurance || false,
+        insuranceRate: insuranceRate || undefined,
       });
 
       // Store the calculation result

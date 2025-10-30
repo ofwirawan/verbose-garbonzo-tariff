@@ -45,7 +45,14 @@ export interface TariffCalculationResult {
   freightCostMin?: number;
   freightCostMax?: number;
   freightMode?: 'air' | 'ocean' | 'express';
+  freightType?: string;
   transitDays?: number;
+  // Insurance cost fields
+  insuranceRate?: number;
+  insuranceCost?: number;
+  valuationBasisDeclared?: string;
+  valuationBasisApplied?: string;
+  // Total cost
   totalLandedCost?: number;
 }
 

@@ -54,6 +54,8 @@ interface TariffChartFormProps {
   netWeight: string;
   includeFreight: boolean;
   freightMode: "air" | "ocean";
+  includeInsurance: boolean;
+  insuranceRate: string;
   countryOptions: DropdownOption[];
   productOptions: DropdownOption[];
   isCalculating: boolean;
@@ -65,6 +67,8 @@ interface TariffChartFormProps {
   onNetWeightChange: (value: string) => void;
   onIncludeFreightChange: (value: boolean) => void;
   onFreightModeChange: (value: "air" | "ocean") => void;
+  onIncludeInsuranceChange: (value: boolean) => void;
+  onInsuranceRateChange: (value: string) => void;
   onCalculate: () => void;
 }
 
@@ -77,6 +81,8 @@ function TariffChartForm({
   netWeight,
   includeFreight,
   freightMode,
+  includeInsurance,
+  insuranceRate,
   countryOptions,
   productOptions,
   isCalculating,
@@ -88,6 +94,8 @@ function TariffChartForm({
   onNetWeightChange,
   onIncludeFreightChange,
   onFreightModeChange,
+  onIncludeInsuranceChange,
+  onInsuranceRateChange,
   onCalculate,
 }: TariffChartFormProps) {
   const [datePopoverOpen, setDatePopoverOpen] = useState(false);
@@ -287,8 +295,9 @@ function TariffChartForm({
         </div>
       </div>
 
-      {/* Freight Options - Full Width Below */}
-      <div className="bg-gray-50 rounded-lg p-4 sm:p-5 md:p-6 border border-gray-200">
+      {/* Freight & Insurance Options - Full Width Below */}
+      <div className="bg-gray-50 rounded-lg p-4 sm:p-5 md:p-6 border border-gray-200 space-y-6">
+        {/* Freight Section */}
         <div className="space-y-4">
           <div className="flex items-center gap-3">
             <input
@@ -392,6 +401,165 @@ function TariffChartForm({
             </div>
           )}
         </div>
+
+        {/* Divider */}
+        <div className="border-t border-gray-300"></div>
+
+        {/* Insurance Section */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-3">
+            <input
+              type="checkbox"
+              id="includeInsurance"
+              checked={includeInsurance}
+              onChange={(e) => onIncludeInsuranceChange(e.target.checked)}
+              className="w-4 h-4 text-gray-900 border-gray-300 rounded focus:ring-gray-900"
+            />
+            <Label
+              htmlFor="includeInsurance"
+              className="text-sm font-medium text-gray-700 cursor-pointer"
+            >
+              Include insurance cost estimation
+            </Label>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    className="text-gray-400 hover:text-gray-600 transition-colors"
+                    aria-label="Insurance calculation information"
+                  >
+                    <InfoIcon className="w-4 h-4" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs p-4 bg-black text-white">
+                  <div className="space-y-2 text-xs">
+                    <p className="font-semibold">
+                      How insurance costs are calculated:
+                    </p>
+                    <ul className="space-y-1 list-disc list-inside">
+                      <li>
+                        Insurance is calculated as a percentage of the trade
+                        value
+                      </li>
+                      <li>
+                        The rate varies by destination country valuation basis
+                        (CIF, CFR, FOB)
+                      </li>
+                      <li>
+                        Applicable only for CIF valuations; CFR and FOB exclude
+                        insurance
+                      </li>
+                    </ul>
+                    <p className="text-gray-300 italic mt-2">
+                      Default rate is 1% if not specified. Enter 0 to exclude
+                      insurance.
+                    </p>
+                  </div>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+
+          {includeInsurance && (
+            <div className="pt-2 border-t border-gray-300">
+              <div className="space-y-2">
+                <Label
+                  htmlFor="insuranceRate"
+                  className="text-sm font-medium text-gray-700"
+                >
+                  Insurance Rate
+                </Label>
+                <div className="space-y-3">
+                  {/* Preset Options */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {[
+                      { label: "Low", value: "0.5" },
+                      { label: "Standard", value: "1.0" },
+                      { label: "High", value: "2.0" },
+                    ].map((option) => (
+                      <label
+                        key={option.value}
+                        className={`flex items-center gap-3 cursor-pointer p-3 rounded-lg border-2 transition-all ${
+                          insuranceRate === option.value
+                            ? "border-gray-900 bg-gray-50"
+                            : "border-gray-300 hover:border-gray-500 bg-white"
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="insuranceRate"
+                          value={option.value}
+                          checked={insuranceRate === option.value}
+                          onChange={(e) => onInsuranceRateChange(e.target.value)}
+                          className="w-4 h-4 text-gray-900 border-gray-300 focus:ring-gray-900"
+                        />
+                        <div className="flex-1">
+                          <span className="text-sm font-semibold text-gray-900 block">
+                            {option.label}
+                          </span>
+                          <span className="text-xs text-gray-500">
+                            {option.value}%
+                          </span>
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+
+                  {/* Custom Amount */}
+                  <div className="pt-2 border-t border-gray-200">
+                    <label className="flex items-center gap-3 cursor-pointer p-3 rounded-lg border-2 border-gray-300 hover:border-gray-500 transition-all bg-white">
+                      <input
+                        type="radio"
+                        name="insuranceRate"
+                        value="custom"
+                        checked={
+                          insuranceRate !== "0.5" &&
+                          insuranceRate !== "1.0" &&
+                          insuranceRate !== "2.0"
+                        }
+                        onChange={() => {
+                          // Just switch to custom mode, keep existing value
+                        }}
+                        className="w-4 h-4 text-gray-900 border-gray-300 focus:ring-gray-900"
+                      />
+                      <div className="flex-1">
+                        <span className="text-sm font-semibold text-gray-900 block">
+                          Custom Amount
+                        </span>
+                        <div className="mt-2 flex items-center gap-2">
+                          <Input
+                            id="customInsuranceRate"
+                            type="number"
+                            min="0"
+                            max="100"
+                            step="0.01"
+                            value={
+                              insuranceRate !== "0.5" &&
+                              insuranceRate !== "1.0" &&
+                              insuranceRate !== "2.0"
+                                ? insuranceRate
+                                : ""
+                            }
+                            onChange={(e) => onInsuranceRateChange(e.target.value)}
+                            placeholder="Enter custom rate"
+                            className="h-9 text-xs border-gray-300 flex-1"
+                          />
+                          <span className="text-sm text-gray-500">%</span>
+                        </div>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+                <p className="text-xs text-gray-500 mt-3">
+                  Insurance is calculated as a percentage of trade value and is
+                  applicable to CIF valuations only. CFR and FOB valuations will
+                  exclude insurance.
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Calculate Button */}
@@ -463,6 +631,8 @@ export default function TariffChart({
   const [transactionDate, setTransactionDate] = useState<Date>(new Date());
   const [includeFreight, setIncludeFreight] = useState(false);
   const [freightMode, setFreightMode] = useState<"air" | "ocean">("air");
+  const [includeInsurance, setIncludeInsurance] = useState(false);
+  const [insuranceRate, setInsuranceRate] = useState("1.0");
 
   // Derived state
   const countryOptions = convertCountriesToOptions(countries);
@@ -478,6 +648,8 @@ export default function TariffChart({
       transactionDate,
       includeFreight,
       freightMode,
+      includeInsurance,
+      insuranceRate: insuranceRate ? parseFloat(insuranceRate) : undefined,
     });
   };
 
@@ -507,6 +679,8 @@ export default function TariffChart({
               netWeight={netWeight}
               includeFreight={includeFreight}
               freightMode={freightMode}
+              includeInsurance={includeInsurance}
+              insuranceRate={insuranceRate}
               countryOptions={countryOptions}
               productOptions={productOptions}
               isCalculating={isCalculating}
@@ -518,6 +692,8 @@ export default function TariffChart({
               onNetWeightChange={setNetWeight}
               onIncludeFreightChange={setIncludeFreight}
               onFreightModeChange={setFreightMode}
+              onIncludeInsuranceChange={setIncludeInsurance}
+              onInsuranceRateChange={setInsuranceRate}
               onCalculate={handleCalculate}
             />
 

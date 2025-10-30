@@ -512,15 +512,18 @@ public class TariffService {
                         : new BigDecimal("100"); // fallback estimated weight
 
                 try {
-                    Double freightValue = freightService.calculateFreight(
+                    FreightService.FreightDetails freightDetails = freightService.calculateFreight(
                             req.getFreightMode(),
                             req.getImporterCode(),
                             req.getExporterCode(),
                             weight.doubleValue());
 
-                    freightCost = BigDecimal.valueOf(freightValue);
+                    freightCost = BigDecimal.valueOf(freightDetails.getCostAverage());
                     resp.setFreightCost(scaleMoney(freightCost));
+                    resp.setFreightCostMin(scaleMoney(BigDecimal.valueOf(freightDetails.getCostMin())));
+                    resp.setFreightCostMax(scaleMoney(BigDecimal.valueOf(freightDetails.getCostMax())));
                     resp.setFreightType(req.getFreightMode());
+                    resp.setTransitDays(freightDetails.getTransitDays());
                     totalCost = totalCost.add(freightCost);
 
                 } catch (Exception ex) {

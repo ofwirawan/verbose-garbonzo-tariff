@@ -32,7 +32,10 @@ public class CalculateResponse {
     private List<String> warnings; // Optional warning message for user
 
     private BigDecimal freightCost;
+    private BigDecimal freightCostMin;
+    private BigDecimal freightCostMax;
     private String freightType;
+    private Integer transitDays;
 
     private BigDecimal insuranceRate;
     private BigDecimal insuranceCost;

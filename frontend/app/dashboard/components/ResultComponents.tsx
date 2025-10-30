@@ -62,6 +62,8 @@ export function CalculationResults({
 }: CalculationResultsProps) {
   const hasFreightData =
     result.freightCost !== undefined && result.freightCost > 0;
+  const hasInsuranceData =
+    result.insuranceCost !== undefined && result.insuranceCost > 0;
   const dutyAmount = Number(result.tradeFinal) - Number(result.tradeOriginal);
 
   return (
@@ -71,6 +73,7 @@ export function CalculationResults({
         result={result}
         dutyAmount={dutyAmount}
         hasFreightData={hasFreightData}
+        hasInsuranceData={hasInsuranceData}
       />
 
       {/* Collapsible Details Section */}
@@ -78,6 +81,7 @@ export function CalculationResults({
         result={result}
         suspensionNote={suspensionNote}
         hasFreightData={hasFreightData}
+        hasInsuranceData={hasInsuranceData}
       />
 
       {/* Save Button */}
@@ -90,10 +94,12 @@ function CostSummary({
   result,
   dutyAmount,
   hasFreightData,
+  hasInsuranceData,
 }: {
   result: TariffCalculationResult;
   dutyAmount: number;
   hasFreightData: boolean;
+  hasInsuranceData: boolean;
 }) {
   const appliedRate = result.appliedRate || {};
   const getRateInfo = () => {
@@ -107,18 +113,14 @@ function CostSummary({
   };
 
   const rateInfo = getRateInfo();
-  const totalCost = hasFreightData
-    ? Number(result.totalLandedCost)
-    : Number(result.tradeFinal);
-
-  const isPercentage = appliedRate?.suspension !== undefined ||
-                       appliedRate?.prefAdval !== undefined ||
-                       appliedRate?.mfnAdval !== undefined;
+  const totalCost = Number(result.totalLandedCost) || Number(result.tradeFinal);
+  const cardCount = (hasFreightData ? 1 : 0) + (hasInsuranceData ? 1 : 0) + 2; // trade + duty + optional freight/insurance
+  const gridCols = cardCount === 2 ? "sm:grid-cols-2" : cardCount === 3 ? "sm:grid-cols-3" : "sm:grid-cols-2 lg:grid-cols-4";
 
   return (
     <div className="space-y-4">
       {/* Visual Cost Breakdown Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className={`grid grid-cols-1 ${gridCols} gap-4`}>
         {/* Trade Value Card */}
         <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-5 md:p-6">
           <div className="flex items-start justify-between mb-2">
@@ -180,28 +182,27 @@ function CostSummary({
               {result.transitDays && ` · ${result.transitDays} days`}
             </div>
           </div>
-        ) : (
-          <div className="bg-gray-50 rounded-lg border border-dashed border-gray-300 p-4 sm:p-5 md:p-6 flex items-center justify-center">
-            <div className="text-center">
-              <svg
-                className="w-8 h-8 text-gray-300 mx-auto mb-2"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                />
-              </svg>
-              <div className="text-xs text-gray-400">
-                No freight data available for this route
+        ) : null}
+
+        {/* Insurance Card (if applicable) */}
+        {hasInsuranceData ? (
+          <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-5 md:p-6">
+            <div className="flex items-start justify-between mb-2">
+              <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                Insurance Cost
               </div>
             </div>
+            <div className="text-lg sm:text-2xl font-bold text-gray-900 break-words">
+              $
+              {Number(result.insuranceCost).toLocaleString("en-US", {
+                minimumFractionDigits: 2,
+              })}
+            </div>
+            <div className="text-xs text-gray-500 mt-1">
+              {result.insuranceRate?.toFixed(2)}% · {result.valuationBasisDeclared || "CIF"}
+            </div>
           </div>
-        )}
+        ) : null}
       </div>
 
       {/* Total Landed Cost - Prominent Display */}
@@ -245,10 +246,12 @@ function DetailsSection({
   result,
   suspensionNote,
   hasFreightData,
+  hasInsuranceData,
 }: {
   result: TariffCalculationResult;
   suspensionNote: string | null;
   hasFreightData: boolean;
+  hasInsuranceData: boolean;
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const appliedRate = result.appliedRate || {};
@@ -398,6 +401,36 @@ function DetailsSection({
                 <InfoItem
                   label="Shipment Weight"
                   value={result.netWeight ? `${result.netWeight} kg` : "—"}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Insurance Details Section */}
+          {hasInsuranceData && (
+            <div className="bg-white rounded-lg p-4 sm:p-5 md:p-6 border border-gray-200">
+              <h5 className="text-xs font-bold text-gray-700 uppercase tracking-wide mb-4 flex items-center gap-2">
+                Insurance Information
+              </h5>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <InfoItem
+                  label="Insurance Rate"
+                  value={`${result.insuranceRate?.toFixed(2) || "1.00"}%`}
+                />
+                <InfoItem
+                  label="Insurance Cost"
+                  value={`$${Number(result.insuranceCost).toLocaleString(
+                    "en-US",
+                    { minimumFractionDigits: 2 }
+                  )}`}
+                />
+                <InfoItem
+                  label="Valuation Basis (Declared)"
+                  value={result.valuationBasisDeclared || "—"}
+                />
+                <InfoItem
+                  label="Valuation Basis (Applied)"
+                  value={result.valuationBasisApplied || "—"}
                 />
               </div>
             </div>
