@@ -1,4 +1,4 @@
-package com.verbosegarbonzo.tariff.controller;
+package com.verbosegarbonzo.tariff.controller.admin;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.*;
@@ -13,10 +13,10 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.test.context.TestPropertySource;
 
-import com.verbosegarbonzo.tariff.repository.SuspensionRepository;
+import com.verbosegarbonzo.tariff.repository.TransactionRepository;
+import com.verbosegarbonzo.tariff.repository.UserInfoRepository;
 import com.verbosegarbonzo.tariff.repository.CountryRepository;
 import com.verbosegarbonzo.tariff.repository.ProductRepository;
-import com.verbosegarbonzo.tariff.repository.UserInfoRepository;
 import com.verbosegarbonzo.tariff.service.UserInfoService;
 import com.verbosegarbonzo.tariff.service.JwtService;
 import com.verbosegarbonzo.tariff.model.UserInfo;
@@ -29,15 +29,19 @@ import java.time.LocalDate;
         "spring.h2.console.enabled=false",
         "spring.jpa.hibernate.ddl-auto=create-drop",
         "logging.level.org.springframework.security=WARN",
-        "logging.level.csd.security=WARN"
+        "logging.level.csd.security=WARN",
+        "spring.jackson.serialization.write-dates-as-timestamps=false"
 })
-@DisplayName("Admin Suspension Controller Integration Tests")
-class AdminSuspensionControllerTest {
+@DisplayName("Admin Transaction Controller Integration Tests")
+class AdminTransactionControllerTest {
     @LocalServerPort
     private int port;
 
     @Autowired
-    private SuspensionRepository suspensionRepository;
+    private TransactionRepository transactionRepository;
+
+    @Autowired
+    private UserInfoRepository userInfoRepository;
 
     @Autowired
     private CountryRepository countryRepository;
@@ -52,10 +56,7 @@ class AdminSuspensionControllerTest {
     private com.verbosegarbonzo.tariff.repository.PreferenceRepository preferenceRepository;
 
     @Autowired
-    private com.verbosegarbonzo.tariff.repository.TransactionRepository transactionRepository;
-
-    @Autowired
-    private UserInfoRepository userInfoRepository;
+    private com.verbosegarbonzo.tariff.repository.SuspensionRepository suspensionRepository;
 
     @Autowired
     private UserInfoService userInfoService;
@@ -81,37 +82,40 @@ class AdminSuspensionControllerTest {
         userInfoService.addUser(new UserInfo(null, "admin", "admin@email.com", "goodpassword", "ROLE_ADMIN"));
         adminJwtToken = jwtService.generateToken("admin@email.com");
 
-        // seed importer + product
+        // seed user (other than admin), country and product
+        userInfoRepository.save(new com.verbosegarbonzo.tariff.model.UserInfo(null, "U", "u@x.com", "p", "ROLE_USER"));
         countryRepository.save(new com.verbosegarbonzo.tariff.model.Country("IMP", "Importer", "001"));
         productRepository.save(new com.verbosegarbonzo.tariff.model.Product("PROD01", "Product 1"));
     }
 
     @Test
-    @DisplayName("Create suspension")
-    void createSuspension() {
+    @DisplayName("Create transaction")
+    void createTransaction() {
+        var user = userInfoRepository.findByEmail("admin@email.com").get();
         String payload = String.format("""
                 {
-                  "importerCode": "IMP",
-                  "productCode": "PROD01",
-                  "validFrom": "%s",
-                  "validTo": "%s",
-                  "suspensionFlag": true,
-                  "suspensionNote": "note",
-                  "suspensionRate": 0.5
+                  "user": "%s",
+                  "tDate": "%s",
+                  "importer": "IMP",
+                  "product": "PROD01",
+                  "tradeOriginal": 100.5,
+                  "netWeight": 10.0,
+                  "tradeFinal": 80.0,
+                  "appliedRate": {}
                 }
-                """, LocalDate.now().toString(), LocalDate.now().plusDays(10).toString());
+                """, user.getUid().toString(), LocalDate.now().toString());
 
         given()
             .auth().oauth2(adminJwtToken)
             .contentType(ContentType.JSON)
             .body(payload)
         .when()
-            .post("/api/admin/suspensions")
+            .post("/api/admin/transactions")
         .then()
             .statusCode(201)
-            .body("importerCode", equalTo("IMP"))
-            .body("productCode", equalTo("PROD01"));
+            .body("importer", equalTo("IMP"))
+            .body("product", equalTo("PROD01"));
 
-        assert suspensionRepository.count() == 1;
+        assert transactionRepository.count() == 1;
     }
 }

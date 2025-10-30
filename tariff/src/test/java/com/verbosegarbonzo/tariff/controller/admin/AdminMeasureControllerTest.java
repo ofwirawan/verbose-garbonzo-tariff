@@ -1,4 +1,4 @@
-package com.verbosegarbonzo.tariff.controller;
+package com.verbosegarbonzo.tariff.controller.admin;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.*;

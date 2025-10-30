@@ -1,4 +1,4 @@
-package com.verbosegarbonzo.tariff.controller;
+package com.verbosegarbonzo.tariff.controller.admin;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.*;
@@ -13,12 +13,15 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.test.context.TestPropertySource;
 
+import com.verbosegarbonzo.tariff.repository.SuspensionRepository;
+import com.verbosegarbonzo.tariff.repository.CountryRepository;
+import com.verbosegarbonzo.tariff.repository.ProductRepository;
 import com.verbosegarbonzo.tariff.repository.UserInfoRepository;
 import com.verbosegarbonzo.tariff.service.UserInfoService;
 import com.verbosegarbonzo.tariff.service.JwtService;
 import com.verbosegarbonzo.tariff.model.UserInfo;
 
-import java.util.UUID;
+import java.time.LocalDate;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @TestPropertySource(properties = {
@@ -28,19 +31,19 @@ import java.util.UUID;
         "logging.level.org.springframework.security=WARN",
         "logging.level.csd.security=WARN"
 })
-@DisplayName("Admin User Controller Integration Tests")
-class AdminUserControllerTest {
+@DisplayName("Admin Suspension Controller Integration Tests")
+class AdminSuspensionControllerTest {
     @LocalServerPort
     private int port;
 
     @Autowired
-    private UserInfoRepository userInfoRepository;
+    private SuspensionRepository suspensionRepository;
 
     @Autowired
-    private com.verbosegarbonzo.tariff.repository.CountryRepository countryRepository;
+    private CountryRepository countryRepository;
 
     @Autowired
-    private com.verbosegarbonzo.tariff.repository.ProductRepository productRepository;
+    private ProductRepository productRepository;
 
     @Autowired
     private com.verbosegarbonzo.tariff.repository.MeasureRepository measureRepository;
@@ -49,10 +52,10 @@ class AdminUserControllerTest {
     private com.verbosegarbonzo.tariff.repository.PreferenceRepository preferenceRepository;
 
     @Autowired
-    private com.verbosegarbonzo.tariff.repository.SuspensionRepository suspensionRepository;
+    private com.verbosegarbonzo.tariff.repository.TransactionRepository transactionRepository;
 
     @Autowired
-    private com.verbosegarbonzo.tariff.repository.TransactionRepository transactionRepository;
+    private UserInfoRepository userInfoRepository;
 
     @Autowired
     private UserInfoService userInfoService;
@@ -67,68 +70,48 @@ class AdminUserControllerTest {
         RestAssured.port = port;
         RestAssured.enableLoggingOfRequestAndResponseIfValidationFails();
 
-        // clean all tables to avoid FK conflicts
-        measureRepository.deleteAll();
-        preferenceRepository.deleteAll();
-        suspensionRepository.deleteAll();
-        transactionRepository.deleteAll();
-        productRepository.deleteAll();
-        countryRepository.deleteAll();
-        userInfoRepository.deleteAll();
+    measureRepository.deleteAll();
+    preferenceRepository.deleteAll();
+    suspensionRepository.deleteAll();
+    transactionRepository.deleteAll();
+    productRepository.deleteAll();
+    countryRepository.deleteAll();
+    userInfoRepository.deleteAll();
 
         userInfoService.addUser(new UserInfo(null, "admin", "admin@email.com", "goodpassword", "ROLE_ADMIN"));
         adminJwtToken = jwtService.generateToken("admin@email.com");
+
+        // seed importer + product
+        countryRepository.save(new com.verbosegarbonzo.tariff.model.Country("IMP", "Importer", "001"));
+        productRepository.save(new com.verbosegarbonzo.tariff.model.Product("PROD01", "Product 1"));
     }
 
     @Test
-    @DisplayName("Create and fetch user via admin endpoint")
-    void createAndFetchUser() {
-        String payload = """
+    @DisplayName("Create suspension")
+    void createSuspension() {
+        String payload = String.format("""
                 {
-                  "name": "Test User",
-                  "email": "testuser@example.com",
-                  "password": "secret",
-                  "roles": "ROLE_USER"
+                  "importerCode": "IMP",
+                  "productCode": "PROD01",
+                  "validFrom": "%s",
+                  "validTo": "%s",
+                  "suspensionFlag": true,
+                  "suspensionNote": "note",
+                  "suspensionRate": 0.5
                 }
-                """;
+                """, LocalDate.now().toString(), LocalDate.now().plusDays(10).toString());
 
-        var id = given()
+        given()
             .auth().oauth2(adminJwtToken)
             .contentType(ContentType.JSON)
             .body(payload)
         .when()
-            .post("/api/admin/users")
+            .post("/api/admin/suspensions")
         .then()
             .statusCode(201)
-            .body("email", equalTo("testuser@example.com"))
-            .extract()
-            .path("uid");
+            .body("importerCode", equalTo("IMP"))
+            .body("productCode", equalTo("PROD01"));
 
-        // fetch
-        given()
-            .auth().oauth2(adminJwtToken)
-        .when()
-            .get("/api/admin/users/" + id)
-        .then()
-            .statusCode(200)
-            .body("email", equalTo("testuser@example.com"));
-
-        assert userInfoRepository.count() == 2; // admin + new
-    }
-
-    @Test
-    @DisplayName("Delete user via admin endpoint")
-    void deleteUser() {
-        var saved = userInfoRepository.save(new com.verbosegarbonzo.tariff.model.UserInfo(null, "T", "t@e.com", "p", "ROLE_USER"));
-        UUID uid = saved.getUid();
-
-        given()
-            .auth().oauth2(adminJwtToken)
-        .when()
-            .delete("/api/admin/users/" + uid)
-        .then()
-            .statusCode(204);
-
-        assert userInfoRepository.existsById(uid) == false;
+        assert suspensionRepository.count() == 1;
     }
 }
