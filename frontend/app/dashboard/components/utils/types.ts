@@ -34,6 +34,7 @@ export interface TariffCalculationResult {
   suspensionNote?: string;
   suspensionActive?: boolean;
   warning?: string;
+  warnings?: string[];
   appliedRate?: {
     suspension?: number;
     prefAdval?: number;
@@ -42,11 +43,7 @@ export interface TariffCalculationResult {
   };
   // Freight cost fields
   freightCost?: number;
-  freightCostMin?: number;
-  freightCostMax?: number;
-  freightMode?: 'air' | 'ocean' | 'express';
   freightType?: string;
-  transitDays?: number;
   // Insurance cost fields
   insuranceRate?: number;
   insuranceCost?: number;

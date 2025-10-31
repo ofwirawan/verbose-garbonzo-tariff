@@ -62,8 +62,6 @@ export function CalculationResults({
 }: CalculationResultsProps) {
   const hasFreightData =
     result.freightCost !== undefined && result.freightCost > 0;
-  const hasInsuranceData =
-    result.insuranceCost !== undefined && result.insuranceCost > 0;
   const dutyAmount = Number(result.tradeFinal) - Number(result.tradeOriginal);
 
   return (
@@ -73,7 +71,6 @@ export function CalculationResults({
         result={result}
         dutyAmount={dutyAmount}
         hasFreightData={hasFreightData}
-        hasInsuranceData={hasInsuranceData}
       />
 
       {/* Collapsible Details Section */}
@@ -81,7 +78,6 @@ export function CalculationResults({
         result={result}
         suspensionNote={suspensionNote}
         hasFreightData={hasFreightData}
-        hasInsuranceData={hasInsuranceData}
       />
 
       {/* Save Button */}
@@ -94,12 +90,10 @@ function CostSummary({
   result,
   dutyAmount,
   hasFreightData,
-  hasInsuranceData,
 }: {
   result: TariffCalculationResult;
   dutyAmount: number;
   hasFreightData: boolean;
-  hasInsuranceData: boolean;
 }) {
   const appliedRate = result.appliedRate || {};
   const getRateInfo = () => {
@@ -114,8 +108,8 @@ function CostSummary({
 
   const rateInfo = getRateInfo();
   const totalCost = Number(result.totalLandedCost) || Number(result.tradeFinal);
-  const cardCount = (hasFreightData ? 1 : 0) + (hasInsuranceData ? 1 : 0) + 2; // trade + duty + optional freight/insurance
-  const gridCols = cardCount === 2 ? "sm:grid-cols-2" : cardCount === 3 ? "sm:grid-cols-3" : "sm:grid-cols-2 lg:grid-cols-4";
+  const cardCount = (hasFreightData ? 1 : 0) + 2; // trade + duty + optional freight
+  const gridCols = cardCount === 2 ? "sm:grid-cols-2" : "sm:grid-cols-2 lg:grid-cols-3";
 
   return (
     <div className="space-y-4">
@@ -174,35 +168,15 @@ function CostSummary({
               })}
             </div>
             <div className="text-xs text-gray-500 mt-1">
-              {result.freightMode === "air"
+              {result.freightType === "air"
                 ? "Air Freight"
-                : result.freightMode === "ocean"
+                : result.freightType === "ocean"
                 ? "Ocean Freight"
                 : "Express Delivery"}
-              {result.transitDays && ` · ${result.transitDays} days`}
             </div>
           </div>
         ) : null}
 
-        {/* Insurance Card (if applicable) */}
-        {hasInsuranceData ? (
-          <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-5 md:p-6">
-            <div className="flex items-start justify-between mb-2">
-              <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-                Insurance Cost
-              </div>
-            </div>
-            <div className="text-lg sm:text-2xl font-bold text-gray-900 break-words">
-              $
-              {Number(result.insuranceCost).toLocaleString("en-US", {
-                minimumFractionDigits: 2,
-              })}
-            </div>
-            <div className="text-xs text-gray-500 mt-1">
-              {result.insuranceRate?.toFixed(2)}% · {result.valuationBasisDeclared || "CIF"}
-            </div>
-          </div>
-        ) : null}
       </div>
 
       {/* Total Landed Cost - Prominent Display */}
@@ -221,20 +195,6 @@ function CostSummary({
             <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-black break-words">
               ${totalCost.toLocaleString("en-US", { minimumFractionDigits: 2 })}
             </div>
-            {hasFreightData &&
-              result.freightCostMin &&
-              result.freightCostMax && (
-                <div className="text-xs text-gray-400 mt-1">
-                  Freight range: $
-                  {Number(result.freightCostMin).toLocaleString("en-US", {
-                    maximumFractionDigits: 0,
-                  })}
-                  -$
-                  {Number(result.freightCostMax).toLocaleString("en-US", {
-                    maximumFractionDigits: 0,
-                  })}
-                </div>
-              )}
           </div>
         </div>
       </div>
@@ -246,12 +206,10 @@ function DetailsSection({
   result,
   suspensionNote,
   hasFreightData,
-  hasInsuranceData,
 }: {
   result: TariffCalculationResult;
   suspensionNote: string | null;
   hasFreightData: boolean;
-  hasInsuranceData: boolean;
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const appliedRate = result.appliedRate || {};
@@ -361,7 +319,7 @@ function DetailsSection({
             </div>
           )}
 
-          {/* Freight Details Section */}
+          {/* Shipping Information Section */}
           {hasFreightData && (
             <div className="bg-white rounded-lg p-4 sm:p-5 md:p-6 border border-gray-200">
               <h5 className="text-xs font-bold text-gray-700 uppercase tracking-wide mb-4 flex items-center gap-2">
@@ -371,68 +329,87 @@ function DetailsSection({
                 <InfoItem
                   label="Shipping Method"
                   value={
-                    result.freightMode === "air"
+                    result.freightType === "air"
                       ? "Air Freight"
-                      : result.freightMode === "ocean"
+                      : result.freightType === "ocean"
                       ? "Ocean Freight"
-                      : "Express Courier"
+                      : result.freightType || "—"
                   }
                 />
                 <InfoItem
-                  label="Cost Range"
+                  label="Freight Cost"
                   value={
-                    result.freightCostMin && result.freightCostMax
-                      ? `$${Number(result.freightCostMin).toLocaleString(
+                    result.freightCost
+                      ? `$${Number(result.freightCost).toLocaleString(
                           "en-US",
-                          { maximumFractionDigits: 0 }
-                        )}-$${Number(result.freightCostMax).toLocaleString(
-                          "en-US",
-                          { maximumFractionDigits: 0 }
+                          { minimumFractionDigits: 2 }
                         )}`
                       : "—"
                   }
                 />
-                <InfoItem
-                  label="Transit Time"
-                  value={
-                    result.transitDays ? `${result.transitDays} days` : "—"
-                  }
-                />
-                <InfoItem
-                  label="Shipment Weight"
-                  value={result.netWeight ? `${result.netWeight} kg` : "—"}
-                />
-              </div>
-            </div>
-          )}
-
-          {/* Insurance Details Section */}
-          {hasInsuranceData && (
-            <div className="bg-white rounded-lg p-4 sm:p-5 md:p-6 border border-gray-200">
-              <h5 className="text-xs font-bold text-gray-700 uppercase tracking-wide mb-4 flex items-center gap-2">
-                Insurance Information
-              </h5>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <InfoItem
                   label="Insurance Rate"
                   value={`${result.insuranceRate?.toFixed(2) || "1.00"}%`}
                 />
                 <InfoItem
                   label="Insurance Cost"
-                  value={`$${Number(result.insuranceCost).toLocaleString(
-                    "en-US",
-                    { minimumFractionDigits: 2 }
-                  )}`}
+                  value={
+                    result.insuranceCost
+                      ? `$${Number(result.insuranceCost).toLocaleString(
+                          "en-US",
+                          { minimumFractionDigits: 2 }
+                        )}`
+                      : "—"
+                  }
                 />
+              </div>
+            </div>
+          )}
+
+          {/* Valuation Basis Section */}
+          {(result.valuationBasisDeclared || result.valuationBasisApplied) && (
+            <div className="bg-white rounded-lg p-4 sm:p-5 md:p-6 border border-gray-200">
+              <h5 className="text-xs font-bold text-gray-700 uppercase tracking-wide mb-4 flex items-center gap-2">
+                Valuation Basis
+              </h5>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <InfoItem
-                  label="Valuation Basis (Declared)"
+                  label="Declared"
                   value={result.valuationBasisDeclared || "—"}
                 />
                 <InfoItem
-                  label="Valuation Basis (Applied)"
+                  label="Applied"
                   value={result.valuationBasisApplied || "—"}
                 />
               </div>
+            </div>
+          )}
+
+          {/* Warnings Section */}
+          {result.warnings && result.warnings.length > 0 && (
+            <div className="bg-white rounded-lg p-4 sm:p-5 md:p-6 border border-amber-200 bg-amber-50">
+              <h5 className="text-xs font-bold text-amber-900 uppercase tracking-wide mb-4 flex items-center gap-2">
+                <svg
+                  className="w-4 h-4 flex-shrink-0"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+                Calculation Notes
+              </h5>
+              <ul className="space-y-2">
+                {result.warnings.map((warning, index) => (
+                  <li key={index} className="text-sm text-amber-800 flex gap-3">
+                    <span className="text-amber-600 font-bold min-w-fit">•</span>
+                    <span>{warning}</span>
+                  </li>
+                ))}
+              </ul>
             </div>
           )}
 

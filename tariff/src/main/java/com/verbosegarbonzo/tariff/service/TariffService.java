@@ -496,6 +496,10 @@ public class TariffService {
                 : "CIF";
         resp.setValuationBasisDeclared(basisDeclared);
 
+        // Debug logging
+        log.info("Importer: {}, Valuation Basis: {}, IncludeFreight: {}, FreightMode: {}",
+                req.getImporterCode(), basisDeclared, req.isIncludeFreight(), req.getFreightMode());
+
         // Start with base trade + duty
         BigDecimal totalCost = req.getTradeOriginal().add(duty);
         BigDecimal freightCost = BigDecimal.ZERO;
@@ -506,7 +510,9 @@ public class TariffService {
 
         try {
             // === FREIGHT CALCULATION ===
-            if (req.isIncludeFreight() && (basisDeclared.equals("CIF") || basisDeclared.equals("CFR"))) {
+            // Calculate freight if requested, regardless of valuation basis
+            // For CIF/CFR, it's included in duty; for FOB, it's shown for informational purposes
+            if (req.isIncludeFreight()) {
                 BigDecimal weight = (req.getNetWeight() != null && req.getNetWeight().compareTo(BigDecimal.ZERO) > 0)
                         ? req.getNetWeight()
                         : new BigDecimal("100"); // fallback estimated weight
@@ -520,21 +526,18 @@ public class TariffService {
 
                     freightCost = BigDecimal.valueOf(freightDetails.getCostAverage());
                     resp.setFreightCost(scaleMoney(freightCost));
-                    resp.setFreightCostMin(scaleMoney(BigDecimal.valueOf(freightDetails.getCostMin())));
-                    resp.setFreightCostMax(scaleMoney(BigDecimal.valueOf(freightDetails.getCostMax())));
                     resp.setFreightType(req.getFreightMode());
-                    resp.setTransitDays(freightDetails.getTransitDays());
-                    totalCost = totalCost.add(freightCost);
+
+                    // Only add to total cost for CIF/CFR valuation basis
+                    if (basisDeclared.equals("CIF") || basisDeclared.equals("CFR")) {
+                        totalCost = totalCost.add(freightCost);
+                    }
 
                 } catch (Exception ex) {
                     log.warn("Freight calculation failed: {}", ex.getMessage());
                     warnings.add("Freight cost could not be fetched (" + ex.getMessage() + "). " + "Calculation continues without freight adjustment.");
                     valuationApplied = "FOB";
                 }
-
-            } else if (basisDeclared.equals("CIF") || basisDeclared.equals("CFR")) {
-                warnings.add("Freight cost excluded by user, but " + basisDeclared + " valuation typically requires it.");
-                valuationApplied = "FOB";
             }
 
             // === INSURANCE CALCULATION ===
