@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { ColumnDef } from "@tanstack/react-table";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
@@ -109,13 +110,31 @@ export function PreferencesManager() {
     }
   };
 
-  const columns = [
-    { key: "importerCode", label: "Importer Code" },
-    { key: "exporterCode", label: "Exporter Code" },
-    { key: "productCode", label: "Product Code" },
-    { key: "validFrom", label: "Valid From" },
-    { key: "validTo", label: "Valid To" },
-    { key: "prefAdValRate", label: "Pref AdVal Rate (%)" },
+  const columns: ColumnDef<Preference>[] = [
+    {
+      accessorKey: "importerCode",
+      header: "Importer Code",
+    },
+    {
+      accessorKey: "exporterCode",
+      header: "Exporter Code",
+    },
+    {
+      accessorKey: "productCode",
+      header: "Product Code",
+    },
+    {
+      accessorKey: "validFrom",
+      header: "Valid From",
+    },
+    {
+      accessorKey: "validTo",
+      header: "Valid To",
+    },
+    {
+      accessorKey: "prefAdValRate",
+      header: "Pref AdVal Rate (%)",
+    },
   ];
 
   return (
@@ -126,7 +145,6 @@ export function PreferencesManager() {
         isLoading={isLoading}
         onAdd={handleAdd}
         onEdit={handleEdit}
-        onDelete={() => {}}
         onDeleteConfirm={handleDeleteConfirm}
         currentPage={currentPage}
         totalPages={totalPages}
@@ -147,7 +165,7 @@ export function PreferencesManager() {
         isSubmitting={isSubmitting}
       >
         <div className="space-y-4">
-          <div>
+          <div className="grid gap-3">
             <Label htmlFor="importerCode">Importer Code</Label>
             <Input
               id="importerCode"
@@ -158,7 +176,7 @@ export function PreferencesManager() {
               placeholder="e.g., SG"
             />
           </div>
-          <div>
+          <div className="grid gap-3">
             <Label htmlFor="exporterCode">Exporter Code</Label>
             <Input
               id="exporterCode"
@@ -169,7 +187,7 @@ export function PreferencesManager() {
               placeholder="e.g., MY"
             />
           </div>
-          <div>
+          <div className="grid gap-3">
             <Label htmlFor="productCode">Product Code</Label>
             <Input
               id="productCode"
@@ -180,7 +198,7 @@ export function PreferencesManager() {
               placeholder="e.g., 123456"
             />
           </div>
-          <div>
+          <div className="grid gap-3">
             <Label htmlFor="validFrom">Valid From (YYYY-MM-DD)</Label>
             <Input
               id="validFrom"
@@ -191,7 +209,7 @@ export function PreferencesManager() {
               }
             />
           </div>
-          <div>
+          <div className="grid gap-3">
             <Label htmlFor="validTo">Valid To (YYYY-MM-DD)</Label>
             <Input
               id="validTo"
@@ -202,7 +220,7 @@ export function PreferencesManager() {
               }
             />
           </div>
-          <div>
+          <div className="grid gap-3">
             <Label htmlFor="prefAdValRate">Preference AdVal Rate (%)</Label>
             <Input
               id="prefAdValRate"

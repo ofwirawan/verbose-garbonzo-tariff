@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { ColumnDef } from "@tanstack/react-table";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
@@ -84,9 +85,15 @@ export function ProductsManager() {
     loadProducts(currentPage);
   };
 
-  const columns = [
-    { key: "hs6Code", label: "HS6 Code" },
-    { key: "description", label: "Description" },
+  const columns: ColumnDef<Product>[] = [
+    {
+      accessorKey: "hs6Code",
+      header: "HS6 Code",
+    },
+    {
+      accessorKey: "description",
+      header: "Description",
+    },
   ];
 
   return (
@@ -97,7 +104,6 @@ export function ProductsManager() {
         isLoading={isLoading}
         onAdd={handleAdd}
         onEdit={handleEdit}
-        onDelete={() => {}}
         onDeleteConfirm={handleDeleteConfirm}
         currentPage={currentPage}
         totalPages={totalPages}
@@ -118,7 +124,7 @@ export function ProductsManager() {
         isSubmitting={isSubmitting}
       >
         <div className="space-y-4">
-          <div>
+          <div className="grid gap-3">
             <Label htmlFor="hs6Code">HS6 Code</Label>
             <Input
               id="hs6Code"
@@ -130,7 +136,7 @@ export function ProductsManager() {
               disabled={!!editingProduct}
             />
           </div>
-          <div>
+          <div className="grid gap-3">
             <Label htmlFor="description">Description</Label>
             <Input
               id="description"

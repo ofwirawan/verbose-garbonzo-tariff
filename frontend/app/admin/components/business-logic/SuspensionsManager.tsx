@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { ColumnDef } from "@tanstack/react-table";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
@@ -110,17 +111,32 @@ export function SuspensionsManager() {
     }
   };
 
-  const columns = [
-    { key: "importerCode", label: "Importer Code" },
-    { key: "productCode", label: "Product Code" },
-    { key: "validFrom", label: "Valid From" },
-    { key: "validTo", label: "Valid To" },
+  const columns: ColumnDef<Suspension>[] = [
     {
-      key: "suspensionFlag",
-      label: "Active",
-      render: (value: boolean) => (value ? "Yes" : "No"),
+      accessorKey: "importerCode",
+      header: "Importer Code",
     },
-    { key: "suspensionRate", label: "Rate (%)" },
+    {
+      accessorKey: "productCode",
+      header: "Product Code",
+    },
+    {
+      accessorKey: "validFrom",
+      header: "Valid From",
+    },
+    {
+      accessorKey: "validTo",
+      header: "Valid To",
+    },
+    {
+      accessorKey: "suspensionFlag",
+      header: "Active",
+      cell: ({ row }) => (row.original.suspensionFlag ? "Yes" : "No"),
+    },
+    {
+      accessorKey: "suspensionRate",
+      header: "Rate (%)",
+    },
   ];
 
   return (
@@ -131,7 +147,6 @@ export function SuspensionsManager() {
         isLoading={isLoading}
         onAdd={handleAdd}
         onEdit={handleEdit}
-        onDelete={() => {}}
         onDeleteConfirm={handleDeleteConfirm}
         currentPage={currentPage}
         totalPages={totalPages}
@@ -152,7 +167,7 @@ export function SuspensionsManager() {
         isSubmitting={isSubmitting}
       >
         <div className="space-y-4">
-          <div>
+          <div className="grid gap-3">
             <Label htmlFor="importerCode">Importer Code</Label>
             <Input
               id="importerCode"
@@ -163,7 +178,7 @@ export function SuspensionsManager() {
               placeholder="e.g., SG"
             />
           </div>
-          <div>
+          <div className="grid gap-3">
             <Label htmlFor="productCode">Product Code</Label>
             <Input
               id="productCode"
@@ -174,7 +189,7 @@ export function SuspensionsManager() {
               placeholder="e.g., 123456"
             />
           </div>
-          <div>
+          <div className="grid gap-3">
             <Label htmlFor="validFrom">Valid From (YYYY-MM-DD)</Label>
             <Input
               id="validFrom"
@@ -185,7 +200,7 @@ export function SuspensionsManager() {
               }
             />
           </div>
-          <div>
+          <div className="grid gap-3">
             <Label htmlFor="validTo">Valid To (YYYY-MM-DD)</Label>
             <Input
               id="validTo"
@@ -196,7 +211,7 @@ export function SuspensionsManager() {
               }
             />
           </div>
-          <div>
+          <div className="grid gap-3">
             <Label htmlFor="suspensionFlag" className="flex items-center gap-2">
               <input
                 id="suspensionFlag"
@@ -213,7 +228,7 @@ export function SuspensionsManager() {
               Active Suspension
             </Label>
           </div>
-          <div>
+          <div className="grid gap-3">
             <Label htmlFor="suspensionNote">Suspension Note</Label>
             <Input
               id="suspensionNote"
@@ -224,7 +239,7 @@ export function SuspensionsManager() {
               placeholder="e.g., Test note"
             />
           </div>
-          <div>
+          <div className="grid gap-3">
             <Label htmlFor="suspensionRate">Suspension Rate (%)</Label>
             <Input
               id="suspensionRate"

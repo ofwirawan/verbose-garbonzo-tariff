@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { ColumnDef } from "@tanstack/react-table";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
@@ -102,13 +103,31 @@ export function MeasuresManager() {
     }
   };
 
-  const columns = [
-    { key: "importerCode", label: "Importer Code" },
-    { key: "productCode", label: "Product Code" },
-    { key: "validFrom", label: "Valid From" },
-    { key: "validTo", label: "Valid To" },
-    { key: "mfnAdvalRate", label: "MFN AdVal Rate (%)" },
-    { key: "specificRatePerKg", label: "Specific Rate/kg" },
+  const columns: ColumnDef<Measure>[] = [
+    {
+      accessorKey: "importerCode",
+      header: "Importer Code",
+    },
+    {
+      accessorKey: "productCode",
+      header: "Product Code",
+    },
+    {
+      accessorKey: "validFrom",
+      header: "Valid From",
+    },
+    {
+      accessorKey: "validTo",
+      header: "Valid To",
+    },
+    {
+      accessorKey: "mfnAdvalRate",
+      header: "MFN AdVal Rate (%)",
+    },
+    {
+      accessorKey: "specificRatePerKg",
+      header: "Specific Rate/kg",
+    },
   ];
 
   return (
@@ -119,7 +138,6 @@ export function MeasuresManager() {
         isLoading={isLoading}
         onAdd={handleAdd}
         onEdit={handleEdit}
-        onDelete={() => {}}
         onDeleteConfirm={handleDeleteConfirm}
         currentPage={currentPage}
         totalPages={totalPages}
@@ -140,7 +158,7 @@ export function MeasuresManager() {
         isSubmitting={isSubmitting}
       >
         <div className="space-y-4">
-          <div>
+          <div className="grid gap-3">
             <Label htmlFor="importerCode">Importer Code</Label>
             <Input
               id="importerCode"
@@ -151,7 +169,7 @@ export function MeasuresManager() {
               placeholder="e.g., SG"
             />
           </div>
-          <div>
+          <div className="grid gap-3">
             <Label htmlFor="productCode">Product Code</Label>
             <Input
               id="productCode"
@@ -162,7 +180,7 @@ export function MeasuresManager() {
               placeholder="e.g., 123456"
             />
           </div>
-          <div>
+          <div className="grid gap-3">
             <Label htmlFor="validFrom">Valid From (YYYY-MM-DD)</Label>
             <Input
               id="validFrom"
@@ -173,7 +191,7 @@ export function MeasuresManager() {
               }
             />
           </div>
-          <div>
+          <div className="grid gap-3">
             <Label htmlFor="validTo">Valid To (YYYY-MM-DD)</Label>
             <Input
               id="validTo"
@@ -184,7 +202,7 @@ export function MeasuresManager() {
               }
             />
           </div>
-          <div>
+          <div className="grid gap-3">
             <Label htmlFor="mfnAdvalRate">MFN AdVal Rate (%)</Label>
             <Input
               id="mfnAdvalRate"
@@ -199,7 +217,7 @@ export function MeasuresManager() {
               }
             />
           </div>
-          <div>
+          <div className="grid gap-3">
             <Label htmlFor="specificRatePerKg">Specific Rate Per Kg</Label>
             <Input
               id="specificRatePerKg"

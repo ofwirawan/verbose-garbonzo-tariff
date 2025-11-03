@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { ColumnDef } from "@tanstack/react-table";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
@@ -95,15 +96,26 @@ export function UsersManager() {
     loadUsers(currentPage);
   };
 
-  const columns = [
-    { key: "uid", label: "User ID" },
-    { key: "email", label: "Email" },
-    { key: "roles", label: "Role" },
+  const columns: ColumnDef<User>[] = [
     {
-      key: "createdAt",
-      label: "Created",
-      render: (value: string) =>
-        value ? new Date(value).toLocaleDateString() : "N/A",
+      accessorKey: "uid",
+      header: "User ID",
+    },
+    {
+      accessorKey: "email",
+      header: "Email",
+    },
+    {
+      accessorKey: "roles",
+      header: "Role",
+    },
+    {
+      accessorKey: "createdAt",
+      header: "Created",
+      cell: ({ row }) =>
+        row.original.createdAt
+          ? new Date(row.original.createdAt).toLocaleDateString()
+          : "N/A",
     },
   ];
 
@@ -115,7 +127,6 @@ export function UsersManager() {
         isLoading={isLoading}
         onAdd={handleAdd}
         onEdit={handleEdit}
-        onDelete={() => {}}
         onDeleteConfirm={handleDeleteConfirm}
         currentPage={currentPage}
         totalPages={totalPages}
@@ -134,7 +145,7 @@ export function UsersManager() {
         isSubmitting={isSubmitting}
       >
         <div className="space-y-4">
-          <div>
+          <div className="grid gap-3">
             <Label htmlFor="uid">User ID (UUID)</Label>
             <Input
               id="uid"
@@ -146,7 +157,7 @@ export function UsersManager() {
               disabled={!!editingUser}
             />
           </div>
-          <div>
+          <div className="grid gap-3">
             <Label htmlFor="email">Email</Label>
             <Input
               id="email"
@@ -158,7 +169,7 @@ export function UsersManager() {
               placeholder="e.g., user@example.com"
             />
           </div>
-          <div>
+          <div className="grid gap-3">
             <Label htmlFor="pwHash">Password Hash</Label>
             <Input
               id="pwHash"
@@ -171,7 +182,7 @@ export function UsersManager() {
               }
             />
           </div>
-          <div>
+          <div className="grid gap-3">
             <Label htmlFor="roles">Role</Label>
             <Input
               id="roles"

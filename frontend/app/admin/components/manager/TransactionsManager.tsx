@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { ColumnDef } from "@tanstack/react-table";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
@@ -114,19 +115,46 @@ export function TransactionsManager() {
     }
   };
 
-  const columns = [
-    { key: "tid", label: "Transaction ID" },
-    { key: "user", label: "User" },
-    { key: "tDate", label: "Date" },
-    { key: "importer", label: "Importer" },
-    { key: "exporter", label: "Exporter" },
-    { key: "product", label: "Product" },
-    { key: "tradeOriginal", label: "Original Trade Value" },
-    { key: "tradeFinal", label: "Final Trade Value" },
+  const columns: ColumnDef<Transaction>[] = [
     {
-      key: "appliedRate",
-      label: "Applied Rate (%)",
-      render: (value: any) => (value?.rate ? value.rate.toFixed(2) : "N/A"),
+      accessorKey: "tid",
+      header: "Transaction ID",
+    },
+    {
+      accessorKey: "user",
+      header: "User",
+    },
+    {
+      accessorKey: "tDate",
+      header: "Date",
+    },
+    {
+      accessorKey: "importer",
+      header: "Importer",
+    },
+    {
+      accessorKey: "exporter",
+      header: "Exporter",
+    },
+    {
+      accessorKey: "product",
+      header: "Product",
+    },
+    {
+      accessorKey: "tradeOriginal",
+      header: "Original Trade Value",
+    },
+    {
+      accessorKey: "tradeFinal",
+      header: "Final Trade Value",
+    },
+    {
+      accessorKey: "appliedRate",
+      header: "Applied Rate (%)",
+      cell: ({ row }) =>
+        row.original.appliedRate?.rate
+          ? row.original.appliedRate.rate.toFixed(2)
+          : "N/A",
     },
   ];
 
@@ -138,7 +166,6 @@ export function TransactionsManager() {
         isLoading={isLoading}
         onAdd={handleAdd}
         onEdit={handleEdit}
-        onDelete={() => {}}
         onDeleteConfirm={handleDeleteConfirm}
         currentPage={currentPage}
         totalPages={totalPages}
@@ -161,7 +188,7 @@ export function TransactionsManager() {
         submitLabel={editingTransaction ? "Update" : "Create"}
       >
         <div className="space-y-4 max-h-96 overflow-y-auto">
-          <div>
+          <div className="grid gap-3">
             <Label htmlFor="user">User ID (UUID)</Label>
             <Input
               id="user"
@@ -173,7 +200,7 @@ export function TransactionsManager() {
               disabled={!!editingTransaction}
             />
           </div>
-          <div>
+          <div className="grid gap-3">
             <Label htmlFor="tDate">Transaction Date (YYYY-MM-DD)</Label>
             <Input
               id="tDate"
@@ -184,7 +211,7 @@ export function TransactionsManager() {
               }
             />
           </div>
-          <div>
+          <div className="grid gap-3">
             <Label htmlFor="importer">Importer Code</Label>
             <Input
               id="importer"
@@ -195,7 +222,7 @@ export function TransactionsManager() {
               placeholder="e.g., SG"
             />
           </div>
-          <div>
+          <div className="grid gap-3">
             <Label htmlFor="exporter">Exporter Code</Label>
             <Input
               id="exporter"
@@ -206,7 +233,7 @@ export function TransactionsManager() {
               placeholder="e.g., MY"
             />
           </div>
-          <div>
+          <div className="grid gap-3">
             <Label htmlFor="product">Product Code</Label>
             <Input
               id="product"
@@ -217,7 +244,7 @@ export function TransactionsManager() {
               placeholder="e.g., 123456"
             />
           </div>
-          <div>
+          <div className="grid gap-3">
             <Label htmlFor="tradeOriginal">Original Trade Value</Label>
             <Input
               id="tradeOriginal"
@@ -232,7 +259,7 @@ export function TransactionsManager() {
               }
             />
           </div>
-          <div>
+          <div className="grid gap-3">
             <Label htmlFor="netWeight">Net Weight (kg)</Label>
             <Input
               id="netWeight"
@@ -247,7 +274,7 @@ export function TransactionsManager() {
               }
             />
           </div>
-          <div>
+          <div className="grid gap-3">
             <Label htmlFor="tradeFinal">Final Trade Value</Label>
             <Input
               id="tradeFinal"
@@ -262,7 +289,7 @@ export function TransactionsManager() {
               }
             />
           </div>
-          <div>
+          <div className="grid gap-3">
             <Label htmlFor="appliedRate">Applied Rate (%)</Label>
             <Input
               id="appliedRate"

@@ -1,6 +1,33 @@
 "use client";
 
-import { useState } from "react";
+import * as React from "react";
+import {
+  ColumnDef,
+  ColumnFiltersState,
+  flexRender,
+  getCoreRowModel,
+  getFilteredRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  SortingState,
+  useReactTable,
+  VisibilityState,
+} from "@tanstack/react-table";
+import { ArrowUpDown, ChevronDown, Edit2, Plus, Trash2 } from "lucide-react";
+import { toast } from "sonner";
+
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -9,7 +36,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,23 +45,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Edit2, Trash2, Plus, ChevronLeft, ChevronRight } from "lucide-react";
-import { toast } from "sonner";
 
-interface Column {
-  key: string;
-  label: string;
-  render?: (value: any, row: any) => React.ReactNode;
-}
-
-interface DataTableProps {
-  columns: Column[];
-  data: any[];
+interface DataTableProps<TData, TValue> {
+  columns: ColumnDef<TData, TValue>[];
+  data: TData[];
   isLoading: boolean;
   onAdd: () => void;
-  onEdit: (row: any) => void;
-  onDelete: (row: any) => void;
-  onDeleteConfirm: (row: any) => Promise<void>;
+  onEdit: (row: TData) => void;
+  onDeleteConfirm: (row: TData) => Promise<void>;
   currentPage: number;
   totalPages: number;
   onPageChange: (page: number) => void;
@@ -43,22 +60,99 @@ interface DataTableProps {
   emptyMessage?: string;
 }
 
-export function DataTable({
+export function DataTable<TData, TValue>({
   columns,
   data,
   isLoading,
   onAdd,
   onEdit,
-  onDelete,
   onDeleteConfirm,
   currentPage,
   totalPages,
   onPageChange,
   title,
   emptyMessage = "No data found",
-}: DataTableProps) {
-  const [deleteRow, setDeleteRow] = useState<any>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
+}: DataTableProps<TData, TValue>) {
+  const [sorting, setSorting] = React.useState<SortingState>([]);
+  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
+    []
+  );
+  const [columnVisibility, setColumnVisibility] =
+    React.useState<VisibilityState>({});
+  const [rowSelection, setRowSelection] = React.useState({});
+  const [deleteRow, setDeleteRow] = React.useState<TData | null>(null);
+  const [isDeleting, setIsDeleting] = React.useState(false);
+
+  // Add actions column dynamically
+  const columnsWithActions: ColumnDef<TData, TValue>[] = [
+    {
+      id: "select",
+      header: ({ table }) => (
+        <Checkbox
+          checked={
+            table.getIsAllPageRowsSelected() ||
+            (table.getIsSomePageRowsSelected() && "indeterminate")
+          }
+          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+          aria-label="Select all"
+        />
+      ),
+      cell: ({ row }) => (
+        <Checkbox
+          checked={row.getIsSelected()}
+          onCheckedChange={(value) => row.toggleSelected(!!value)}
+          aria-label="Select row"
+        />
+      ),
+      enableSorting: false,
+      enableHiding: false,
+    } as ColumnDef<TData, TValue>,
+    ...columns,
+    {
+      id: "actions",
+      header: "Actions",
+      enableHiding: false,
+      cell: ({ row }) => (
+        <div className="flex gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onEdit(row.original)}
+            className="text-blue-600 hover:bg-blue-50"
+          >
+            <Edit2 className="w-4 h-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setDeleteRow(row.original)}
+            className="text-red-600 hover:bg-red-50"
+          >
+            <Trash2 className="w-4 h-4" />
+          </Button>
+        </div>
+      ),
+    } as ColumnDef<TData, TValue>,
+  ];
+
+  const table = useReactTable({
+    data,
+    columns: columnsWithActions,
+    onSortingChange: setSorting,
+    onColumnFiltersChange: setColumnFilters,
+    getCoreRowModel: getCoreRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    onColumnVisibilityChange: setColumnVisibility,
+    onRowSelectionChange: setRowSelection,
+    state: {
+      sorting,
+      columnFilters,
+      columnVisibility,
+      rowSelection,
+    },
+  });
 
   const handleDeleteConfirm = async () => {
     if (!deleteRow) return;
@@ -77,120 +171,149 @@ export function DataTable({
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
-        <Button
-          onClick={onAdd}
-          className="bg-black text-white hover:bg-gray-800"
-          disabled={isLoading}
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Add {title}
-        </Button>
+    <div className="w-full space-y-4">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h3 className="text-lg font-semibold">{title}</h3>
+        </div>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center gap-4">
+          <Input
+            placeholder={`Filter ${title.toLowerCase()}...`}
+            className="max-w-sm"
+            disabled={data.length === 0}
+          />
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline">
+                Columns <ChevronDown className="ml-2 h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {table
+                .getAllColumns()
+                .filter((column) => column.getCanHide())
+                .map((column) => {
+                  return (
+                    <DropdownMenuCheckboxItem
+                      key={column.id}
+                      className="capitalize"
+                      checked={column.getIsVisible()}
+                      onCheckedChange={(value) =>
+                        column.toggleVisibility(!!value)
+                      }
+                    >
+                      {column.id}
+                    </DropdownMenuCheckboxItem>
+                  );
+                })}
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <Button
+            onClick={onAdd}
+            className="bg-black text-white hover:bg-gray-800"
+            disabled={isLoading}
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            Add {title}
+          </Button>
+        </div>
       </div>
 
-      <div className="border border-gray-200 rounded-lg overflow-hidden">
-        {isLoading ? (
-          <div className="p-8 text-center text-gray-500">Loading...</div>
-        ) : data.length === 0 ? (
-          <div className="p-8 text-center text-gray-500">{emptyMessage}</div>
-        ) : (
-          <>
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-gray-50 border-gray-200">
-                    {columns.map((column) => (
-                      <TableHead
-                        key={column.key}
-                        className="font-semibold text-gray-700"
-                      >
-                        {column.label}
-                      </TableHead>
-                    ))}
-                    <TableHead className="font-semibold text-gray-700">
-                      Actions
-                    </TableHead>
+      {isLoading ? (
+        <div className="rounded-md border p-8 text-center text-gray-500">
+          Loading...
+        </div>
+      ) : (
+        <>
+          <div className="overflow-hidden rounded-md border">
+            <Table>
+              <TableHeader>
+                {table.getHeaderGroups().map((headerGroup) => (
+                  <TableRow key={headerGroup.id}>
+                    {headerGroup.headers.map((header) => {
+                      return (
+                        <TableHead key={header.id}>
+                          {header.isPlaceholder
+                            ? null
+                            : flexRender(
+                                header.column.columnDef.header,
+                                header.getContext()
+                              )}
+                        </TableHead>
+                      );
+                    })}
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {data.map((row, idx) => (
+                ))}
+              </TableHeader>
+              <TableBody>
+                {table.getRowModel().rows?.length ? (
+                  table.getRowModel().rows.map((row) => (
                     <TableRow
-                      key={idx}
-                      className="border-gray-200 hover:bg-gray-50"
+                      key={row.id}
+                      data-state={row.getIsSelected() && "selected"}
                     >
-                      {columns.map((column) => (
-                        <TableCell key={column.key} className="text-gray-700">
-                          {column.render
-                            ? column.render(row[column.key], row)
-                            : String(row[column.key])}
+                      {row.getVisibleCells().map((cell) => (
+                        <TableCell key={cell.id}>
+                          {flexRender(
+                            cell.column.columnDef.cell,
+                            cell.getContext()
+                          )}
                         </TableCell>
                       ))}
-                      <TableCell className="text-gray-700">
-                        <div className="flex gap-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => onEdit(row)}
-                            className="text-blue-600 hover:bg-blue-50"
-                          >
-                            <Edit2 className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setDeleteRow(row)}
-                            className="text-red-600 hover:bg-red-50"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell
+                      colSpan={columnsWithActions.length}
+                      className="h-24 text-center"
+                    >
+                      {emptyMessage}
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
 
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <div className="flex justify-between items-center p-4 border-t border-gray-200 bg-gray-50">
-                <span className="text-sm text-gray-600">
-                  Page {currentPage + 1} of {totalPages}
-                </span>
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => onPageChange(currentPage - 1)}
-                    disabled={currentPage === 0}
-                  >
-                    <ChevronLeft className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => onPageChange(currentPage + 1)}
-                    disabled={currentPage === totalPages - 1}
-                  >
-                    <ChevronRight className="w-4 h-4" />
-                  </Button>
-                </div>
-              </div>
-            )}
-          </>
-        )}
-      </div>
+          <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
+            <div className="text-sm text-gray-500">
+              {table.getFilteredSelectedRowModel().rows.length} of{" "}
+              {table.getFilteredRowModel().rows.length} row(s) selected.
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onPageChange(currentPage - 1)}
+                disabled={currentPage === 0 || isLoading}
+              >
+                Previous
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onPageChange(currentPage + 1)}
+                disabled={currentPage === totalPages - 1 || isLoading}
+              >
+                Next
+              </Button>
+            </div>
+          </div>
+        </>
+      )}
 
       {/* Delete Confirmation Dialog */}
-      <AlertDialog open={!!deleteRow} onOpenChange={(open) => !open && setDeleteRow(null)}>
+      <AlertDialog
+        open={!!deleteRow}
+        onOpenChange={(open) => !open && setDeleteRow(null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete {title}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this {title.toLowerCase()}? This action
-              cannot be undone.
+              Are you sure you want to delete this {title.toLowerCase()}? This
+              action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="flex gap-2 justify-end">

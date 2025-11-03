@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { ColumnDef } from "@tanstack/react-table";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
@@ -102,10 +103,19 @@ export function CountriesManager() {
     loadCountries(currentPage);
   };
 
-  const columns = [
-    { key: "countryCode", label: "Country Code" },
-    { key: "numericCode", label: "Numeric Code" },
-    { key: "name", label: "Country Name" },
+  const columns: ColumnDef<Country>[] = [
+    {
+      accessorKey: "countryCode",
+      header: "Country Code",
+    },
+    {
+      accessorKey: "numericCode",
+      header: "Numeric Code",
+    },
+    {
+      accessorKey: "name",
+      header: "Country Name",
+    },
   ];
 
   return (
@@ -116,7 +126,6 @@ export function CountriesManager() {
         isLoading={isLoading}
         onAdd={handleAdd}
         onEdit={handleEdit}
-        onDelete={() => {}}
         onDeleteConfirm={handleDeleteConfirm}
         currentPage={currentPage}
         totalPages={totalPages}
@@ -137,7 +146,7 @@ export function CountriesManager() {
         isSubmitting={isSubmitting}
       >
         <div className="space-y-4">
-          <div>
+          <div className="grid gap-3">
             <Label htmlFor="countryCode">Country Code</Label>
             <Input
               id="countryCode"
@@ -149,7 +158,7 @@ export function CountriesManager() {
               disabled={!!editingCountry}
             />
           </div>
-          <div>
+          <div className="grid gap-3">
             <Label htmlFor="numericCode">Numeric Code</Label>
             <Input
               id="numericCode"
@@ -160,7 +169,7 @@ export function CountriesManager() {
               placeholder="e.g., 702"
             />
           </div>
-          <div>
+          <div className="grid gap-3">
             <Label htmlFor="name">Country Name</Label>
             <Input
               id="name"
