@@ -13,18 +13,14 @@ import {
   useReactTable,
   VisibilityState,
 } from "@tanstack/react-table";
-import { ArrowUpDown, ChevronDown, Edit2, Plus, Trash2 } from "lucide-react";
+import { ChevronDown, Edit2, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
@@ -45,6 +41,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { useState } from "react";
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -58,6 +55,7 @@ interface DataTableProps<TData, TValue> {
   onPageChange: (page: number) => void;
   title: string;
   emptyMessage?: string;
+  filterColumnId?: string;
 }
 
 export function DataTable<TData, TValue>({
@@ -72,16 +70,15 @@ export function DataTable<TData, TValue>({
   onPageChange,
   title,
   emptyMessage = "No data found",
+  filterColumnId,
 }: DataTableProps<TData, TValue>) {
-  const [sorting, setSorting] = React.useState<SortingState>([]);
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
-    []
-  );
-  const [columnVisibility, setColumnVisibility] =
-    React.useState<VisibilityState>({});
-  const [rowSelection, setRowSelection] = React.useState({});
-  const [deleteRow, setDeleteRow] = React.useState<TData | null>(null);
-  const [isDeleting, setIsDeleting] = React.useState(false);
+  const [sorting, setSorting] = useState<SortingState>([]);
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+  const [rowSelection, setRowSelection] = useState({});
+  const [deleteRow, setDeleteRow] = useState<TData | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [filterValue, setFilterValue] = useState("");
 
   // Add actions column dynamically
   const columnsWithActions: ColumnDef<TData, TValue>[] = [
@@ -163,7 +160,9 @@ export function DataTable<TData, TValue>({
       setDeleteRow(null);
     } catch (error) {
       toast.error(
-        `Failed to delete ${title}: ${error instanceof Error ? error.message : "Unknown error"}`
+        `Failed to delete ${title}: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
       );
     } finally {
       setIsDeleting(false);
@@ -181,6 +180,16 @@ export function DataTable<TData, TValue>({
             placeholder={`Filter ${title.toLowerCase()}...`}
             className="max-w-sm"
             disabled={data.length === 0}
+            value={filterValue}
+            onChange={(e) => {
+              setFilterValue(e.target.value);
+              const columnToFilter = filterColumnId
+                ? table.getColumn(filterColumnId)
+                : table.getAllLeafColumns()[0];
+              if (columnToFilter) {
+                columnToFilter.setFilterValue(e.target.value);
+              }
+            }}
           />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

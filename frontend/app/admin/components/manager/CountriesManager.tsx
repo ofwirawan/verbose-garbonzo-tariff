@@ -131,6 +131,7 @@ export function CountriesManager() {
         totalPages={totalPages}
         onPageChange={loadCountries}
         title="Countries"
+        filterColumnId="name"
       />
 
       <FormDialog

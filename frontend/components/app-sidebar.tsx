@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { type NavItem } from "./sidebar-config";
 import {
   IconCamera,
   IconChartBar,
@@ -19,7 +20,6 @@ import {
   IconShieldLock,
   // IconUsers,
 } from "@tabler/icons-react";
-
 // import { NavDocuments } from "@/components/nav-documents";
 import { NavMain } from "@/components/nav-main";
 // import { NavSecondary } from "@/components/nav-secondary";
@@ -34,6 +34,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { getCurrentUser } from "@/lib/auth";
+import { useState } from "react";
 
 const data = {
   user: {
@@ -167,8 +168,19 @@ const data = {
   ],
 };
 
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  const [currentUser, setCurrentUser] = React.useState(data.user);
+interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
+  isAdmin?: boolean;
+  adminItems?: NavItem[];
+  onAdminItemClick?: (itemTitle: string) => void;
+}
+
+export function AppSidebar({
+  isAdmin = false,
+  adminItems = [],
+  onAdminItemClick,
+  ...props
+}: AppSidebarProps) {
+  const [currentUser, setCurrentUser] = useState(data.user);
 
   React.useEffect(() => {
     const user = getCurrentUser();
@@ -184,18 +196,33 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           <SidebarMenuItem>
             <SidebarMenuButton
               asChild
-              className="data-[slot=sidebar-menu-button]:!p-1.5"
+              size="lg"
+              className="justify-start"
             >
-              <a href="#">
+              <a href={isAdmin ? "/admin" : "/dashboard"}>
                 <IconInnerShadowTop className="!size-5" />
-                <span className="text-xl font-semibold">Tarrific</span>
+                <div className="flex flex-col gap-0">
+                  <span className="text-xl font-semibold leading-tight">Tarrific</span>
+                  {isAdmin && (
+                    <span className="text-xs text-gray-500 font-medium leading-tight">
+                      Admin Panel
+                    </span>
+                  )}
+                </div>
               </a>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
+        {isAdmin ? (
+          <NavMain
+            items={adminItems}
+            onItemClick={onAdminItemClick}
+          />
+        ) : (
+          <NavMain items={data.navMain} />
+        )}
         {/* <NavDocuments items={data.documents} /> */}
         {/* <NavSecondary items={data.navSecondary} className="mt-auto" /> */}
       </SidebarContent>
