@@ -26,10 +26,63 @@ public class FreightService {
     }
 
     /**
+     * Holds freight cost details including min, average, max and transit time
+     */
+    public static class FreightDetails {
+        public Double costMin;
+        public Double costAverage;
+        public Double costMax;
+        public Integer transitDays;
+
+        public FreightDetails(Double costMin, Double costAverage, Double costMax, Integer transitDays) {
+            this.costMin = costMin;
+            this.costAverage = costAverage;
+            this.costMax = costMax;
+            this.transitDays = transitDays;
+        }
+
+        public Double getCostMin() { return costMin; }
+        public Double getCostAverage() { return costAverage; }
+        public Double getCostMax() { return costMax; }
+        public Integer getTransitDays() { return transitDays; }
+    }
+
+    /**
+     * Extracts transit days from the API response based on freight mode
+     */
+    private Integer extractTransitDays(JsonNode modeNode, String mode) {
+        if (modeNode == null || modeNode.isMissingNode()) {
+            return null;
+        }
+
+        // Common transit day values by mode
+        Integer defaultTransitDays = null;
+        if ("air".equalsIgnoreCase(mode)) {
+            defaultTransitDays = 5; // Average air freight transit time
+        } else if ("ocean".equalsIgnoreCase(mode)) {
+            defaultTransitDays = 30; // Average ocean freight transit time
+        } else if ("express".equalsIgnoreCase(mode)) {
+            defaultTransitDays = 2; // Express delivery transit time
+        }
+
+        // Try to extract from API response if available
+        JsonNode transitNode = modeNode.path("transitTime");
+        if (transitNode != null && !transitNode.isMissingNode()) {
+            int apiTransitDays = transitNode.asInt(0);
+            if (apiTransitDays > 0) {
+                return apiTransitDays;
+            }
+        }
+
+        return defaultTransitDays;
+    }
+
+    /**
      * Calculates freight cost using Freightos GET API (JSON mode).
+     * Returns freight details including min, average, max costs and transit days.
      * Uses city names stored in the Country entity.
      */
-    public Double calculateFreight(String mode, String importerCode, String exporterCode, double weight) {
+    public FreightDetails calculateFreight(String mode, String importerCode, String exporterCode, double weight) {
         Country importer = countryRepository.findById(importerCode)
                 .orElseThrow(() -> new IllegalArgumentException("Importer not found: " + importerCode));
         Country exporter = countryRepository.findById(exporterCode)
@@ -39,8 +92,8 @@ public class FreightService {
             throw new IllegalStateException("City missing for importer or exporter in database");
         }
 
-        String origin = exporter.getCity();      // already formatted as “City,Country”
-        String destination = importer.getCity(); // already formatted as “City,Country”
+        String origin = exporter.getCity();      // already formatted as "City,Country"
+        String destination = importer.getCity(); // already formatted as "City,Country"
 
         try {
             // Build query URL
@@ -90,7 +143,10 @@ public class FreightService {
 
             double min = minNode.asDouble();
             double max = maxNode.asDouble();
-            return (min + max) / 2.0; // average cost between min and max
+            double average = (min + max) / 2.0;
+            Integer transitDays = extractTransitDays(modeNode, mode);
+
+            return new FreightDetails(min, average, max, transitDays);
 
         } catch (Exception e) {
             throw new FreightCalculationException("Freight API call failed: " + e.getMessage(), e);

@@ -18,6 +18,7 @@ model country {
   numeric_code          String        @unique @db.VarChar(3)
   name                  String        @default("")
   city                  String?       @db.VarChar(100)
+  valuation_basis       String?       @db.VarChar(10)
   measures              measure[]
   exporter_preferences  preference[]  @relation("exporter_preferences")
   importer_preferences  preference[]  @relation("importer_preferences")
@@ -36,20 +37,25 @@ model product {
 }
 
 model transaction {
-  tid            BigInt    @id @default(autoincrement())
-  uid            String    @db.Uuid
-  t_date         DateTime  @db.Date
-  importer_code  String    @db.VarChar(3)
-  exporter_code  String?   @db.VarChar(3)
-  hs6code        String    @db.VarChar(6)
-  trade_original Decimal   @db.Decimal(38, 2)
-  net_weight     Decimal?  @db.Decimal(38, 2)
-  trade_final    Decimal   @db.Decimal(38, 2)
-  applied_rate   Json      @db.Json
-  exporter       country?  @relation("exporter_transactions", fields: [exporter_code], references: [country_code], onDelete: NoAction)
-  product        product   @relation(fields: [hs6code], references: [hs6code], onDelete: Cascade)
-  importer       country   @relation("importer_transactions", fields: [importer_code], references: [country_code], onDelete: NoAction)
-  user           user_info @relation(fields: [uid], references: [uid], onDelete: NoAction, onUpdate: NoAction)
+  tid             BigInt    @id @default(autoincrement())
+  uid             String    @db.Uuid
+  t_date          DateTime  @db.Date
+  importer_code   String    @db.VarChar(3)
+  exporter_code   String?   @db.VarChar(3)
+  hs6code         String    @db.VarChar(6)
+  trade_original  Decimal   @db.Decimal(38, 2)
+  net_weight      Decimal?  @db.Decimal(38, 2)
+  trade_final     Decimal   @db.Decimal(38, 2)
+  applied_rate    Json      @db.Json
+  freight_cost    Decimal?  @db.Decimal(38, 2)
+  freight_type    String?   @db.VarChar(10)
+  insurance_rate  Decimal?  @db.Decimal(5, 2)
+  insurance_cost  Decimal?  @db.Decimal(12, 2)
+  valuation_basis String?   @db.VarChar
+  exporter        country?  @relation("exporter_transactions", fields: [exporter_code], references: [country_code], onDelete: NoAction)
+  product         product   @relation(fields: [hs6code], references: [hs6code], onDelete: Cascade)
+  importer        country   @relation("importer_transactions", fields: [importer_code], references: [country_code], onDelete: NoAction)
+  user            user_info @relation(fields: [uid], references: [uid], onDelete: NoAction, onUpdate: NoAction)
 }
 
 model measure {
@@ -100,14 +106,14 @@ model suspension {
 }
 
 model user_info {
-  uid             String        @id @db.Uuid
-  email           String        @unique @db.VarChar(255)
-  name            String?       @db.VarChar(255)
-  password        String        @db.VarChar(255)
-  roles           String        @db.VarChar(255)
+  uid         String        @id @db.Uuid
+  email       String        @unique @db.VarChar(255)
+  name        String?       @db.VarChar(255)
+  password    String        @db.VarChar(255)
+  roles       String        @db.VarChar(255)
   profile_type    ProfileType?
-  timestamp       DateTime?     @default(now()) @db.Timestamp(6)
-  transaction     transaction[]
+  timestamp   DateTime?     @default(now()) @db.Timestamp(6)
+  transaction transaction[]
 
   @@map("user_info")
 }

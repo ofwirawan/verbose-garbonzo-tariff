@@ -158,7 +158,7 @@ export async function updateUserProfile(
 }
 
 export async function updateUserProfileType(
-  profileType: string
+  profileType: ProfileType | null
 ): Promise<UserProfile | null> {
   try {
     // Get JWT token from cookies

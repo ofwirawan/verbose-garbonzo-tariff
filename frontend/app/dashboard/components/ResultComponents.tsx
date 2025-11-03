@@ -107,18 +107,15 @@ function CostSummary({
   };
 
   const rateInfo = getRateInfo();
-  const totalCost = hasFreightData
-    ? Number(result.totalLandedCost)
-    : Number(result.tradeFinal);
-
-  const isPercentage = appliedRate?.suspension !== undefined ||
-                       appliedRate?.prefAdval !== undefined ||
-                       appliedRate?.mfnAdval !== undefined;
+  const totalCost = Number(result.totalLandedCost) || Number(result.tradeFinal);
+  const hasValuationBasis = result.valuationBasisDeclared || result.valuationBasisApplied;
+  const cardCount = (hasFreightData ? 1 : 0) + (hasValuationBasis ? 1 : 0) + 2; // trade + duty + optional freight + optional valuation
+  const gridCols = cardCount === 2 ? "sm:grid-cols-2" : cardCount === 3 ? "sm:grid-cols-3 lg:grid-cols-3" : "sm:grid-cols-2 lg:grid-cols-4";
 
   return (
     <div className="space-y-4">
       {/* Visual Cost Breakdown Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className={`grid grid-cols-1 ${gridCols} gap-4`}>
         {/* Trade Value Card */}
         <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-5 md:p-6">
           <div className="flex items-start justify-between mb-2">
@@ -172,36 +169,38 @@ function CostSummary({
               })}
             </div>
             <div className="text-xs text-gray-500 mt-1">
-              {result.freightMode === "air"
+              {result.freightType === "air"
                 ? "Air Freight"
-                : result.freightMode === "ocean"
+                : result.freightType === "ocean"
                 ? "Ocean Freight"
                 : "Express Delivery"}
-              {result.transitDays && ` · ${result.transitDays} days`}
             </div>
           </div>
-        ) : (
-          <div className="bg-gray-50 rounded-lg border border-dashed border-gray-300 p-4 sm:p-5 md:p-6 flex items-center justify-center">
-            <div className="text-center">
-              <svg
-                className="w-8 h-8 text-gray-300 mx-auto mb-2"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                />
-              </svg>
-              <div className="text-xs text-gray-400">
-                No freight data available for this route
+        ) : null}
+
+        {/* Valuation Basis Card (if applicable) */}
+        {hasValuationBasis ? (
+          <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-5 md:p-6">
+            <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">
+              Valuation Basis
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <div className="text-xs text-gray-600 font-medium mb-1">Declared</div>
+                <div className="text-lg sm:text-2xl font-bold text-gray-900">
+                  {result.valuationBasisDeclared || "—"}
+                </div>
+              </div>
+              <div>
+                <div className="text-xs text-gray-600 font-medium mb-1">Applied</div>
+                <div className="text-lg sm:text-2xl font-bold text-gray-900">
+                  {result.valuationBasisApplied || "—"}
+                </div>
               </div>
             </div>
           </div>
-        )}
+        ) : null}
+
       </div>
 
       {/* Total Landed Cost - Prominent Display */}
@@ -220,20 +219,6 @@ function CostSummary({
             <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-black break-words">
               ${totalCost.toLocaleString("en-US", { minimumFractionDigits: 2 })}
             </div>
-            {hasFreightData &&
-              result.freightCostMin &&
-              result.freightCostMax && (
-                <div className="text-xs text-gray-400 mt-1">
-                  Freight range: $
-                  {Number(result.freightCostMin).toLocaleString("en-US", {
-                    maximumFractionDigits: 0,
-                  })}
-                  -$
-                  {Number(result.freightCostMax).toLocaleString("en-US", {
-                    maximumFractionDigits: 0,
-                  })}
-                </div>
-              )}
           </div>
         </div>
       </div>
@@ -358,48 +343,82 @@ function DetailsSection({
             </div>
           )}
 
-          {/* Freight Details Section */}
-          {hasFreightData && (
+          {/* Shipping Information Section */}
+          {(hasFreightData || result.insuranceCost) && (
             <div className="bg-white rounded-lg p-4 sm:p-5 md:p-6 border border-gray-200">
               <h5 className="text-xs font-bold text-gray-700 uppercase tracking-wide mb-4 flex items-center gap-2">
                 Shipping Information
               </h5>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <InfoItem
-                  label="Shipping Method"
-                  value={
-                    result.freightMode === "air"
-                      ? "Air Freight"
-                      : result.freightMode === "ocean"
-                      ? "Ocean Freight"
-                      : "Express Courier"
-                  }
-                />
-                <InfoItem
-                  label="Cost Range"
-                  value={
-                    result.freightCostMin && result.freightCostMax
-                      ? `$${Number(result.freightCostMin).toLocaleString(
-                          "en-US",
-                          { maximumFractionDigits: 0 }
-                        )}-$${Number(result.freightCostMax).toLocaleString(
-                          "en-US",
-                          { maximumFractionDigits: 0 }
-                        )}`
-                      : "—"
-                  }
-                />
-                <InfoItem
-                  label="Transit Time"
-                  value={
-                    result.transitDays ? `${result.transitDays} days` : "—"
-                  }
-                />
-                <InfoItem
-                  label="Shipment Weight"
-                  value={result.netWeight ? `${result.netWeight} kg` : "—"}
-                />
+                {hasFreightData && (
+                  <>
+                    <InfoItem
+                      label="Shipping Method"
+                      value={
+                        result.freightType === "air"
+                          ? "Air Freight"
+                          : result.freightType === "ocean"
+                          ? "Ocean Freight"
+                          : result.freightType || "—"
+                      }
+                    />
+                    <InfoItem
+                      label="Freight Cost"
+                      value={
+                        result.freightCost
+                          ? `$${Number(result.freightCost).toLocaleString(
+                              "en-US",
+                              { minimumFractionDigits: 2 }
+                            )}`
+                          : "—"
+                      }
+                    />
+                  </>
+                )}
+                {result.insuranceRate !== undefined && result.insuranceRate !== null && (
+                  <InfoItem
+                    label="Insurance Rate"
+                    value={`${result.insuranceRate.toFixed(2)}%`}
+                  />
+                )}
+                {result.insuranceCost !== undefined && result.insuranceCost !== null && result.insuranceCost > 0 && (
+                  <InfoItem
+                    label="Insurance Cost"
+                    value={`$${Number(result.insuranceCost).toLocaleString(
+                      "en-US",
+                      { minimumFractionDigits: 2 }
+                    )}`}
+                  />
+                )}
               </div>
+            </div>
+          )}
+
+          {/* Warnings Section */}
+          {result.warnings && result.warnings.length > 0 && (
+            <div className="bg-white rounded-lg p-4 sm:p-5 md:p-6 border border-amber-200 bg-amber-50">
+              <h5 className="text-xs font-bold text-amber-900 uppercase tracking-wide mb-4 flex items-center gap-2">
+                <svg
+                  className="w-4 h-4 flex-shrink-0"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+                Calculation Notes
+              </h5>
+              <ul className="space-y-2">
+                {result.warnings.map((warning, index) => (
+                  <li key={index} className="text-sm text-amber-800 flex gap-3">
+                    <span className="text-amber-600 font-bold min-w-fit">•</span>
+                    <span>{warning}</span>
+                  </li>
+                ))}
+              </ul>
             </div>
           )}
 
