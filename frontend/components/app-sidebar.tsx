@@ -16,6 +16,7 @@ import {
   IconReport,
   IconSearch,
   IconSettings,
+  IconShieldLock,
   // IconUsers,
 } from "@tabler/icons-react";
 
@@ -60,6 +61,11 @@ const data = {
       title: "Tariff History",
       url: "/tariffhistory",
       icon: IconChartBar,
+    },
+    {
+      title: "Admin",
+      url: "/admin",
+      icon: IconShieldLock,
     },
     // {
     //   title: "Analytics",
