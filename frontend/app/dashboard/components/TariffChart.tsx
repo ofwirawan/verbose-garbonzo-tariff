@@ -471,12 +471,12 @@ function TariffChartForm({
                   Insurance Rate
                 </Label>
                 <div className="space-y-3">
-                  {/* Preset Options */}
+                  {/* Preset and Custom Options */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {/* Low and Standard Presets */}
                     {[
                       { label: "Low", value: "0.5" },
                       { label: "Standard", value: "1.0" },
-                      { label: "High", value: "2.0" },
                     ].map((option) => (
                       <label
                         key={option.value}
@@ -504,11 +504,35 @@ function TariffChartForm({
                         </div>
                       </label>
                     ))}
-                  </div>
 
-                  {/* Custom Amount */}
-                  <div className="pt-2 border-t border-gray-200">
-                    <label className="flex items-center gap-3 cursor-pointer p-3 rounded-lg border-2 border-gray-300 hover:border-gray-500 transition-all bg-white">
+                    {/* High Preset */}
+                    <label
+                      className={`flex items-center gap-3 cursor-pointer p-3 rounded-lg border-2 transition-all ${
+                        insuranceRate === "2.0"
+                          ? "border-gray-900 bg-gray-50"
+                          : "border-gray-300 hover:border-gray-500 bg-white"
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="insuranceRate"
+                        value="2.0"
+                        checked={insuranceRate === "2.0"}
+                        onChange={(e) => onInsuranceRateChange(e.target.value)}
+                        className="w-4 h-4 text-gray-900 border-gray-300 focus:ring-gray-900"
+                      />
+                      <div className="flex-1">
+                        <span className="text-sm font-semibold text-gray-900 block">
+                          High
+                        </span>
+                        <span className="text-xs text-gray-500">
+                          2.0%
+                        </span>
+                      </div>
+                    </label>
+
+                    {/* Custom Amount */}
+                    <label className="flex items-start gap-3 cursor-pointer p-3 rounded-lg border-2 border-gray-300 hover:border-gray-500 transition-all bg-white">
                       <input
                         type="radio"
                         name="insuranceRate"
@@ -521,7 +545,7 @@ function TariffChartForm({
                         onChange={() => {
                           // Just switch to custom mode, keep existing value
                         }}
-                        className="w-4 h-4 text-gray-900 border-gray-300 focus:ring-gray-900"
+                        className="w-4 h-4 text-gray-900 border-gray-300 focus:ring-gray-900 mt-3"
                       />
                       <div className="flex-1">
                         <span className="text-sm font-semibold text-gray-900 block">

@@ -108,8 +108,9 @@ function CostSummary({
 
   const rateInfo = getRateInfo();
   const totalCost = Number(result.totalLandedCost) || Number(result.tradeFinal);
-  const cardCount = (hasFreightData ? 1 : 0) + 2; // trade + duty + optional freight
-  const gridCols = cardCount === 2 ? "sm:grid-cols-2" : "sm:grid-cols-2 lg:grid-cols-3";
+  const hasValuationBasis = result.valuationBasisDeclared || result.valuationBasisApplied;
+  const cardCount = (hasFreightData ? 1 : 0) + (hasValuationBasis ? 1 : 0) + 2; // trade + duty + optional freight + optional valuation
+  const gridCols = cardCount === 2 ? "sm:grid-cols-2" : cardCount === 3 ? "sm:grid-cols-3 lg:grid-cols-3" : "sm:grid-cols-2 lg:grid-cols-4";
 
   return (
     <div className="space-y-4">
@@ -173,6 +174,29 @@ function CostSummary({
                 : result.freightType === "ocean"
                 ? "Ocean Freight"
                 : "Express Delivery"}
+            </div>
+          </div>
+        ) : null}
+
+        {/* Valuation Basis Card (if applicable) */}
+        {hasValuationBasis ? (
+          <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-5 md:p-6">
+            <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">
+              Valuation Basis
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <div className="text-xs text-gray-600 font-medium mb-1">Declared</div>
+                <div className="text-lg sm:text-2xl font-bold text-gray-900">
+                  {result.valuationBasisDeclared || "—"}
+                </div>
+              </div>
+              <div>
+                <div className="text-xs text-gray-600 font-medium mb-1">Applied</div>
+                <div className="text-lg sm:text-2xl font-bold text-gray-900">
+                  {result.valuationBasisApplied || "—"}
+                </div>
+              </div>
             </div>
           </div>
         ) : null}
@@ -320,67 +344,52 @@ function DetailsSection({
           )}
 
           {/* Shipping Information Section */}
-          {hasFreightData && (
+          {(hasFreightData || result.insuranceCost) && (
             <div className="bg-white rounded-lg p-4 sm:p-5 md:p-6 border border-gray-200">
               <h5 className="text-xs font-bold text-gray-700 uppercase tracking-wide mb-4 flex items-center gap-2">
                 Shipping Information
               </h5>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <InfoItem
-                  label="Shipping Method"
-                  value={
-                    result.freightType === "air"
-                      ? "Air Freight"
-                      : result.freightType === "ocean"
-                      ? "Ocean Freight"
-                      : result.freightType || "—"
-                  }
-                />
-                <InfoItem
-                  label="Freight Cost"
-                  value={
-                    result.freightCost
-                      ? `$${Number(result.freightCost).toLocaleString(
-                          "en-US",
-                          { minimumFractionDigits: 2 }
-                        )}`
-                      : "—"
-                  }
-                />
-                <InfoItem
-                  label="Insurance Rate"
-                  value={`${result.insuranceRate?.toFixed(2) || "1.00"}%`}
-                />
-                <InfoItem
-                  label="Insurance Cost"
-                  value={
-                    result.insuranceCost
-                      ? `$${Number(result.insuranceCost).toLocaleString(
-                          "en-US",
-                          { minimumFractionDigits: 2 }
-                        )}`
-                      : "—"
-                  }
-                />
-              </div>
-            </div>
-          )}
-
-          {/* Valuation Basis Section */}
-          {(result.valuationBasisDeclared || result.valuationBasisApplied) && (
-            <div className="bg-white rounded-lg p-4 sm:p-5 md:p-6 border border-gray-200">
-              <h5 className="text-xs font-bold text-gray-700 uppercase tracking-wide mb-4 flex items-center gap-2">
-                Valuation Basis
-              </h5>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <InfoItem
-                  label="Declared"
-                  value={result.valuationBasisDeclared || "—"}
-                />
-                <InfoItem
-                  label="Applied"
-                  value={result.valuationBasisApplied || "—"}
-                />
+                {hasFreightData && (
+                  <>
+                    <InfoItem
+                      label="Shipping Method"
+                      value={
+                        result.freightType === "air"
+                          ? "Air Freight"
+                          : result.freightType === "ocean"
+                          ? "Ocean Freight"
+                          : result.freightType || "—"
+                      }
+                    />
+                    <InfoItem
+                      label="Freight Cost"
+                      value={
+                        result.freightCost
+                          ? `$${Number(result.freightCost).toLocaleString(
+                              "en-US",
+                              { minimumFractionDigits: 2 }
+                            )}`
+                          : "—"
+                      }
+                    />
+                  </>
+                )}
+                {result.insuranceRate !== undefined && result.insuranceRate !== null && (
+                  <InfoItem
+                    label="Insurance Rate"
+                    value={`${result.insuranceRate.toFixed(2)}%`}
+                  />
+                )}
+                {result.insuranceCost !== undefined && result.insuranceCost !== null && result.insuranceCost > 0 && (
+                  <InfoItem
+                    label="Insurance Cost"
+                    value={`$${Number(result.insuranceCost).toLocaleString(
+                      "en-US",
+                      { minimumFractionDigits: 2 }
+                    )}`}
+                  />
+                )}
               </div>
             </div>
           )}
