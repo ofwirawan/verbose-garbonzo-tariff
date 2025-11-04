@@ -7,13 +7,14 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { DataTable } from "../DataTable";
 import { FormDialog } from "../FormDialog";
-import { countryAPI, Country, PaginatedResponse } from "@/app/admin/lib/api";
+import { countryAPI, Country } from "@/app/admin/lib/api";
 
 export function CountriesManager() {
   const [countries, setCountries] = useState<Country[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
+  const [searchQuery, setSearchQuery] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingCountry, setEditingCountry] = useState<Country | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -21,30 +22,31 @@ export function CountriesManager() {
     countryCode: "",
     numericCode: "",
     name: "",
+    city: "",
   });
 
-  const loadCountries = async (page = 0) => {
+  const loadCountries = async (page = 0, search = "") => {
     try {
       setIsLoading(true);
-      console.log("📥 Loading countries from page:", page);
-      // Debug: Check if token exists in localStorage
-      if (typeof window !== "undefined") {
-        const token = localStorage.getItem("jwt_token");
-        console.log("🔑 Token in localStorage:", {
-          exists: !!token,
-          preview: token ? `${token.substring(0, 30)}...` : "NO TOKEN",
-          length: token?.length,
-        });
-      }
-      const response = await countryAPI.getAll(page, 10);
-      console.log("✅ Countries loaded successfully:", response);
+      console.log("📥 Loading countries from page:", page, "search:", search);
+      const response = await countryAPI.getAll(page, 25, search);
+      console.log("✅ Countries loaded:", {
+        page,
+        count: response.content.length,
+        responseNumber: response.number,
+        totalPages: response.totalPages,
+        fullResponse: response,
+      });
       setCountries(response.content);
-      setCurrentPage(response.currentPage);
+      // Spring returns 'number' for current page, not 'currentPage'
+      setCurrentPage(response.number ?? page);
       setTotalPages(response.totalPages);
     } catch (error) {
       console.error("❌ Error loading countries:", error);
       toast.error(
-        `Failed to load countries: ${error instanceof Error ? error.message : "Unknown error"}`
+        `Failed to load countries: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
       );
     } finally {
       setIsLoading(false);
@@ -54,13 +56,19 @@ export function CountriesManager() {
   useEffect(() => {
     // Only load on client side after component mounts
     if (typeof window !== "undefined") {
-      loadCountries(currentPage);
+      loadCountries(currentPage, searchQuery);
     }
   }, []);
 
+  const handleSearch = (query: string) => {
+    setSearchQuery(query);
+    // Reset to page 0 when searching and load with search query
+    loadCountries(0, query);
+  };
+
   const handleAdd = () => {
     setEditingCountry(null);
-    setFormData({ countryCode: "", numericCode: "", name: "" });
+    setFormData({ countryCode: "", numericCode: "", name: "", city: "" });
     setDialogOpen(true);
   };
 
@@ -71,7 +79,12 @@ export function CountriesManager() {
   };
 
   const handleSubmit = async () => {
-    if (!formData.countryCode || !formData.numericCode || !formData.name) {
+    if (
+      !formData.countryCode ||
+      !formData.numericCode ||
+      !formData.name ||
+      !formData.city
+    ) {
       toast.error("Please fill in all required fields");
       return;
     }
@@ -116,6 +129,10 @@ export function CountriesManager() {
       accessorKey: "name",
       header: "Country Name",
     },
+    {
+      accessorKey: "city",
+      header: "City",
+    },
   ];
 
   return (
@@ -130,8 +147,8 @@ export function CountriesManager() {
         currentPage={currentPage}
         totalPages={totalPages}
         onPageChange={loadCountries}
+        onSearch={handleSearch}
         title="Countries"
-        filterColumnId="name"
       />
 
       <FormDialog
@@ -155,8 +172,9 @@ export function CountriesManager() {
               onChange={(e) =>
                 setFormData({ ...formData, countryCode: e.target.value })
               }
-              placeholder="e.g., SG"
+              placeholder="e.g., SGP"
               disabled={!!editingCountry}
+              maxLength={3}
             />
           </div>
           <div className="grid gap-3">
@@ -168,6 +186,7 @@ export function CountriesManager() {
                 setFormData({ ...formData, numericCode: e.target.value })
               }
               placeholder="e.g., 702"
+              maxLength={3}
             />
           </div>
           <div className="grid gap-3">
@@ -177,6 +196,17 @@ export function CountriesManager() {
               value={formData.name}
               onChange={(e) =>
                 setFormData({ ...formData, name: e.target.value })
+              }
+              placeholder="e.g., Singapore"
+            />
+          </div>
+          <div className="grid gap-3">
+            <Label htmlFor="city">City</Label>
+            <Input
+              id="city"
+              value={formData.city}
+              onChange={(e) =>
+                setFormData({ ...formData, city: e.target.value })
               }
               placeholder="e.g., Singapore"
             />

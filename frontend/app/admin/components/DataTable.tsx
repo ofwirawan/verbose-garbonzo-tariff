@@ -7,7 +7,6 @@ import {
   flexRender,
   getCoreRowModel,
   getFilteredRowModel,
-  getPaginationRowModel,
   getSortedRowModel,
   SortingState,
   useReactTable,
@@ -53,6 +52,7 @@ interface DataTableProps<TData, TValue> {
   currentPage: number;
   totalPages: number;
   onPageChange: (page: number) => void;
+  onSearch?: (query: string) => void;
   title: string;
   emptyMessage?: string;
   filterColumnId?: string;
@@ -68,6 +68,7 @@ export function DataTable<TData, TValue>({
   currentPage,
   totalPages,
   onPageChange,
+  onSearch,
   title,
   emptyMessage = "No data found",
   filterColumnId,
@@ -79,6 +80,7 @@ export function DataTable<TData, TValue>({
   const [deleteRow, setDeleteRow] = useState<TData | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [filterValue, setFilterValue] = useState("");
+  const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
 
   // Add actions column dynamically
   const columnsWithActions: ColumnDef<TData, TValue>[] = [
@@ -138,7 +140,6 @@ export function DataTable<TData, TValue>({
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     onColumnVisibilityChange: setColumnVisibility,
@@ -177,17 +178,22 @@ export function DataTable<TData, TValue>({
         </div>
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center gap-4">
           <Input
-            placeholder={`Filter ${title.toLowerCase()}...`}
+            placeholder={`Search ${title.toLowerCase()}...`}
             className="max-w-sm"
-            disabled={data.length === 0}
             value={filterValue}
             onChange={(e) => {
-              setFilterValue(e.target.value);
-              const columnToFilter = filterColumnId
-                ? table.getColumn(filterColumnId)
-                : table.getAllLeafColumns()[0];
-              if (columnToFilter) {
-                columnToFilter.setFilterValue(e.target.value);
+              const value = e.target.value;
+              setFilterValue(value);
+
+              // Clear previous timeout
+              if (searchTimeout) clearTimeout(searchTimeout);
+
+              // If onSearch callback is provided, use server-side search
+              if (onSearch) {
+                const timeout = setTimeout(() => {
+                  onSearch(value);
+                }, 300); // 300ms debounce
+                setSearchTimeout(timeout);
               }
             }}
           />
@@ -234,55 +240,57 @@ export function DataTable<TData, TValue>({
         </div>
       ) : (
         <>
-          <div className="overflow-hidden rounded-md border">
-            <Table>
-              <TableHeader>
-                {table.getHeaderGroups().map((headerGroup) => (
-                  <TableRow key={headerGroup.id}>
-                    {headerGroup.headers.map((header) => {
-                      return (
-                        <TableHead key={header.id}>
-                          {header.isPlaceholder
-                            ? null
-                            : flexRender(
-                                header.column.columnDef.header,
-                                header.getContext()
-                              )}
-                        </TableHead>
-                      );
-                    })}
-                  </TableRow>
-                ))}
-              </TableHeader>
-              <TableBody>
-                {table.getRowModel().rows?.length ? (
-                  table.getRowModel().rows.map((row) => (
-                    <TableRow
-                      key={row.id}
-                      data-state={row.getIsSelected() && "selected"}
-                    >
-                      {row.getVisibleCells().map((cell) => (
-                        <TableCell key={cell.id}>
-                          {flexRender(
-                            cell.column.columnDef.cell,
-                            cell.getContext()
-                          )}
-                        </TableCell>
-                      ))}
+          <div className={`rounded-md border overflow-hidden ${data.length > 10 ? 'flex flex-col' : ''}`}>
+            <div className={data.length > 10 ? 'overflow-y-auto max-h-[600px]' : ''}>
+              <Table>
+                <TableHeader className="bg-white sticky top-0 z-10">
+                  {table.getHeaderGroups().map((headerGroup) => (
+                    <TableRow key={headerGroup.id}>
+                      {headerGroup.headers.map((header) => {
+                        return (
+                          <TableHead key={header.id}>
+                            {header.isPlaceholder
+                              ? null
+                              : flexRender(
+                                  header.column.columnDef.header,
+                                  header.getContext()
+                                )}
+                          </TableHead>
+                        );
+                      })}
                     </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell
-                      colSpan={columnsWithActions.length}
-                      className="h-24 text-center"
-                    >
-                      {emptyMessage}
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
+                  ))}
+                </TableHeader>
+                <TableBody>
+                  {table.getRowModel().rows?.length ? (
+                    table.getRowModel().rows.map((row) => (
+                      <TableRow
+                        key={row.id}
+                        data-state={row.getIsSelected() && "selected"}
+                      >
+                        {row.getVisibleCells().map((cell) => (
+                          <TableCell key={cell.id}>
+                            {flexRender(
+                              cell.column.columnDef.cell,
+                              cell.getContext()
+                            )}
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell
+                        colSpan={columnsWithActions.length}
+                        className="h-24 text-center"
+                      >
+                        {emptyMessage}
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
           </div>
 
           <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
@@ -290,7 +298,7 @@ export function DataTable<TData, TValue>({
               {table.getFilteredSelectedRowModel().rows.length} of{" "}
               {table.getFilteredRowModel().rows.length} row(s) selected.
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 items-center">
               <Button
                 variant="outline"
                 size="sm"
@@ -299,6 +307,9 @@ export function DataTable<TData, TValue>({
               >
                 Previous
               </Button>
+              <div className="text-sm font-medium text-gray-700 px-2 py-1 bg-gray-100 rounded min-w-fit">
+                Page {currentPage + 1} of {totalPages}
+              </div>
               <Button
                 variant="outline"
                 size="sm"

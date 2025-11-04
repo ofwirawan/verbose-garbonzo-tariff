@@ -32,15 +32,15 @@ export function FormDialog({
   isSubmitting = false,
   submitLabel = "Save",
 }: FormDialogProps) {
+  const handleSubmitClick = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSubmit();
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          onSubmit();
-        }}
-      >
-        <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[425px]">
+        <form onSubmit={handleSubmitClick}>
           <DialogHeader className="space-y-2">
             <DialogTitle>{title}</DialogTitle>
             {description && <DialogDescription>{description}</DialogDescription>}
@@ -50,7 +50,7 @@ export function FormDialog({
           </div>
           <DialogFooter>
             <DialogClose asChild>
-              <Button variant="outline">Cancel</Button>
+              <Button variant="outline" type="button">Cancel</Button>
             </DialogClose>
             <Button
               type="submit"
@@ -60,8 +60,8 @@ export function FormDialog({
               {isSubmitting ? "Saving..." : submitLabel}
             </Button>
           </DialogFooter>
-        </DialogContent>
-      </form>
+        </form>
+      </DialogContent>
     </Dialog>
   );
 }

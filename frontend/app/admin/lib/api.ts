@@ -1,7 +1,9 @@
 "use client";
 
 // Admin API Service Layer
-const API_BASE_URL = `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"}/api/admin`;
+const API_BASE_URL = `${
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"
+}/api/admin`;
 
 // Helper function to get auth headers - retrieve token from cookies
 function getAuthHeaders(): HeadersInit {
@@ -18,12 +20,6 @@ function getAuthHeaders(): HeadersInit {
     token = cookieValue || null;
   }
 
-  console.log("🔐 Auth Header Debug:", {
-    hasToken: !!token,
-    tokenPreview: token ? `${token.substring(0, 20)}...` : "No token",
-    isClient: typeof window !== "undefined",
-  });
-
   return {
     "Content-Type": "application/json",
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -31,26 +27,15 @@ function getAuthHeaders(): HeadersInit {
 }
 
 // Helper function for API calls with better error handling
-async function apiCall<T>(
-  url: string,
-  options?: RequestInit
-): Promise<T> {
-  console.log("📡 API Call:", { url, method: options?.method || "GET" });
-
+async function apiCall<T>(url: string, options?: RequestInit): Promise<T> {
   const response = await fetch(url, {
     ...options,
     headers: getAuthHeaders(),
   });
 
-  console.log("📊 Response Status:", response.status, response.statusText);
-
   if (!response.ok) {
     const errorText = await response.text();
-    console.error("❌ API Error:", {
-      url,
-      status: response.status,
-      error: errorText,
-    });
+
     throw new Error(
       `API Error (${response.status}): ${errorText || response.statusText}`
     );
@@ -64,6 +49,8 @@ export interface Country {
   countryCode: string;
   numericCode: string;
   name: string;
+  city: string;
+  valuationBasis?: string;
 }
 
 export interface Product {
@@ -127,15 +114,18 @@ export interface PaginatedResponse<T> {
   content: T[];
   totalElements: number;
   totalPages: number;
-  currentPage: number;
-  pageSize: number;
+  number: number; // Current page number (0-indexed)
+  size: number;
+  pageSize?: number;
+  currentPage?: number;
 }
 
 // Country API
 export const countryAPI = {
-  async getAll(page = 0, size = 10): Promise<PaginatedResponse<Country>> {
+  async getAll(page = 0, size = 10, search = ""): Promise<PaginatedResponse<Country>> {
+    const searchParam = search ? `&search=${encodeURIComponent(search)}` : "";
     return apiCall<PaginatedResponse<Country>>(
-      `${API_BASE_URL}/countries?page=${page}&size=${size}`
+      `${API_BASE_URL}/countries?page=${page}&size=${size}${searchParam}`
     );
   },
 
@@ -153,7 +143,10 @@ export const countryAPI = {
       headers: getAuthHeaders(),
       body: JSON.stringify(data),
     });
-    if (!response.ok) throw new Error("Failed to create country");
+    if (!response.ok) {
+      const errorData = await response.text();
+      throw new Error(`Failed to create country: ${errorData}`);
+    }
     return response.json();
   },
 
