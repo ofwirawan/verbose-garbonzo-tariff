@@ -13,7 +13,11 @@ import {
   useReactTable,
   VisibilityState,
 } from "@tanstack/react-table";
-import { ChevronDown } from "lucide-react";
+
+import {
+  IconTrash,
+  IconFilter2
+} from "@tabler/icons-react";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -227,7 +231,7 @@ export const columns: ColumnDef<HistoryItem>[] = [
       return (
         <div>
           <div>${cost.toLocaleString()}</div>
-          {type && <div className="text-xs text-gray-500">{type}</div>}
+          {type && <div className="text-xs text-gray-500">Type: {type}</div>}
         </div>
       );
     },
@@ -251,17 +255,17 @@ export const columns: ColumnDef<HistoryItem>[] = [
       );
     },
   },
-  {
-    accessorKey: "tradeFinal",
-    header: "Final Trade Value",
-    cell: ({ row }) => {
-      const value = row.getValue<number>("tradeFinal");
-      if (value === null || value === undefined) {
-        return <div className="text-gray-500">N/A</div>;
-      }
-      return <div className="font-medium">${value.toLocaleString()}</div>;
-    },
-  },
+  // {
+  //   accessorKey: "tradeFinal",
+  //   header: "Final Trade Value",
+  //   cell: ({ row }) => {
+  //     const value = row.getValue<number>("tradeFinal");
+  //     if (value === null || value === undefined) {
+  //       return <div className="text-gray-500">N/A</div>;
+  //     }
+  //     return <div className="font-medium">${value.toLocaleString()}</div>;
+  //   },
+  // },
   {
     accessorKey: "totalLandedCost",
     header: "Total Landed Cost",
@@ -270,7 +274,7 @@ export const columns: ColumnDef<HistoryItem>[] = [
       if (value === null || value === undefined) {
         return <div className="text-gray-500">N/A</div>;
       }
-      return <div className="font-bold text-blue-600">${value.toLocaleString()}</div>;
+      return <div>${value.toLocaleString()}</div>;
     },
   },
 ];
@@ -323,14 +327,13 @@ export function HistoryTable({ data }: HistoryTableProps) {
         <AlertDialog>
           <AlertDialogTrigger asChild>
             <Button
-              variant="destructive"
-              size="sm"
+              variant="outline" 
+              size="sm" 
+              className="ml-auto"
               disabled={table.getFilteredSelectedRowModel().rows.length === 0}
             >
-              Delete {table.getFilteredSelectedRowModel().rows.length} selected
-              {table.getFilteredSelectedRowModel().rows.length === 1
-                ? " item"
-                : " items"}
+              <IconTrash className="h-4 w-4" />
+              Delete ({table.getFilteredSelectedRowModel().rows.length})
             </Button>
           </AlertDialogTrigger>
           <AlertDialogContent>
@@ -398,8 +401,10 @@ export function HistoryTable({ data }: HistoryTableProps) {
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
+            
             <Button variant="outline" size="sm" className="ml-auto">
-              Columns <ChevronDown />
+              <IconFilter2 className="h4 w4" />
+              Filter 
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
