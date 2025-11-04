@@ -486,6 +486,13 @@ function SaveHistoryButton({ result }: { result: TariffCalculationResult }) {
         net_weight: result.netWeight || null,
         trade_final: Number(result.tradeFinal),
         applied_rate: appliedRate,
+        // Add all the missing enhanced fields
+        freight_cost: result.freightCost || null,
+        freight_type: result.freightType || null,
+        insurance_cost: result.insuranceCost || null,
+        insurance_rate: result.insuranceRate || null,
+        total_landed_cost: result.totalLandedCost || null,
+        warnings: result.warnings || null,
       };
 
       const response = await authenticatedFetch("/api/history", {

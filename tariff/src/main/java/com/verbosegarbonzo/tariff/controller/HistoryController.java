@@ -113,6 +113,26 @@ public class HistoryController {
                 transaction.setAppliedRate(objectMapper.valueToTree(appliedRate));
             }
             
+            // Add missing fields for complete calculation data
+            if (requestBody.containsKey("freight_cost") && requestBody.get("freight_cost") != null) {
+                transaction.setFreightCost(new BigDecimal(requestBody.get("freight_cost").toString()));
+            }
+            if (requestBody.containsKey("freight_type") && requestBody.get("freight_type") != null) {
+                transaction.setFreightType(requestBody.get("freight_type").toString());
+            }
+            if (requestBody.containsKey("insurance_rate") && requestBody.get("insurance_rate") != null) {
+                transaction.setInsuranceRate(new BigDecimal(requestBody.get("insurance_rate").toString()));
+            }
+            if (requestBody.containsKey("insurance_cost") && requestBody.get("insurance_cost") != null) {
+                transaction.setInsuranceCost(new BigDecimal(requestBody.get("insurance_cost").toString()));
+            }
+            if (requestBody.containsKey("total_landed_cost") && requestBody.get("total_landed_cost") != null) {
+                transaction.setTotalLandedCost(new BigDecimal(requestBody.get("total_landed_cost").toString()));
+            }
+            if (requestBody.containsKey("warnings") && requestBody.get("warnings") != null) {
+                transaction.setWarnings(objectMapper.valueToTree(requestBody.get("warnings")));
+            }
+            
             // Save transaction
             Transaction savedTransaction = transactionRepository.save(transaction);
             
