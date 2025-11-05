@@ -27,7 +27,7 @@ import java.time.LocalDate;
         "spring.jpa.hibernate.ddl-auto=create-drop",
         "logging.level.org.springframework.security=WARN",
         "logging.level.csd.security=WARN",
-        "spring.jackson.serialization.write-dates-as-timestamps=false"
+        "freight.api.url=https://ship.freightos.com/api/shippingCalculator"
 })
 @DisplayName("Admin Transaction Controller Integration Tests")
 class AdminTransactionControllerTest {
@@ -77,11 +77,11 @@ class AdminTransactionControllerTest {
     userInfoRepository.deleteAll();
 
         userInfoService.addUser(new UserInfo(null, "admin", "admin@email.com", "goodpassword", "ROLE_ADMIN"));
-        adminJwtToken = jwtService.generateToken("admin@email.com");
+        adminJwtToken = jwtService.token("admin@email.com");
 
         // seed user (other than admin), country and product
         userInfoRepository.save(new com.verbosegarbonzo.tariff.model.UserInfo(null, "U", "u@x.com", "p", "ROLE_USER"));
-        countryRepository.save(new com.verbosegarbonzo.tariff.model.Country("IMP", "Importer", "001"));
+        countryRepository.save(new com.verbosegarbonzo.tariff.model.Country("IMP", "CountryA", "001", "City", null));
         productRepository.save(new com.verbosegarbonzo.tariff.model.Product("PROD01", "Product 1"));
     }
 

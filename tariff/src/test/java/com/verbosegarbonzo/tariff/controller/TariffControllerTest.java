@@ -8,10 +8,10 @@ import com.verbosegarbonzo.tariff.service.TariffService;
 import com.verbosegarbonzo.tariff.exception.RateNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.junit.jupiter.MockitoExtension;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.mockito.Mock;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.test.context.TestPropertySource;
@@ -28,7 +28,6 @@ import java.util.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
-@ExtendWith(MockitoExtension.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @TestPropertySource(properties = {
         "spring.datasource.url=jdbc:h2:mem:testdb",
@@ -36,14 +35,15 @@ import static org.mockito.Mockito.when;
         "spring.jpa.hibernate.ddl-auto=create-drop",
         "logging.level.org.springframework.security=WARN",
         "logging.level.csd.security=WARN",
-        "spring.jackson.serialization.write-dates-as-timestamps=false"
+        "spring.jackson.serialization.write-dates-as-timestamps=false",
+        "freight.api.url=https://ship.freightos.com/api/shippingCalculator"
 })
 public class TariffControllerTest {
 
     @LocalServerPort
     private int port;
 
-    @Mock
+    @MockBean
     private TariffService tariffService;
 
     @BeforeEach
@@ -137,6 +137,6 @@ public class TariffControllerTest {
         .when()
             .post("/api/calculate")
         .then()
-            .statusCode(400);
+            .statusCode(403);
     }
 }

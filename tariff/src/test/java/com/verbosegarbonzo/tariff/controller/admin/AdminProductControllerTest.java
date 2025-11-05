@@ -25,7 +25,8 @@ import com.verbosegarbonzo.tariff.model.UserInfo;
         "spring.h2.console.enabled=false",
         "spring.jpa.hibernate.ddl-auto=create-drop",
         "logging.level.org.springframework.security=WARN",
-        "logging.level.csd.security=WARN"
+        "logging.level.csd.security=WARN",
+        "freight.api.url=https://ship.freightos.com/api/shippingCalculator"
 })
 @DisplayName("Admin Product Controller Integration Tests")
 class AdminProductControllerTest {
@@ -76,7 +77,7 @@ class AdminProductControllerTest {
         userInfoRepository.deleteAll();
 
         userInfoService.addUser(new UserInfo(null, "admin", "admin@email.com", "goodpassword", "ROLE_ADMIN"));
-        adminJwtToken = jwtService.generateToken("admin@email.com");
+        adminJwtToken = jwtService.token("admin@email.com");
     }
 
     @Test

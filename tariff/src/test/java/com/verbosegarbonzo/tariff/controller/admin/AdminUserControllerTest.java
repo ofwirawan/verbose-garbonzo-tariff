@@ -26,7 +26,8 @@ import java.util.UUID;
         "spring.h2.console.enabled=false",
         "spring.jpa.hibernate.ddl-auto=create-drop",
         "logging.level.org.springframework.security=WARN",
-        "logging.level.csd.security=WARN"
+        "logging.level.csd.security=WARN",
+        "freight.api.url=https://ship.freightos.com/api/shippingCalculator"
 })
 @DisplayName("Admin User Controller Integration Tests")
 class AdminUserControllerTest {
@@ -77,7 +78,7 @@ class AdminUserControllerTest {
         userInfoRepository.deleteAll();
 
         userInfoService.addUser(new UserInfo(null, "admin", "admin@email.com", "goodpassword", "ROLE_ADMIN"));
-        adminJwtToken = jwtService.generateToken("admin@email.com");
+        adminJwtToken = jwtService.token("admin@email.com");
     }
 
     @Test

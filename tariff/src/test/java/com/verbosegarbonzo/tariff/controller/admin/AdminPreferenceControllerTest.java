@@ -29,7 +29,8 @@ import java.time.LocalDate;
         "spring.h2.console.enabled=false",
         "spring.jpa.hibernate.ddl-auto=create-drop",
         "logging.level.org.springframework.security=WARN",
-        "logging.level.csd.security=WARN"
+        "logging.level.csd.security=WARN",
+        "freight.api.url=https://ship.freightos.com/api/shippingCalculator"
 })
 @DisplayName("Admin Preference Controller Integration Tests")
 class AdminPreferenceControllerTest {
@@ -67,11 +68,11 @@ class AdminPreferenceControllerTest {
         userInfoRepository.deleteAll();
 
         userInfoService.addUser(new UserInfo(null, "admin", "admin@email.com", "goodpassword", "ROLE_ADMIN"));
-        adminJwtToken = jwtService.generateToken("admin@email.com");
+        adminJwtToken = jwtService.token("admin@email.com");
 
         // seed importer + exporter + product
-        countryRepository.save(new com.verbosegarbonzo.tariff.model.Country("IMP", "Importer", "001"));
-        countryRepository.save(new com.verbosegarbonzo.tariff.model.Country("EXP", "Exporter", "002"));
+        countryRepository.save(new com.verbosegarbonzo.tariff.model.Country("IMP", "CountryA", "001", "City", null));
+        countryRepository.save(new com.verbosegarbonzo.tariff.model.Country("EXP", "CountryB", "002", "CityB", null));
         productRepository.save(new com.verbosegarbonzo.tariff.model.Product("PRD001", "Product 1"));
     }
 

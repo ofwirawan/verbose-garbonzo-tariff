@@ -24,11 +24,9 @@ import io.restassured.http.ContentType;
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.*;
 import org.springframework.boot.test.web.server.LocalServerPort;
-import org.springframework.web.reactive.function.BodyInserters;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.Map;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @TestPropertySource(properties = {
@@ -37,7 +35,8 @@ import java.util.Map;
         "spring.jpa.hibernate.ddl-auto=create-drop",
         "logging.level.org.springframework.security=WARN",
         "logging.level.csd.security=WARN",
-        "spring.jackson.serialization.write-dates-as-timestamps=false"
+        "spring.jackson.serialization.write-dates-as-timestamps=false",
+        "freight.api.url=https://ship.freightos.com/api/shippingCalculator"
 })
 public class HistoryControllerTest {
     
@@ -83,14 +82,14 @@ public class HistoryControllerTest {
         System.out.println(userInfoService.addUser(testUser));
 
         // Authenticate using the actual AuthController and get JWT token
-        adminJwtToken = jwtService.generateToken("admin@email.com");
+        adminJwtToken = jwtService.token("admin@email.com");
         System.out.println("Bearer: " + adminJwtToken);
         
         // Create test countries
-        testImporter = new Country("IMP", "Importer", "001");
+        testImporter = new com.verbosegarbonzo.tariff.model.Country("AAA", "CountryA", "001", "City", null);
         testImporter = countryRepository.save(testImporter);
         
-        testExporter = new Country("EXP", "Exporter", "002");
+        testExporter = new com.verbosegarbonzo.tariff.model.Country("BBB", "CountryB", "002", "CityB", null);
         testExporter = countryRepository.save(testExporter);
 
         Product testProduct = new Product("PROD01", "Product 1");
@@ -99,12 +98,12 @@ public class HistoryControllerTest {
     }
 
     @Test
-    void getAllHistory_WithoutAuth_Returns401() {
+    void getAllHistory_WithoutAuth_Returns403() {
         given()
             .when()
                 .get("/api/history")
             .then()
-                .statusCode(401);
+                .statusCode(403);
     }
     
     @Test
@@ -125,10 +124,10 @@ public class HistoryControllerTest {
        String requestBody = String.format("""
                {
                 "t_date": "%s",
-                "hs6code", "%s",
-                "trade_original", "1000.00",
-                "importer_code", testImporter.getCountryCode(),
-                "trade_final", "900.00"
+                "hs6code": "%s",
+                "trade_original": "1000.00",
+                "importer_code": "AAA",
+                "trade_final": "900.00"
                }
                """, LocalDate.now().toString(), LocalDate.now().toString());
             
@@ -147,19 +146,21 @@ public class HistoryControllerTest {
         // Prepare request body
         String requestBody = String.format("""
                {
-                "t_date": "2007-12-03",
+                "t_date": "%s",
                 "hs6code": "PROD01",
                 "trade_original": "1000.00",
                 "importer_code": "%s",
-                "trade_final": "900.00"
+                "trade_final": "900.00",
+                "applied_rate": 
                }
-               """, testImporter.getCountryCode());
+               """, LocalDate.now().toString() ,testImporter.getCountryCode());
         
         // Add transaction
         given()
-            .header("Authorization", "Bearer " + adminJwtToken)
-            .contentType(ContentType.JSON)
-            .body(BodyInserters.fromValue(requestBody))
+            .auth()
+            .oauth2(adminJwtToken)
+            .contentType("application/json")
+            .body(requestBody)
         .when()
             .post("/api/history")
         .then()
