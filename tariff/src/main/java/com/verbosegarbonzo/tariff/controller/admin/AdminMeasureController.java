@@ -136,14 +136,17 @@ public class AdminMeasureController {
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                             "Product not found: " + dto.getProductCode()));
 
-            // Duplicate check for update
-            boolean exists = measureRepository
-                    .findValidRate(importer, product, dto.getValidFrom())
-                    .filter(m -> !m.getMeasureId().equals(id))
-                    .isPresent();
-            if (exists) {
-                throw new ResponseStatusException(HttpStatus.CONFLICT,
-                        "A measure with the same importer, product, and validFrom already exists.");
+            // Duplicate check for update - only check if key fields have changed
+            if (!measure.getImporter().equals(importer) ||
+                !measure.getProduct().equals(product) ||
+                !measure.getValidFrom().equals(dto.getValidFrom())) {
+                boolean exists = measureRepository
+                        .findValidRate(importer, product, dto.getValidFrom())
+                        .isPresent();
+                if (exists) {
+                    throw new ResponseStatusException(HttpStatus.CONFLICT,
+                            "A measure with the same importer, product, and validFrom already exists.");
+                }
             }
 
             measure.setImporter(importer);

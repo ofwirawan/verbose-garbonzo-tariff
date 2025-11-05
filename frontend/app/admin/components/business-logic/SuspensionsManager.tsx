@@ -5,12 +5,22 @@ import { ColumnDef } from "@tanstack/react-table";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { DataTable } from "../DataTable";
 import { FormDialog } from "../FormDialog";
 import {
   suspensionAPI,
+  countryAPI,
+  productAPI,
   Suspension,
-  PaginatedResponse,
+  Country,
+  Product,
 } from "@/app/admin/lib/api";
 
 export function SuspensionsManager() {
@@ -18,11 +28,14 @@ export function SuspensionsManager() {
   const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
+  const [searchQuery, setSearchQuery] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingSuspension, setEditingSuspension] = useState<Suspension | null>(
     null
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [countries, setCountries] = useState<Country[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
   const [formData, setFormData] = useState<Suspension>({
     importerCode: "",
     productCode: "",
@@ -33,23 +46,67 @@ export function SuspensionsManager() {
     suspensionRate: 0,
   });
 
-  const loadSuspensions = async (page = 0) => {
+  const loadSuspensions = async (page = 0, search = "") => {
     try {
       setIsLoading(true);
-      const response = await suspensionAPI.getAll(page, 10);
+      console.log("📥 Loading suspensions from page:", page, "search:", search);
+      const response = await suspensionAPI.getAll(page, 25, search);
+      console.log("✅ Suspensions loaded:", {
+        page,
+        count: response.content.length,
+        responseNumber: response.number,
+        totalPages: response.totalPages,
+        fullResponse: response,
+      });
       setSuspensions(response.content);
-      setCurrentPage(response.currentPage);
+      setCurrentPage(response.number ?? page);
       setTotalPages(response.totalPages);
     } catch (error) {
-      toast.error("Failed to load suspensions");
+      console.error("❌ Error loading suspensions:", error);
+      toast.error(
+        `Failed to load suspensions: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
     } finally {
       setIsLoading(false);
     }
   };
 
+  const loadCountries = async () => {
+    try {
+      const response = await countryAPI.getAll(0, 1000);
+      setCountries(response.content);
+    } catch (error) {
+      console.error("❌ Error loading countries:", error);
+    }
+  };
+
+  const loadProducts = async () => {
+    try {
+      const response = await productAPI.getAll(0, 1000);
+      setProducts(response.content);
+    } catch (error) {
+      console.error("❌ Error loading products:", error);
+    }
+  };
+
   useEffect(() => {
-    loadSuspensions(0);
+    if (typeof window !== "undefined") {
+      loadSuspensions(0, "");
+      loadCountries();
+      loadProducts();
+    }
   }, []);
+
+  const handleSearch = (query: string) => {
+    setSearchQuery(query);
+    loadSuspensions(0, query);
+  };
+
+  const handlePageChange = (page: number) => {
+    loadSuspensions(page, searchQuery);
+  };
 
   const handleAdd = () => {
     setEditingSuspension(null);
@@ -84,15 +141,15 @@ export function SuspensionsManager() {
 
     setIsSubmitting(true);
     try {
-      if (editingSuspension && editingSuspension.id) {
-        await suspensionAPI.update(editingSuspension.id, formData);
+      if (editingSuspension && editingSuspension.suspensionId) {
+        await suspensionAPI.update(editingSuspension.suspensionId, formData);
         toast.success("Suspension updated successfully");
       } else {
         await suspensionAPI.create(formData);
         toast.success("Suspension created successfully");
       }
       setDialogOpen(false);
-      loadSuspensions(currentPage);
+      loadSuspensions(currentPage, searchQuery);
     } catch (error) {
       toast.error(
         `Failed to save suspension: ${
@@ -105,9 +162,9 @@ export function SuspensionsManager() {
   };
 
   const handleDeleteConfirm = async (row: Suspension) => {
-    if (row.id) {
-      await suspensionAPI.delete(row.id);
-      loadSuspensions(currentPage);
+    if (row.suspensionId) {
+      await suspensionAPI.delete(row.suspensionId);
+      loadSuspensions(currentPage, searchQuery);
     }
   };
 
@@ -150,7 +207,8 @@ export function SuspensionsManager() {
         onDeleteConfirm={handleDeleteConfirm}
         currentPage={currentPage}
         totalPages={totalPages}
-        onPageChange={loadSuspensions}
+        onPageChange={handlePageChange}
+        onSearch={handleSearch}
         title="Suspensions"
       />
 
@@ -166,28 +224,49 @@ export function SuspensionsManager() {
         onSubmit={handleSubmit}
         isSubmitting={isSubmitting}
       >
-        <div className="space-y-4">
+        <div className="space-y-4 max-h-96 overflow-y-auto">
           <div className="grid gap-3">
-            <Label htmlFor="importerCode">Importer Code</Label>
-            <Input
-              id="importerCode"
+            <Label htmlFor="importerCode">Importer Country</Label>
+            <Select
               value={formData.importerCode}
-              onChange={(e) =>
-                setFormData({ ...formData, importerCode: e.target.value })
+              onValueChange={(value) =>
+                setFormData({ ...formData, importerCode: value })
               }
-              placeholder="e.g., SG"
-            />
+            >
+              <SelectTrigger id="importerCode">
+                <SelectValue placeholder="Select importer country" />
+              </SelectTrigger>
+              <SelectContent className="w-64">
+                {countries.map((country) => (
+                  <SelectItem
+                    key={country.countryCode}
+                    value={country.countryCode}
+                  >
+                    {country.countryCode} - {country.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div className="grid gap-3">
-            <Label htmlFor="productCode">Product Code</Label>
-            <Input
-              id="productCode"
+            <Label htmlFor="productCode">Product</Label>
+            <Select
               value={formData.productCode}
-              onChange={(e) =>
-                setFormData({ ...formData, productCode: e.target.value })
+              onValueChange={(value) =>
+                setFormData({ ...formData, productCode: value })
               }
-              placeholder="e.g., 123456"
-            />
+            >
+              <SelectTrigger id="productCode">
+                <SelectValue placeholder="Select product" />
+              </SelectTrigger>
+              <SelectContent className="w-80 max-h-64">
+                {products.map((product) => (
+                  <SelectItem key={product.hs6Code} value={product.hs6Code}>
+                    {product.hs6Code} - {product.description}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div className="grid gap-3">
             <Label htmlFor="validFrom">Valid From (YYYY-MM-DD)</Label>
@@ -245,11 +324,12 @@ export function SuspensionsManager() {
               id="suspensionRate"
               type="number"
               step="0.01"
-              value={formData.suspensionRate}
+              value={formData.suspensionRate || ""}
               onChange={(e) =>
                 setFormData({
                   ...formData,
-                  suspensionRate: parseFloat(e.target.value),
+                  suspensionRate:
+                    e.target.value === "" ? 0 : parseFloat(e.target.value),
                 })
               }
             />

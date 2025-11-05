@@ -56,6 +56,7 @@ interface DataTableProps<TData, TValue> {
   title: string;
   emptyMessage?: string;
   filterColumnId?: string;
+  showAddButton?: boolean;
 }
 
 export function DataTable<TData, TValue>({
@@ -72,6 +73,7 @@ export function DataTable<TData, TValue>({
   title,
   emptyMessage = "No data found",
   filterColumnId,
+  showAddButton = true,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -223,14 +225,16 @@ export function DataTable<TData, TValue>({
                 })}
             </DropdownMenuContent>
           </DropdownMenu>
-          <Button
-            onClick={onAdd}
-            className="bg-black text-white hover:bg-gray-800"
-            disabled={isLoading}
-          >
-            <Plus className="mr-2 h-4 w-4" />
-            Add {title}
-          </Button>
+          {showAddButton && (
+            <Button
+              onClick={onAdd}
+              className="bg-black text-white hover:bg-gray-800"
+              disabled={isLoading}
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Add {title}
+            </Button>
+          )}
         </div>
       </div>
 

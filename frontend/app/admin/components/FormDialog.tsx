@@ -20,6 +20,7 @@ interface FormDialogProps {
   onSubmit: () => void;
   isSubmitting?: boolean;
   submitLabel?: string;
+  size?: "sm" | "lg";
 }
 
 export function FormDialog({
@@ -31,15 +32,21 @@ export function FormDialog({
   onSubmit,
   isSubmitting = false,
   submitLabel = "Save",
+  size = "sm",
 }: FormDialogProps) {
   const handleSubmitClick = (e: React.FormEvent) => {
     e.preventDefault();
     onSubmit();
   };
 
+  const sizeClasses = {
+    sm: "sm:max-w-[425px]",
+    lg: "sm:max-w-[600px]",
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className={sizeClasses[size]}>
         <form onSubmit={handleSubmitClick}>
           <DialogHeader className="space-y-2">
             <DialogTitle>{title}</DialogTitle>

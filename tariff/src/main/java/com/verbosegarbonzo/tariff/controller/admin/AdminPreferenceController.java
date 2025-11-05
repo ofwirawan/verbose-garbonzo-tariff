@@ -147,13 +147,18 @@ public class AdminPreferenceController {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "Product not found: " + dto.getProductCode()));
 
-        boolean exists = preferenceRepository
-                .findByImporterAndExporterAndProductAndValidFrom(importer, exporter, product, dto.getValidFrom())
-                .filter(p -> !p.getPreferenceId().equals(id))
-                .isPresent();
-        if (exists) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT,
-                    "A preference with the same importer, exporter, product, and validFrom already exists.");
+        // Duplicate check for update - only check if key fields have changed
+        if (!preference.getImporter().equals(importer) ||
+            !preference.getExporter().equals(exporter) ||
+            !preference.getProduct().equals(product) ||
+            !preference.getValidFrom().equals(dto.getValidFrom())) {
+            boolean exists = preferenceRepository
+                    .findByImporterAndExporterAndProductAndValidFrom(importer, exporter, product, dto.getValidFrom())
+                    .isPresent();
+            if (exists) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT,
+                        "A preference with the same importer, exporter, product, and validFrom already exists.");
+            }
         }
 
         preference.setImporter(importer);

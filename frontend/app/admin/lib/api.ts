@@ -87,7 +87,7 @@ export interface Preference {
 }
 
 export interface Suspension {
-  id?: number;
+  suspensionId?: number;
   importerCode: string;
   productCode: string;
   validFrom: string;
@@ -399,9 +399,10 @@ export const preferenceAPI = {
 
 // Suspension API
 export const suspensionAPI = {
-  async getAll(page = 0, size = 10): Promise<PaginatedResponse<Suspension>> {
+  async getAll(page = 0, size = 10, search = ""): Promise<PaginatedResponse<Suspension>> {
+    const searchParam = search ? `&search=${encodeURIComponent(search)}` : "";
     const response = await fetch(
-      `${API_BASE_URL}/suspensions?page=${page}&size=${size}`,
+      `${API_BASE_URL}/suspensions?page=${page}&size=${size}${searchParam}`,
       {
         headers: getAuthHeaders(),
       }

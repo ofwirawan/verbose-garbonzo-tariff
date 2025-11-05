@@ -167,7 +167,7 @@ export function CountriesManager() {
         onSubmit={handleSubmit}
         isSubmitting={isSubmitting}
       >
-        <div className="space-y-4">
+        <div className="space-y-4 max-h-96 overflow-y-auto">
           <div className="grid gap-3">
             <Label htmlFor="countryCode">Country Code</Label>
             <Input
