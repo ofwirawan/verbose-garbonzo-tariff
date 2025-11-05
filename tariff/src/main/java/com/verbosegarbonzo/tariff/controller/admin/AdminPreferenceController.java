@@ -105,9 +105,16 @@ public class AdminPreferenceController {
         return ResponseEntity.status(201).body(toDTO(created));
     }
 
-    // Get all Preferences (paginated)
+    // Get all Preferences (paginated) with optional search
     @GetMapping
-    public Page<PreferenceDTO> getAllPreferences(Pageable pageable) {
+    public Page<PreferenceDTO> getAllPreferences(
+            @RequestParam(required = false) String search,
+            Pageable pageable) {
+        if (search != null && !search.isEmpty()) {
+            return preferenceRepository.findByImporterCountryCodeContainingIgnoreCaseOrExporterCountryCodeContainingIgnoreCaseOrProductHs6CodeContainingIgnoreCase(
+                    search, search, search, pageable)
+                    .map(this::toDTO);
+        }
         return preferenceRepository.findAll(pageable)
                 .map(this::toDTO);
     }

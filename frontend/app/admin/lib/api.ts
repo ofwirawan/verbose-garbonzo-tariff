@@ -263,15 +263,11 @@ export const userAPI = {
 
 // Measure API
 export const measureAPI = {
-  async getAll(page = 0, size = 10): Promise<PaginatedResponse<Measure>> {
-    const response = await fetch(
-      `${API_BASE_URL}/measures?page=${page}&size=${size}`,
-      {
-        headers: getAuthHeaders(),
-      }
+  async getAll(page = 0, size = 10, search = ""): Promise<PaginatedResponse<Measure>> {
+    const searchParam = search ? `&search=${encodeURIComponent(search)}` : "";
+    return apiCall<PaginatedResponse<Measure>>(
+      `${API_BASE_URL}/measures?page=${page}&size=${size}${searchParam}`
     );
-    if (!response.ok) throw new Error("Failed to fetch measures");
-    return response.json();
   },
 
   async getById(id: number): Promise<Measure> {
@@ -330,9 +326,10 @@ export const measureAPI = {
 
 // Preference API
 export const preferenceAPI = {
-  async getAll(page = 0, size = 10): Promise<PaginatedResponse<Preference>> {
+  async getAll(page = 0, size = 10, search = ""): Promise<PaginatedResponse<Preference>> {
+    const searchParam = search ? `&search=${encodeURIComponent(search)}` : "";
     const response = await fetch(
-      `${API_BASE_URL}/preferences?page=${page}&size=${size}`,
+      `${API_BASE_URL}/preferences?page=${page}&size=${size}${searchParam}`,
       {
         headers: getAuthHeaders(),
       }

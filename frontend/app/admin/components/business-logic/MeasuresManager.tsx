@@ -5,15 +5,25 @@ import { ColumnDef } from "@tanstack/react-table";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { DataTable } from "../DataTable";
 import { FormDialog } from "../FormDialog";
-import { measureAPI, Measure, PaginatedResponse } from "@/app/admin/lib/api";
+import { measureAPI, countryAPI, productAPI, Measure, Country, Product, PaginatedResponse } from "@/app/admin/lib/api";
 
 export function MeasuresManager() {
   const [measures, setMeasures] = useState<Measure[]>([]);
+  const [countries, setCountries] = useState<Country[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
+  const [searchQuery, setSearchQuery] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingMeasure, setEditingMeasure] = useState<Measure | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -26,23 +36,72 @@ export function MeasuresManager() {
     specificRatePerKg: 0,
   });
 
-  const loadMeasures = async (page = 0) => {
+  const loadMeasures = async (page = 0, search = "") => {
     try {
       setIsLoading(true);
-      const response = await measureAPI.getAll(page, 10);
+      console.log("📥 Loading measures from page:", page, "search:", search);
+      const response = await measureAPI.getAll(page, 25, search);
+      console.log("✅ Measures loaded:", {
+        page,
+        count: response.content.length,
+        responseNumber: response.number,
+        totalPages: response.totalPages,
+        fullResponse: response,
+      });
       setMeasures(response.content);
-      setCurrentPage(response.currentPage);
+      // Spring returns 'number' for current page, not 'currentPage'
+      setCurrentPage(response.number ?? page);
       setTotalPages(response.totalPages);
     } catch (error) {
-      toast.error("Failed to load measures");
+      console.error("❌ Error loading measures:", error);
+      toast.error(
+        `Failed to load measures: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
     } finally {
       setIsLoading(false);
     }
   };
 
+  const loadCountries = async () => {
+    try {
+      const response = await countryAPI.getAll(0, 1000);
+      setCountries(response.content);
+    } catch (error) {
+      console.error("❌ Error loading countries:", error);
+      toast.error("Failed to load countries");
+    }
+  };
+
+  const loadProducts = async () => {
+    try {
+      const response = await productAPI.getAll(0, 1000);
+      setProducts(response.content);
+    } catch (error) {
+      console.error("❌ Error loading products:", error);
+      toast.error("Failed to load products");
+    }
+  };
+
   useEffect(() => {
-    loadMeasures(0);
+    // Only load on client side after component mounts
+    if (typeof window !== "undefined") {
+      loadMeasures(currentPage, searchQuery);
+      loadCountries();
+      loadProducts();
+    }
   }, []);
+
+  const handleSearch = (query: string) => {
+    setSearchQuery(query);
+    // Reset to page 0 when searching and load with search query
+    loadMeasures(0, query);
+  };
+
+  const handlePageChange = (page: number) => {
+    loadMeasures(page, searchQuery);
+  };
 
   const handleAdd = () => {
     setEditingMeasure(null);
@@ -84,7 +143,7 @@ export function MeasuresManager() {
         toast.success("Measure created successfully");
       }
       setDialogOpen(false);
-      loadMeasures(currentPage);
+      loadMeasures(currentPage, searchQuery);
     } catch (error) {
       toast.error(
         `Failed to save measure: ${
@@ -99,7 +158,7 @@ export function MeasuresManager() {
   const handleDeleteConfirm = async (row: Measure) => {
     if (row.id) {
       await measureAPI.delete(row.id);
-      loadMeasures(currentPage);
+      loadMeasures(currentPage, searchQuery);
     }
   };
 
@@ -141,7 +200,8 @@ export function MeasuresManager() {
         onDeleteConfirm={handleDeleteConfirm}
         currentPage={currentPage}
         totalPages={totalPages}
-        onPageChange={loadMeasures}
+        onPageChange={handlePageChange}
+        onSearch={handleSearch}
         title="Measures"
       />
 
@@ -160,25 +220,43 @@ export function MeasuresManager() {
         <div className="space-y-4">
           <div className="grid gap-3">
             <Label htmlFor="importerCode">Importer Code</Label>
-            <Input
-              id="importerCode"
+            <Select
               value={formData.importerCode}
-              onChange={(e) =>
-                setFormData({ ...formData, importerCode: e.target.value })
+              onValueChange={(value) =>
+                setFormData({ ...formData, importerCode: value })
               }
-              placeholder="e.g., SG"
-            />
+            >
+              <SelectTrigger id="importerCode">
+                <SelectValue placeholder="Select a country" />
+              </SelectTrigger>
+              <SelectContent>
+                {countries.map((country) => (
+                  <SelectItem key={country.countryCode} value={country.countryCode}>
+                    {country.countryCode} - {country.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div className="grid gap-3">
             <Label htmlFor="productCode">Product Code</Label>
-            <Input
-              id="productCode"
+            <Select
               value={formData.productCode}
-              onChange={(e) =>
-                setFormData({ ...formData, productCode: e.target.value })
+              onValueChange={(value) =>
+                setFormData({ ...formData, productCode: value })
               }
-              placeholder="e.g., 123456"
-            />
+            >
+              <SelectTrigger id="productCode">
+                <SelectValue placeholder="Select a product" />
+              </SelectTrigger>
+              <SelectContent>
+                {products.map((product) => (
+                  <SelectItem key={product.hs6Code} value={product.hs6Code}>
+                    {product.hs6Code} - {product.description}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div className="grid gap-3">
             <Label htmlFor="validFrom">Valid From (YYYY-MM-DD)</Label>
@@ -208,11 +286,13 @@ export function MeasuresManager() {
               id="mfnAdvalRate"
               type="number"
               step="0.01"
-              value={formData.mfnAdvalRate}
+              placeholder="e.g., 5"
+              value={formData.mfnAdvalRate || ""}
               onChange={(e) =>
                 setFormData({
                   ...formData,
-                  mfnAdvalRate: parseFloat(e.target.value),
+                  mfnAdvalRate:
+                    e.target.value === "" ? 0 : parseFloat(e.target.value),
                 })
               }
             />
@@ -223,11 +303,13 @@ export function MeasuresManager() {
               id="specificRatePerKg"
               type="number"
               step="0.01"
-              value={formData.specificRatePerKg}
+              placeholder="e.g., 0.35"
+              value={formData.specificRatePerKg || ""}
               onChange={(e) =>
                 setFormData({
                   ...formData,
-                  specificRatePerKg: parseFloat(e.target.value),
+                  specificRatePerKg:
+                    e.target.value === "" ? 0 : parseFloat(e.target.value),
                 })
               }
             />

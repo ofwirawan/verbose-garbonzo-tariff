@@ -97,9 +97,16 @@ public class AdminMeasureController {
         return ResponseEntity.status(201).body(toDTO(created));
     }
 
-    // Get all Measures with pagination
+    // Get all Measures with pagination and optional search
     @GetMapping
-    public Page<MeasureDTO> getAllMeasures(Pageable pageable) {
+    public Page<MeasureDTO> getAllMeasures(
+            @RequestParam(required = false) String search,
+            Pageable pageable) {
+        if (search != null && !search.isEmpty()) {
+            return measureRepository.findByImporterCountryCodeContainingIgnoreCaseOrProductHs6CodeContainingIgnoreCase(
+                    search, search, pageable)
+                    .map(this::toDTO);
+        }
         return measureRepository.findAll(pageable)
                 .map(this::toDTO);
     }
