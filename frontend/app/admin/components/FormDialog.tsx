@@ -47,15 +47,15 @@ export function FormDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className={sizeClasses[size]}>
-        <form onSubmit={handleSubmitClick}>
-          <DialogHeader className="space-y-2">
+        <form onSubmit={handleSubmitClick} className="flex flex-col max-h-[calc(100vh-180px)] w-full px-6 py-6">
+          <DialogHeader className="space-y-2 flex-shrink-0 w-full">
             <DialogTitle>{title}</DialogTitle>
             {description && <DialogDescription>{description}</DialogDescription>}
           </DialogHeader>
-          <div className="grid gap-4 py-4">
+          <div className="flex flex-col gap-4 py-4 overflow-y-auto flex-1 min-h-0 w-full px-2">
             {children}
           </div>
-          <DialogFooter>
+          <DialogFooter className="flex-shrink-0 w-full">
             <DialogClose asChild>
               <Button variant="outline" type="button">Cancel</Button>
             </DialogClose>

@@ -223,7 +223,7 @@ export function PreferencesManager() {
         onSubmit={handleSubmit}
         isSubmitting={isSubmitting}
       >
-        <div className="space-y-4 max-h-96 overflow-y-auto">
+        <div className="space-y-4">
           <div className="grid gap-3">
             <Label htmlFor="importerCode">Importer Country</Label>
             <Select
@@ -235,7 +235,7 @@ export function PreferencesManager() {
               <SelectTrigger id="importerCode">
                 <SelectValue placeholder="Select importer country" />
               </SelectTrigger>
-              <SelectContent className="w-64">
+              <SelectContent>
                 {countries.map((country) => (
                   <SelectItem key={country.countryCode} value={country.countryCode}>
                     {country.countryCode} - {country.name}
@@ -255,7 +255,7 @@ export function PreferencesManager() {
               <SelectTrigger id="exporterCode">
                 <SelectValue placeholder="Select exporter country" />
               </SelectTrigger>
-              <SelectContent className="w-64">
+              <SelectContent>
                 {countries.map((country) => (
                   <SelectItem key={country.countryCode} value={country.countryCode}>
                     {country.countryCode} - {country.name}
@@ -275,7 +275,7 @@ export function PreferencesManager() {
               <SelectTrigger id="productCode">
                 <SelectValue placeholder="Select product" />
               </SelectTrigger>
-              <SelectContent className="w-80 max-h-64">
+              <SelectContent>
                 {products.map((product) => (
                   <SelectItem key={product.hs6Code} value={product.hs6Code}>
                     {product.hs6Code} - {product.description}

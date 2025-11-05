@@ -6,8 +6,6 @@ import {
   IconPackage,
   IconUsers,
   IconChartBar,
-  IconTrendingUp,
-  IconAlertCircle,
   IconHistory,
 } from "@tabler/icons-react";
 import { AppSidebar } from "@/components/app-sidebar";
@@ -17,18 +15,14 @@ import { type NavItem } from "@/components/sidebar-config";
 import { CountriesManager } from "./components/manager/CountriesManager";
 import { ProductsManager } from "./components/business-logic/ProductsManager";
 import { UsersManager } from "./components/manager/UsersManager";
-import { MeasuresManager } from "./components/business-logic/MeasuresManager";
-import { PreferencesManager } from "./components/business-logic/PreferencesManager";
-import { SuspensionsManager } from "./components/business-logic/SuspensionsManager";
+import { TradeRulesManager } from "./components/business-logic/TradeRulesManager";
 import { TransactionsManager } from "./components/manager/TransactionsManager";
 
 type TabType =
   | "countries"
   | "products"
   | "users"
-  | "measures"
-  | "preferences"
-  | "suspensions"
+  | "trade-rules"
   | "transactions";
 
 export default function AdminDashboard() {
@@ -60,28 +54,12 @@ export default function AdminDashboard() {
       isActive: activeTab === "users",
     },
     {
-      id: "measures",
-      title: "Measures",
-      url: "#measures",
+      id: "trade-rules",
+      title: "Trade Rules",
+      url: "#trade-rules",
       icon: IconChartBar,
-      onClick: () => setActiveTab("measures"),
-      isActive: activeTab === "measures",
-    },
-    {
-      id: "preferences",
-      title: "Preferences",
-      url: "#preferences",
-      icon: IconTrendingUp,
-      onClick: () => setActiveTab("preferences"),
-      isActive: activeTab === "preferences",
-    },
-    {
-      id: "suspensions",
-      title: "Suspensions",
-      url: "#suspensions",
-      icon: IconAlertCircle,
-      onClick: () => setActiveTab("suspensions"),
-      isActive: activeTab === "suspensions",
+      onClick: () => setActiveTab("trade-rules"),
+      isActive: activeTab === "trade-rules",
     },
     {
       id: "transactions",
@@ -101,12 +79,8 @@ export default function AdminDashboard() {
         return <ProductsManager />;
       case "users":
         return <UsersManager />;
-      case "measures":
-        return <MeasuresManager />;
-      case "preferences":
-        return <PreferencesManager />;
-      case "suspensions":
-        return <SuspensionsManager />;
+      case "trade-rules":
+        return <TradeRulesManager />;
       case "transactions":
         return <TransactionsManager />;
       default:
@@ -153,9 +127,7 @@ export default function AdminDashboard() {
                 {activeTab === "countries" && "Manage countries and their tariff data"}
                 {activeTab === "products" && "Manage products and categorization"}
                 {activeTab === "users" && "Manage users and their permissions"}
-                {activeTab === "measures" && "Manage tariff measures and policies"}
-                {activeTab === "preferences" && "Manage system preferences and settings"}
-                {activeTab === "suspensions" && "Manage suspended items and restrictions"}
+                {activeTab === "trade-rules" && "Manage trade rules, preferences, and suspensions"}
                 {activeTab === "transactions" && "View and manage transaction history"}
               </p>
             </div>
