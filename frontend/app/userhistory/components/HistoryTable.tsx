@@ -13,6 +13,12 @@ import {
   useReactTable,
   VisibilityState,
 } from "@tanstack/react-table";
+
+import {
+  IconTrash,
+  IconFilter2
+} from "@tabler/icons-react";
+
 import { ChevronDown } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -123,20 +129,10 @@ export const columns: ColumnDef<HistoryItem>[] = [
   },
   {
     accessorKey: "tradeValue",
-    header: "Trade Value",
+    header: "Trade ($)",
     cell: ({ row }) => {
       const value = row.getValue<number>("tradeValue") || 0;
       return <div>${value.toLocaleString()}</div>;
-    },
-  },
-  {
-    accessorKey: "tariffRate",
-    header: "Tariff Rate (%)",
-    cell: ({ row }) => {
-      const value = row.getValue<number>("tariffRate");
-      return value !== undefined && value !== null
-        ? `${Number(value).toFixed(2)}%`
-        : "N/A";
     },
   },
   {
@@ -222,6 +218,67 @@ export const columns: ColumnDef<HistoryItem>[] = [
       return <div>${value.toLocaleString()}</div>;
     },
   },
+  // New columns for enhanced data
+  {
+    accessorKey: "freightCost",
+    header: "Freight",
+    cell: ({ row }) => {
+      const cost = row.getValue<number>("freightCost");
+      const type = row.original.freightType;
+      
+      if (cost === null || cost === undefined) {
+        return <div className="text-gray-500">N/A</div>;
+      }
+      
+      return (
+        <div>
+          <div>${cost.toLocaleString()}</div>
+          {type && <div className="text-xs text-gray-500">Type: {type}</div>}
+        </div>
+      );
+    },
+  },
+  {
+    accessorKey: "insuranceCost",
+    header: "Insurance",
+    cell: ({ row }) => {
+      const cost = row.getValue<number>("insuranceCost");
+      const rate = row.original.insuranceRate;
+      
+      if (cost === null || cost === undefined) {
+        return <div className="text-gray-500">N/A</div>;
+      }
+      
+      return (
+        <div>
+          <div>${cost.toLocaleString()}</div>
+          {rate && <div className="text-xs text-gray-500">Rate: {rate}%</div>}
+        </div>
+      );
+    },
+  },
+  // {
+  //   accessorKey: "tradeFinal",
+  //   header: "Final Trade Value",
+  //   cell: ({ row }) => {
+  //     const value = row.getValue<number>("tradeFinal");
+  //     if (value === null || value === undefined) {
+  //       return <div className="text-gray-500">N/A</div>;
+  //     }
+  //     return <div className="font-medium">${value.toLocaleString()}</div>;
+  //   },
+  // },
+  {
+    accessorKey: "totalLandedCost",
+    header: "Total Landed Cost",
+    cell: ({ row }) => {
+      const value = row.getValue<number>("totalLandedCost");
+      if (value === null || value === undefined) {
+        return <div className="text-gray-500">N/A</div>;
+      }
+      return <div>${value.toLocaleString()}</div>;
+    },
+  },
 ];
 
 export function HistoryTable({ data }: HistoryTableProps) {
@@ -269,14 +326,13 @@ export function HistoryTable({ data }: HistoryTableProps) {
         <AlertDialog>
           <AlertDialogTrigger asChild>
             <Button
-              variant="destructive"
-              size="sm"
+              variant="outline" 
+              size="sm" 
+              className="ml-auto"
               disabled={table.getFilteredSelectedRowModel().rows.length === 0}
             >
-              Delete {table.getFilteredSelectedRowModel().rows.length} selected
-              {table.getFilteredSelectedRowModel().rows.length === 1
-                ? " item"
-                : " items"}
+              <IconTrash className="h-4 w-4" />
+              Delete ({table.getFilteredSelectedRowModel().rows.length})
             </Button>
           </AlertDialogTrigger>
           <AlertDialogContent>
@@ -343,8 +399,10 @@ export function HistoryTable({ data }: HistoryTableProps) {
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
+            
             <Button variant="outline" size="sm" className="ml-auto">
-              Columns <ChevronDown />
+              <IconFilter2 className="h4 w4" />
+              Filter 
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
