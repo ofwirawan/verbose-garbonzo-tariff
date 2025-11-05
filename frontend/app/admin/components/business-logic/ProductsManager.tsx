@@ -14,6 +14,7 @@ export function ProductsManager() {
   const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
+  const [searchQuery, setSearchQuery] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -22,23 +23,50 @@ export function ProductsManager() {
     description: "",
   });
 
-  const loadProducts = async (page = 0) => {
+  const loadProducts = async (page = 0, search = "") => {
     try {
       setIsLoading(true);
-      const response = await productAPI.getAll(page, 10);
+      console.log("📥 Loading products from page:", page, "search:", search);
+      const response = await productAPI.getAll(page, 25, search);
+      console.log("✅ Products loaded:", {
+        page,
+        count: response.content.length,
+        responseNumber: response.number,
+        totalPages: response.totalPages,
+        fullResponse: response,
+      });
       setProducts(response.content);
-      setCurrentPage(response.currentPage);
+      // Spring returns 'number' for current page, not 'currentPage'
+      setCurrentPage(response.number ?? page);
       setTotalPages(response.totalPages);
     } catch (error) {
-      toast.error("Failed to load products");
+      console.error("❌ Error loading products:", error);
+      toast.error(
+        `Failed to load products: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    loadProducts(0);
+    // Only load on client side after component mounts
+    if (typeof window !== "undefined") {
+      loadProducts(currentPage, searchQuery);
+    }
   }, []);
+
+  const handleSearch = (query: string) => {
+    setSearchQuery(query);
+    // Reset to page 0 when searching and load with search query
+    loadProducts(0, query);
+  };
+
+  const handlePageChange = (page: number) => {
+    loadProducts(page, searchQuery);
+  };
 
   const handleAdd = () => {
     setEditingProduct(null);
@@ -68,7 +96,7 @@ export function ProductsManager() {
         toast.success("Product created successfully");
       }
       setDialogOpen(false);
-      loadProducts(currentPage);
+      loadProducts(currentPage, searchQuery);
     } catch (error) {
       toast.error(
         `Failed to save product: ${
@@ -82,7 +110,7 @@ export function ProductsManager() {
 
   const handleDeleteConfirm = async (row: Product) => {
     await productAPI.delete(row.hs6Code);
-    loadProducts(currentPage);
+    loadProducts(currentPage, searchQuery);
   };
 
   const columns: ColumnDef<Product>[] = [
@@ -107,7 +135,8 @@ export function ProductsManager() {
         onDeleteConfirm={handleDeleteConfirm}
         currentPage={currentPage}
         totalPages={totalPages}
-        onPageChange={loadProducts}
+        onPageChange={handlePageChange}
+        onSearch={handleSearch}
         title="Products"
       />
 

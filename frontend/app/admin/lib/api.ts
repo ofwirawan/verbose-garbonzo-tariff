@@ -171,15 +171,11 @@ export const countryAPI = {
 
 // Product API
 export const productAPI = {
-  async getAll(page = 0, size = 10): Promise<PaginatedResponse<Product>> {
-    const response = await fetch(
-      `${API_BASE_URL}/products?page=${page}&size=${size}`,
-      {
-        headers: getAuthHeaders(),
-      }
+  async getAll(page = 0, size = 10, search = ""): Promise<PaginatedResponse<Product>> {
+    const searchParam = search ? `&search=${encodeURIComponent(search)}` : "";
+    return apiCall<PaginatedResponse<Product>>(
+      `${API_BASE_URL}/products?page=${page}&size=${size}${searchParam}`
     );
-    if (!response.ok) throw new Error("Failed to fetch products");
-    return response.json();
   },
 
   async getByCode(code: string): Promise<Product> {
@@ -221,15 +217,11 @@ export const productAPI = {
 
 // User API
 export const userAPI = {
-  async getAll(page = 0, size = 10): Promise<PaginatedResponse<User>> {
-    const response = await fetch(
-      `${API_BASE_URL}/users?page=${page}&size=${size}`,
-      {
-        headers: getAuthHeaders(),
-      }
+  async getAll(page = 0, size = 10, search = ""): Promise<PaginatedResponse<User>> {
+    const searchParam = search ? `&search=${encodeURIComponent(search)}` : "";
+    return apiCall<PaginatedResponse<User>>(
+      `${API_BASE_URL}/users?page=${page}&size=${size}${searchParam}`
     );
-    if (!response.ok) throw new Error("Failed to fetch users");
-    return response.json();
   },
 
   async getById(uid: string): Promise<User> {
@@ -480,15 +472,11 @@ export const suspensionAPI = {
 
 // Transaction API
 export const transactionAPI = {
-  async getAll(page = 0, size = 10): Promise<PaginatedResponse<Transaction>> {
-    const response = await fetch(
-      `${API_BASE_URL}/transactions?page=${page}&size=${size}`,
-      {
-        headers: getAuthHeaders(),
-      }
+  async getAll(page = 0, size = 10, search = ""): Promise<PaginatedResponse<Transaction>> {
+    const searchParam = search ? `&search=${encodeURIComponent(search)}` : "";
+    return apiCall<PaginatedResponse<Transaction>>(
+      `${API_BASE_URL}/transactions?page=${page}&size=${size}${searchParam}`
     );
-    if (!response.ok) throw new Error("Failed to fetch transactions");
-    return response.json();
   },
 
   async getById(tid: number): Promise<Transaction> {

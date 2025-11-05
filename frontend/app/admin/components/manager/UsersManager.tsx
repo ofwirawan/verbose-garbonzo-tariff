@@ -14,6 +14,7 @@ export function UsersManager() {
   const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
+  const [searchQuery, setSearchQuery] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -24,23 +25,50 @@ export function UsersManager() {
     roles: "user",
   });
 
-  const loadUsers = async (page = 0) => {
+  const loadUsers = async (page = 0, search = "") => {
     try {
       setIsLoading(true);
-      const response = await userAPI.getAll(page, 10);
+      console.log("📥 Loading users from page:", page, "search:", search);
+      const response = await userAPI.getAll(page, 25, search);
+      console.log("✅ Users loaded:", {
+        page,
+        count: response.content.length,
+        responseNumber: response.number,
+        totalPages: response.totalPages,
+        fullResponse: response,
+      });
       setUsers(response.content);
-      setCurrentPage(response.currentPage);
+      // Spring returns 'number' for current page, not 'currentPage'
+      setCurrentPage(response.number ?? page);
       setTotalPages(response.totalPages);
     } catch (error) {
-      toast.error("Failed to load users");
+      console.error("❌ Error loading users:", error);
+      toast.error(
+        `Failed to load users: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    loadUsers(0);
+    // Only load on client side after component mounts
+    if (typeof window !== "undefined") {
+      loadUsers(currentPage, searchQuery);
+    }
   }, []);
+
+  const handleSearch = (query: string) => {
+    setSearchQuery(query);
+    // Reset to page 0 when searching and load with search query
+    loadUsers(0, query);
+  };
+
+  const handlePageChange = (page: number) => {
+    loadUsers(page, searchQuery);
+  };
 
   const handleAdd = () => {
     setEditingUser(null);
@@ -79,7 +107,7 @@ export function UsersManager() {
         toast.success("User created successfully");
       }
       setDialogOpen(false);
-      loadUsers(currentPage);
+      loadUsers(currentPage, searchQuery);
     } catch (error) {
       toast.error(
         `Failed to save user: ${
@@ -93,7 +121,7 @@ export function UsersManager() {
 
   const handleDeleteConfirm = async (row: User) => {
     await userAPI.delete(row.uid);
-    loadUsers(currentPage);
+    loadUsers(currentPage, searchQuery);
   };
 
   const columns: ColumnDef<User>[] = [
@@ -102,20 +130,16 @@ export function UsersManager() {
       header: "User ID",
     },
     {
+      accessorKey: "name",
+      header: "Name",
+    },
+    {
       accessorKey: "email",
       header: "Email",
     },
     {
       accessorKey: "roles",
       header: "Role",
-    },
-    {
-      accessorKey: "createdAt",
-      header: "Created",
-      cell: ({ row }) =>
-        row.original.createdAt
-          ? new Date(row.original.createdAt).toLocaleDateString()
-          : "N/A",
     },
   ];
 
@@ -130,7 +154,8 @@ export function UsersManager() {
         onDeleteConfirm={handleDeleteConfirm}
         currentPage={currentPage}
         totalPages={totalPages}
-        onPageChange={loadUsers}
+        onPageChange={handlePageChange}
+        onSearch={handleSearch}
         title="Users"
       />
 
@@ -167,19 +192,6 @@ export function UsersManager() {
                 setFormData({ ...formData, email: e.target.value })
               }
               placeholder="e.g., user@example.com"
-            />
-          </div>
-          <div className="grid gap-3">
-            <Label htmlFor="pwHash">Password Hash</Label>
-            <Input
-              id="pwHash"
-              value={formData.pwHash || ""}
-              onChange={(e) =>
-                setFormData({ ...formData, pwHash: e.target.value })
-              }
-              placeholder={
-                editingUser ? "Leave empty to keep current" : "e.g., hashed..."
-              }
             />
           </div>
           <div className="grid gap-3">

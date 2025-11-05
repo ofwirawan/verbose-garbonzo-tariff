@@ -66,6 +66,10 @@ export function CountriesManager() {
     loadCountries(0, query);
   };
 
+  const handlePageChange = (page: number) => {
+    loadCountries(page, searchQuery);
+  };
+
   const handleAdd = () => {
     setEditingCountry(null);
     setFormData({ countryCode: "", numericCode: "", name: "", city: "" });
@@ -146,7 +150,7 @@ export function CountriesManager() {
         onDeleteConfirm={handleDeleteConfirm}
         currentPage={currentPage}
         totalPages={totalPages}
-        onPageChange={loadCountries}
+        onPageChange={handlePageChange}
         onSearch={handleSearch}
         title="Countries"
       />

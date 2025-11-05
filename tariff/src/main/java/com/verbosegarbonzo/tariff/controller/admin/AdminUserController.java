@@ -35,9 +35,15 @@ public class AdminUserController {
         return ResponseEntity.status(201).body(created);
     }
 
-    // Get all Users (paginated)
+    // Get all Users (paginated) with optional search
     @GetMapping
-    public Page<UserInfo> getAllUsers(Pageable pageable) {
+    public Page<UserInfo> getAllUsers(
+            @RequestParam(required = false) String search,
+            Pageable pageable) {
+        if (search != null && !search.isEmpty()) {
+            return userRepository.findByNameContainingIgnoreCaseOrEmailContainingIgnoreCase(
+                    search, search, pageable);
+        }
         return userRepository.findAll(pageable);
     }
 

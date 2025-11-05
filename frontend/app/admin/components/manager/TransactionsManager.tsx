@@ -18,6 +18,7 @@ export function TransactionsManager() {
   const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
+  const [searchQuery, setSearchQuery] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] =
     useState<Transaction | null>(null);
@@ -34,23 +35,50 @@ export function TransactionsManager() {
     appliedRate: { rate: 0 },
   });
 
-  const loadTransactions = async (page = 0) => {
+  const loadTransactions = async (page = 0, search = "") => {
     try {
       setIsLoading(true);
-      const response = await transactionAPI.getAll(page, 10);
+      console.log("📥 Loading transactions from page:", page, "search:", search);
+      const response = await transactionAPI.getAll(page, 25, search);
+      console.log("✅ Transactions loaded:", {
+        page,
+        count: response.content.length,
+        responseNumber: response.number,
+        totalPages: response.totalPages,
+        fullResponse: response,
+      });
       setTransactions(response.content);
-      setCurrentPage(response.currentPage);
+      // Spring returns 'number' for current page, not 'currentPage'
+      setCurrentPage(response.number ?? page);
       setTotalPages(response.totalPages);
     } catch (error) {
-      toast.error("Failed to load transactions");
+      console.error("❌ Error loading transactions:", error);
+      toast.error(
+        `Failed to load transactions: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    loadTransactions(0);
+    // Only load on client side after component mounts
+    if (typeof window !== "undefined") {
+      loadTransactions(currentPage, searchQuery);
+    }
   }, []);
+
+  const handleSearch = (query: string) => {
+    setSearchQuery(query);
+    // Reset to page 0 when searching and load with search query
+    loadTransactions(0, query);
+  };
+
+  const handlePageChange = (page: number) => {
+    loadTransactions(page, searchQuery);
+  };
 
   const handleAdd = () => {
     setEditingTransaction(null);
@@ -169,7 +197,8 @@ export function TransactionsManager() {
         onDeleteConfirm={handleDeleteConfirm}
         currentPage={currentPage}
         totalPages={totalPages}
-        onPageChange={loadTransactions}
+        onPageChange={handlePageChange}
+        onSearch={handleSearch}
         title="Transactions"
         emptyMessage="No transactions found"
       />
