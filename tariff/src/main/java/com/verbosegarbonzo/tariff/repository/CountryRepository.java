@@ -1,6 +1,8 @@
 package com.verbosegarbonzo.tariff.repository;
 
 import com.verbosegarbonzo.tariff.model.Country;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.*;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.data.repository.query.Param;
@@ -20,5 +22,9 @@ public interface CountryRepository extends JpaRepository<Country, String> {
     void upsert(@Param("code") String countryCode,
             @Param("name") String name,
             @Param("num") String numericCode);
+
+    // Search by name, country code, or numeric code
+    Page<Country> findByNameContainingIgnoreCaseOrCountryCodeContainingIgnoreCaseOrNumericCodeContaining(
+            String name, String countryCode, String numericCode, Pageable pageable);
 
 }

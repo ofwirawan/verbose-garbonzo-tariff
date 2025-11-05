@@ -97,9 +97,16 @@ public class AdminMeasureController {
         return ResponseEntity.status(201).body(toDTO(created));
     }
 
-    // Get all Measures with pagination
+    // Get all Measures with pagination and optional search
     @GetMapping
-    public Page<MeasureDTO> getAllMeasures(Pageable pageable) {
+    public Page<MeasureDTO> getAllMeasures(
+            @RequestParam(required = false) String search,
+            Pageable pageable) {
+        if (search != null && !search.isEmpty()) {
+            return measureRepository.findByImporterCountryCodeContainingIgnoreCaseOrProductHs6CodeContainingIgnoreCase(
+                    search, search, pageable)
+                    .map(this::toDTO);
+        }
         return measureRepository.findAll(pageable)
                 .map(this::toDTO);
     }
@@ -129,14 +136,17 @@ public class AdminMeasureController {
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                             "Product not found: " + dto.getProductCode()));
 
-            // Duplicate check for update
-            boolean exists = measureRepository
-                    .findValidRate(importer, product, dto.getValidFrom())
-                    .filter(m -> !m.getMeasureId().equals(id))
-                    .isPresent();
-            if (exists) {
-                throw new ResponseStatusException(HttpStatus.CONFLICT,
-                        "A measure with the same importer, product, and validFrom already exists.");
+            // Duplicate check for update - only check if key fields have changed
+            if (!measure.getImporter().equals(importer) ||
+                !measure.getProduct().equals(product) ||
+                !measure.getValidFrom().equals(dto.getValidFrom())) {
+                boolean exists = measureRepository
+                        .findValidRate(importer, product, dto.getValidFrom())
+                        .isPresent();
+                if (exists) {
+                    throw new ResponseStatusException(HttpStatus.CONFLICT,
+                            "A measure with the same importer, product, and validFrom already exists.");
+                }
             }
 
             measure.setImporter(importer);

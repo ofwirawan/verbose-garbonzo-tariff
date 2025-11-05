@@ -37,9 +37,15 @@ public class AdminProductController {
         return ResponseEntity.status(201).body(created);
     }
 
-    // Get all products (paginated)
+    // Get all products (paginated) with optional search
     @GetMapping
-    public Page<Product> getAllProducts(Pageable pageable) {
+    public Page<Product> getAllProducts(
+            @RequestParam(required = false) String search,
+            Pageable pageable) {
+        if (search != null && !search.isEmpty()) {
+            return productRepository.findByHs6CodeContainingIgnoreCaseOrDescriptionContainingIgnoreCase(
+                    search, search, pageable);
+        }
         return productRepository.findAll(pageable);
     }
 

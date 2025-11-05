@@ -45,8 +45,12 @@ export async function login(credentials: LoginCredentials): Promise<string> {
     throw new Error(errorMessage);
   }
 
-  const token = await response.text();
-  console.log("Login successful, token received");
+  let token = await response.text();
+  console.log("Login successful, token received (raw):", token);
+
+  // Remove quotes if the backend returns them wrapped in quotes
+  token = token.replace(/^"(.*)"$/, '$1');
+  console.log("Login successful, token cleaned:", token);
 
   // Store token in both localStorage and cookies
   if (typeof window !== "undefined") {

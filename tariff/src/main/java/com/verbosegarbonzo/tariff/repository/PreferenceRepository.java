@@ -5,6 +5,8 @@ import com.verbosegarbonzo.tariff.model.Preference;
 import com.verbosegarbonzo.tariff.model.Product;
 import java.time.LocalDate;
 import java.util.Optional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 import org.springframework.data.jpa.repository.Query;
@@ -31,4 +33,8 @@ public interface PreferenceRepository extends JpaRepository<Preference, Integer>
         Country exporter,
         Product product,
         LocalDate validFrom);
+
+    // Search by importer code, exporter code, or product code
+    Page<Preference> findByImporterCountryCodeContainingIgnoreCaseOrExporterCountryCodeContainingIgnoreCaseOrProductHs6CodeContainingIgnoreCase(
+            String importerCode, String exporterCode, String productCode, Pageable pageable);
 }
