@@ -20,8 +20,8 @@ public class MetadataController {
             client.loadCountries(); //load and save to Supabase
             return ResponseEntity.ok("Countries synced successfully!");
         } catch (Exception e) {
-            String msg = (e.getCause() == null) ? e.getMessage() : (e.getMessage() + " | cause: " + e.getCause());
-            return ResponseEntity.internalServerError().body("Failed to sync countries: " + msg);
+            // String msg = (e.getCause() == null) ? e.getMessage() : (e.getMessage() + " | cause: " + e.getCause());
+            return ResponseEntity.internalServerError().body("Failed to sync countries: API error");
         }
     }
 
@@ -31,7 +31,7 @@ public class MetadataController {
             client.loadProducts(); //load and save to Supabase
             return ResponseEntity.ok("Products synced successfully!");
         } catch (Exception e) {
-            return ResponseEntity.internalServerError().body("Failed to sync: " + e.getMessage());
+            return ResponseEntity.internalServerError().body("Failed to sync products: API error");
         }
     }
 }

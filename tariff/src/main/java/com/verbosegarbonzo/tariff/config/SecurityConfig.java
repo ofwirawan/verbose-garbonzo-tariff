@@ -50,7 +50,7 @@ public class SecurityConfig {
                         // Public endpoints - allow all OPTIONS requests for CORS preflight
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/auth/register", "/auth/token").permitAll()
-
+                        
                         // Swagger UI endpoints
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-resources/**", "/webjars/**").permitAll()
 

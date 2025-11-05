@@ -491,7 +491,9 @@ function TariffChartForm({
                           name="insuranceRate"
                           value={option.value}
                           checked={insuranceRate === option.value}
-                          onChange={(e) => onInsuranceRateChange(e.target.value)}
+                          onChange={(e) =>
+                            onInsuranceRateChange(e.target.value)
+                          }
                           className="w-4 h-4 text-gray-900 border-gray-300 focus:ring-gray-900"
                         />
                         <div className="flex-1">
@@ -525,9 +527,7 @@ function TariffChartForm({
                         <span className="text-sm font-semibold text-gray-900 block">
                           High
                         </span>
-                        <span className="text-xs text-gray-500">
-                          2.0%
-                        </span>
+                        <span className="text-xs text-gray-500">2.0%</span>
                       </div>
                     </label>
 
@@ -565,7 +565,9 @@ function TariffChartForm({
                                 ? insuranceRate
                                 : ""
                             }
-                            onChange={(e) => onInsuranceRateChange(e.target.value)}
+                            onChange={(e) =>
+                              onInsuranceRateChange(e.target.value)
+                            }
                             placeholder="Enter custom rate"
                             className="h-9 text-xs border-gray-300 flex-1"
                           />
@@ -599,22 +601,7 @@ function TariffChartForm({
               Calculating...
             </span>
           ) : (
-            <span className="flex items-center gap-3">
-              <svg
-                className="h-5 w-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2.5}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"
-                />
-              </svg>
-              Calculate Tariff
-            </span>
+            <span className="flex items-center gap-3">Calculate Tariff</span>
           )}
         </Button>
       </div>

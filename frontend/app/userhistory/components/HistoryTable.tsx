@@ -19,6 +19,8 @@ import {
   IconFilter2
 } from "@tabler/icons-react";
 
+import { ChevronDown } from "lucide-react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -280,14 +282,11 @@ export const columns: ColumnDef<HistoryItem>[] = [
 ];
 
 export function HistoryTable({ data }: HistoryTableProps) {
-  const [sorting, setSorting] = React.useState<SortingState>([]);
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
-    []
-  );
-  const [columnVisibility, setColumnVisibility] =
-    React.useState<VisibilityState>({});
-  const [rowSelection, setRowSelection] = React.useState({});
-  const [history, setHistory] = React.useState<HistoryItem[]>(
+  const [sorting, setSorting] = useState<SortingState>([]);
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+  const [rowSelection, setRowSelection] = useState({});
+  const [history, setHistory] = useState<HistoryItem[]>(
     data.filter((item) => item != null)
   );
 
@@ -368,7 +367,6 @@ export function HistoryTable({ data }: HistoryTableProps) {
                       );
                       return response;
                     });
-
 
                     // Update frontend state
                     setHistory((prev) =>

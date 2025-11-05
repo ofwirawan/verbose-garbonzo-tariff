@@ -31,13 +31,30 @@ public class AdminCountryController {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "A country with numeric code '" + country.getNumericCode() + "' already exists.");
         }
-        Country created = countryRepository.save(country);
-        return ResponseEntity.status(201).body(created);
+        if (country.getCountryCode().length() != 3 || country.getNumericCode().length() != 3) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Country code & numeric code must be of length 3.");
+        }
+        try {
+            Integer.parseInt(country.getNumericCode());
+            Country created = countryRepository.save(country);
+            return ResponseEntity.status(201).body(created);
+        } catch (NumberFormatException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Numeric code must be numeric");
+        }
+        
     }
 
-    // Get all countries
+    // Get all countries with optional search
     @GetMapping
-    public Page<Country> getAllCountries(Pageable pageable) {
+    public Page<Country> getAllCountries(
+            @RequestParam(required = false) String search,
+            Pageable pageable) {
+        if (search != null && !search.isEmpty()) {
+            return countryRepository.findByNameContainingIgnoreCaseOrCountryCodeContainingIgnoreCaseOrNumericCodeContaining(
+                    search, search, search, pageable);
+        }
         return countryRepository.findAll(pageable);
     }
 

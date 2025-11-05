@@ -3,6 +3,7 @@
 import { type Icon } from "@tabler/icons-react";
 
 import Link from "next/link";
+import React from "react";
 
 // import { Button } from "@/components/ui/button";
 import {
@@ -15,12 +16,16 @@ import {
 
 export function NavMain({
   items,
+  onItemClick,
 }: {
   items: {
     title: string;
     url: string;
-    icon?: Icon;
+    icon?: Icon | React.ReactNode;
+    onClick?: () => void;
+    isActive?: boolean;
   }[];
+  onItemClick?: (title: string) => void;
 }) {
   return (
     <SidebarGroup>
@@ -46,16 +51,42 @@ export function NavMain({
         </SidebarMenu>
 
         <SidebarMenu>
-          {items.map((item) => (
-            <SidebarMenuItem key={item.title}>
-              <Link href={item.url}>
-                <SidebarMenuButton tooltip={item.title} className="h-12 text-base">
-                  {item.icon && <item.icon className="size-5" />}
-                  <span>{item.title}</span>
-                </SidebarMenuButton>
-              </Link>
-            </SidebarMenuItem>
-          ))}
+          {items.map((item) => {
+            const renderIcon = () => {
+              if (!item.icon) return null;
+              if (React.isValidElement(item.icon)) {
+                return item.icon;
+              }
+              const IconComponent = item.icon as Icon;
+              return <IconComponent className="size-5" />;
+            };
+
+            return (
+              <SidebarMenuItem key={item.title}>
+                {item.onClick ? (
+                  <SidebarMenuButton
+                    onClick={() => {
+                      item.onClick?.();
+                      onItemClick?.(item.title);
+                    }}
+                    tooltip={item.title}
+                    size="lg"
+                    isActive={item.isActive}
+                  >
+                    {renderIcon()}
+                    <span>{item.title}</span>
+                  </SidebarMenuButton>
+                ) : (
+                  <Link href={item.url}>
+                    <SidebarMenuButton tooltip={item.title} size="lg">
+                      {renderIcon()}
+                      <span>{item.title}</span>
+                    </SidebarMenuButton>
+                  </Link>
+                )}
+              </SidebarMenuItem>
+            );
+          })}
         </SidebarMenu>
       </SidebarGroupContent>
     </SidebarGroup>
