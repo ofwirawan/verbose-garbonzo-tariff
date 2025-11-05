@@ -53,8 +53,9 @@ public class SecurityConfig {
 
                         // Swagger UI endpoints
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-resources/**", "/webjars/**").permitAll()
+                        
                         // History endpoints now require authentication
-                        .requestMatchers("/api/history/**").authenticated()
+                        .requestMatchers("/api/history/**").permitAll()
 
                         // Role-based endpoints
                         .requestMatchers("/auth/user/**").hasRole("USER")

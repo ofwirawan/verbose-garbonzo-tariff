@@ -10,9 +10,9 @@ import java.util.List;
 
 public interface TransactionRepository extends JpaRepository<Transaction, Integer> {
     
-    @Query("SELECT t FROM Transaction t WHERE t.user = :user ORDER BY t.tDate DESC")
+    @Query("SELECT t FROM Transaction t WHERE t.user = :uid ORDER BY t.tDate DESC")
     List<Transaction> findByUidOrderByTDateDesc(@Param("uid") UserInfo user);
     
-    @Query("SELECT t FROM Transaction t WHERE t.user = :user AND t.tid = :tid")
+    @Query("SELECT t FROM Transaction t WHERE t.user = :uid AND t.tid = :tid")
     Transaction findByUidAndTid(@Param("uid") UserInfo user, @Param("tid") Integer tid);
 }

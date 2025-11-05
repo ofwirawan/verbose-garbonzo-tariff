@@ -13,10 +13,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.test.context.TestPropertySource;
 
-import com.verbosegarbonzo.tariff.repository.TransactionRepository;
-import com.verbosegarbonzo.tariff.repository.UserInfoRepository;
-import com.verbosegarbonzo.tariff.repository.CountryRepository;
-import com.verbosegarbonzo.tariff.repository.ProductRepository;
+import com.verbosegarbonzo.tariff.repository.*;
 import com.verbosegarbonzo.tariff.service.UserInfoService;
 import com.verbosegarbonzo.tariff.service.JwtService;
 import com.verbosegarbonzo.tariff.model.UserInfo;
@@ -50,13 +47,13 @@ class AdminTransactionControllerTest {
     private ProductRepository productRepository;
 
     @Autowired
-    private com.verbosegarbonzo.tariff.repository.MeasureRepository measureRepository;
+    private MeasureRepository measureRepository;
 
     @Autowired
-    private com.verbosegarbonzo.tariff.repository.PreferenceRepository preferenceRepository;
+    private PreferenceRepository preferenceRepository;
 
     @Autowired
-    private com.verbosegarbonzo.tariff.repository.SuspensionRepository suspensionRepository;
+    private SuspensionRepository suspensionRepository;
 
     @Autowired
     private UserInfoService userInfoService;
