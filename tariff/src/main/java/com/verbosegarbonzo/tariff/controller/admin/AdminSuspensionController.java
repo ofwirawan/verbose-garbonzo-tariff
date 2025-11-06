@@ -99,9 +99,16 @@ public class AdminSuspensionController {
         return ResponseEntity.status(201).body(toDTO(created));
     }
 
-    // Get all Suspensions (paginated)
+    // Get all Suspensions (paginated) with optional search
     @GetMapping
-    public Page<SuspensionDTO> getAllSuspensions(Pageable pageable) {
+    public Page<SuspensionDTO> getAllSuspensions(
+            @RequestParam(required = false) String search,
+            Pageable pageable) {
+        if (search != null && !search.isEmpty()) {
+            return suspensionRepository.findByImporterCountryCodeContainingIgnoreCaseOrProductHs6CodeContainingIgnoreCase(
+                    search, search, pageable)
+                    .map(this::toDTO);
+        }
         return suspensionRepository.findAll(pageable)
                 .map(this::toDTO);
     }
@@ -131,13 +138,17 @@ public class AdminSuspensionController {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "Product not found: " + dto.getProductCode()));
 
-        boolean exists = suspensionRepository
-                .findByImporterAndProductAndValidFrom(importer, product, dto.getValidFrom())
-                .filter(s -> !s.getSuspensionId().equals(id))
-                .isPresent();
-        if (exists) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT,
-                    "A suspension with the same importer, product, and validFrom already exists.");
+        // Check for duplicate only if the key fields have changed
+        if (!suspension.getImporter().equals(importer) ||
+            !suspension.getProduct().equals(product) ||
+            !suspension.getValidFrom().equals(dto.getValidFrom())) {
+            boolean exists = suspensionRepository
+                    .findByImporterAndProductAndValidFrom(importer, product, dto.getValidFrom())
+                    .isPresent();
+            if (exists) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT,
+                        "A suspension with the same importer, product, and validFrom already exists.");
+            }
         }
 
         suspension.setImporter(importer);

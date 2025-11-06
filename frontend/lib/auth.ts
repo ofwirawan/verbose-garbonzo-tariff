@@ -45,18 +45,28 @@ export async function login(credentials: LoginCredentials): Promise<string> {
     throw new Error(errorMessage);
   }
 
-  const token = await response.text();
-  console.log("Login successful, token received");
+  let token = await response.text();
+  console.log("Login successful, token received (raw):", token);
+
+  // Remove quotes if the backend returns them wrapped in quotes
+  token = token.replace(/^"(.*)"$/, '$1');
+  console.log("Login successful, token cleaned:", token);
 
   // Store token in both localStorage and cookies
   if (typeof window !== "undefined") {
     localStorage.setItem("jwt_token", token);
     localStorage.setItem("username", credentials.username);
 
-    // Also store in cookies for middleware access
-    document.cookie = `jwt_token=${token}; path=/; max-age=${
+    // Also store in cookies for middleware access - ensure no quotes
+    const cleanToken = token.replace(/^"(.*)"$/, '$1'); // Remove surrounding quotes if present
+    document.cookie = `jwt_token=${cleanToken}; path=/; max-age=${
       60 * 60 * 24 * 7
     }; SameSite=Lax`;
+    
+    console.log("🔍 Token stored:", {
+      localStorage: localStorage.getItem("jwt_token"),
+      cookieSet: `jwt_token=${cleanToken}`,
+    });
   }
 
   return token;
@@ -96,7 +106,11 @@ export async function register(data: RegisterData): Promise<string> {
 // Get stored JWT token
 export function getToken(): string | null {
   if (typeof window === "undefined") return null;
-  return localStorage.getItem("jwt_token");
+  const token = localStorage.getItem("jwt_token");
+  if (!token) return null;
+  
+  // Remove surrounding quotes if present
+  return token.replace(/^"(.*)"$/, '$1');
 }
 
 // Check if user is authenticated

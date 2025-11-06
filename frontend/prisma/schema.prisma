@@ -7,12 +7,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum ProfileType {
-  BUSINESS_OWNER   @map("business_owner")
-  POLICY_ANALYST   @map("policy_analyst")
-  STUDENT          @map("student")
-}
-
 model country {
   country_code          String        @id @db.VarChar(3)
   numeric_code          String        @unique @db.VarChar(3)
@@ -49,8 +43,8 @@ model transaction {
   applied_rate    Json      @db.Json
   freight_cost    Decimal?  @db.Decimal(38, 2)
   freight_type    String?   @db.VarChar(10)
-  insurance_rate  Decimal?  @db.Decimal(5, 2)
   insurance_cost  Decimal?  @db.Decimal(12, 2)
+  insurance_rate  Decimal?  @db.Decimal(5, 2)
   valuation_basis String?   @db.VarChar
   exporter        country?  @relation("exporter_transactions", fields: [exporter_code], references: [country_code], onDelete: NoAction)
   product         product   @relation(fields: [hs6code], references: [hs6code], onDelete: Cascade)
@@ -106,14 +100,20 @@ model suspension {
 }
 
 model user_info {
-  uid         String        @id @db.Uuid
-  email       String        @unique @db.VarChar(255)
-  name        String?       @db.VarChar(255)
-  password    String        @db.VarChar(255)
-  roles       String        @db.VarChar(255)
-  profile_type    ProfileType?
-  timestamp   DateTime?     @default(now()) @db.Timestamp(6)
-  transaction transaction[]
+  uid          String        @id @db.Uuid
+  email        String        @unique @db.VarChar(255)
+  name         String?       @db.VarChar(255)
+  password     String        @db.VarChar(255)
+  roles        String        @db.VarChar(255)
+  timestamp    DateTime?     @default(now()) @db.Timestamp(6)
+  profile_type ProfileType?
+  transaction  transaction[]
 
   @@map("user_info")
+}
+
+enum ProfileType {
+  BUSINESS_OWNER @map("business_owner")
+  POLICY_ANALYST @map("policy_analyst")
+  STUDENT        @map("student")
 }

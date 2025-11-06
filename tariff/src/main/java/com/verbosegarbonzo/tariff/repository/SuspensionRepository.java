@@ -3,6 +3,8 @@ package com.verbosegarbonzo.tariff.repository;
 import com.verbosegarbonzo.tariff.model.Country;
 import com.verbosegarbonzo.tariff.model.Product;
 import com.verbosegarbonzo.tariff.model.Suspension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -31,4 +33,8 @@ public interface SuspensionRepository extends JpaRepository<Suspension, Integer>
         Country importer,
         Product product,
         LocalDate validFrom);
+
+    // Search by importer code or product code
+    Page<Suspension> findByImporterCountryCodeContainingIgnoreCaseOrProductHs6CodeContainingIgnoreCase(
+            String importerCode, String productCode, Pageable pageable);
 }

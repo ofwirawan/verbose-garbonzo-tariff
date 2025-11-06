@@ -4,6 +4,8 @@ import com.verbosegarbonzo.tariff.model.Country;
 import com.verbosegarbonzo.tariff.model.Measure;
 import com.verbosegarbonzo.tariff.model.Product;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -23,5 +25,8 @@ public interface MeasureRepository extends JpaRepository<Measure, Integer> {
         @Param("importer") Country importer,
         @Param("hs6") Product hs6,
         @Param("date") LocalDate date);
-    
+
+    // Search by importer code or product code
+    Page<Measure> findByImporterCountryCodeContainingIgnoreCaseOrProductHs6CodeContainingIgnoreCase(
+            String importerCode, String productCode, Pageable pageable);
 }

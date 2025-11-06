@@ -1,12 +1,14 @@
 package com.verbosegarbonzo.tariff.repository;
 
 import com.verbosegarbonzo.tariff.model.Product;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.*;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.repository.query.Param;
 
-public interface ProductRepository extends JpaRepository<Product, String> { 
+public interface ProductRepository extends JpaRepository<Product, String> {
 
 
     @Modifying
@@ -23,4 +25,8 @@ public interface ProductRepository extends JpaRepository<Product, String> {
     @Transactional
     @Query(value = "DELETE FROM product", nativeQuery = true)
     int deleteAllProduct();
+
+    // Search by hs6Code or description
+    Page<Product> findByHs6CodeContainingIgnoreCaseOrDescriptionContainingIgnoreCase(
+            String hs6Code, String description, Pageable pageable);
 }

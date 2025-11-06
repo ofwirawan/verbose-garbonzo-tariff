@@ -46,9 +46,15 @@ public class AdminCountryController {
         
     }
 
-    // Get all countries
+    // Get all countries with optional search
     @GetMapping
-    public Page<Country> getAllCountries(Pageable pageable) {
+    public Page<Country> getAllCountries(
+            @RequestParam(required = false) String search,
+            Pageable pageable) {
+        if (search != null && !search.isEmpty()) {
+            return countryRepository.findByNameContainingIgnoreCaseOrCountryCodeContainingIgnoreCaseOrNumericCodeContaining(
+                    search, search, search, pageable);
+        }
         return countryRepository.findAll(pageable);
     }
 

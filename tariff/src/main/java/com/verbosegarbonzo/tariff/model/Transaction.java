@@ -81,4 +81,11 @@ public class Transaction {
 
     @Column(name = "insurance_cost", precision = 12, scale = 2)
     private BigDecimal insuranceCost;
+
+    @Column(name = "total_landed_cost", precision = 12, scale = 2)
+    private BigDecimal totalLandedCost;
+
+    @Column(name = "warnings", columnDefinition = "json")
+    @Type(JsonType.class)
+    private JsonNode warnings; // Store as JSON array
 }
