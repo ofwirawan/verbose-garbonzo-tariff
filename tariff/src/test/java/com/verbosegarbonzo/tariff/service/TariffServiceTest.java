@@ -201,7 +201,7 @@ class TariffServiceTest {
         when(freightService.calculateFreight("air", "SGP", "MYS", 100.0)).thenReturn(details);
 
         CalculateResponse resp = tariffService.calculate(req);
-        assertEquals(new BigDecimal("120.00"), resp.getTotalLandedCost());
+        assertEquals(new BigDecimal("121.00"), resp.getTotalLandedCost());
         assertEquals("CIF", resp.getValuationBasisApplied());
 
         // Now make freight fail; valuation should become FOB

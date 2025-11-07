@@ -1,10 +1,11 @@
 package com.verbosegarbonzo.tariff.client;
 
-import com.verbosegarbonzo.tariff.config.WitsProperties;
-import com.verbosegarbonzo.tariff.repository.CountryRepository;
-import com.verbosegarbonzo.tariff.repository.ProductRepository;
+import java.io.InputStream;
+import java.util.regex.Pattern;
 
-import reactor.core.publisher.Flux;
+import javax.xml.stream.XMLInputFactory;
+import javax.xml.stream.XMLStreamConstants;
+import javax.xml.stream.XMLStreamReader;
 
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.io.buffer.DataBuffer;
@@ -12,12 +13,11 @@ import org.springframework.core.io.buffer.DataBufferUtils;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 
-import java.io.InputStream;
-import java.util.regex.Pattern;
+import com.verbosegarbonzo.tariff.config.WitsProperties;
+import com.verbosegarbonzo.tariff.repository.CountryRepository;
+import com.verbosegarbonzo.tariff.repository.ProductRepository;
 
-import javax.xml.stream.XMLInputFactory;
-import javax.xml.stream.XMLStreamConstants;
-import javax.xml.stream.XMLStreamReader;
+import reactor.core.publisher.Flux;
 
 @Component
 public class WitsMetadataClient {
@@ -27,8 +27,8 @@ public class WitsMetadataClient {
     private static final Pattern LEAD_DASHES = Pattern.compile("^\\s*[-–—]+\\s*");
     private static final Pattern YEAR_NOTE = Pattern.compile("^\\s*\\((?:-?\\d{4}|\\d{4}-\\d{0,4})\\)\\s*[-–—]*\\s*");
 
-    private static final java.util.Map<String,String> NAME_FIXUPS = java.util.Map.of(
-        "YUG", "Yugoslavia, FR (Serbia/Montenegro)"
+    private static final java.util.Map<String, String> NAME_FIXUPS = java.util.Map.of(
+            "YUG", "Yugoslavia, FR (Serbia/Montenegro)"
     ); //due to WITS naming oddities
 
     private final WebClient webClient;
@@ -46,63 +46,42 @@ public class WitsMetadataClient {
 
     public void loadCountries() {
         final int BATCH = 100;
-    
+
         // --- Removed deletion: keep admin-added city & valuation_basis ---
         System.out.println("Starting country sync without deleting existing records.");
-    
+
         final String url = props.getBaseUrl() + props.getMetadata().getCountry() + "/ALL";
-    
+
         final Flux<DataBuffer> body = webClient.get()
                 .uri(url)
                 .accept(org.springframework.http.MediaType.APPLICATION_XML)
                 .retrieve()
                 .bodyToFlux(DataBuffer.class);
-    
+
         final InputStream is = DataBufferUtils.join(body).map(db -> db.asInputStream(true)).block();
         if (is == null) {
             System.err.println("No XML received from WITS countries endpoint.");
             return;
         }
-    
+
         long seen = 0, queued = 0;
         final java.util.List<String[]> batch = new java.util.ArrayList<>(BATCH);
-    
+
         try (InputStream in = is) {
             XMLInputFactory f = XMLInputFactory.newFactory();
             f.setProperty(XMLInputFactory.IS_NAMESPACE_AWARE, true);
             XMLStreamReader r = f.createXMLStreamReader(in);
-    
+
             String iso3 = null;
             String name = null;
             String numeric = null;
-    
+
             while (r.hasNext()) {
                 int ev = r.next();
-    
+
                 if (ev == XMLStreamConstants.START_ELEMENT) {
                     String tag = r.getLocalName();
-    
-                    if ("country".equalsIgnoreCase(tag)) {
-                        seen++;
-    
-                        for (int i = 0; i < r.getAttributeCount(); i++) {
-                            String n = r.getAttributeLocalName(i);
-                            String v = r.getAttributeValue(i);
-                            if (n == null || v == null) continue;
-                            n = n.toLowerCase();
-                            v = v.trim();
-                            if (v.isEmpty()) continue;
-    
-                            if (n.contains("iso3")) {
-                                iso3 = v;
-                            } else if (n.contains("name")) {
-                                name = v;
-                            } else if (n.equals("countrycode")) {
-                                numeric = v;
-                            }
-                        }
-                    }
-    
+
                     // child elements handling
                     String lower = tag.toLowerCase();
                     if (lower.contains("iso3")) {
@@ -117,65 +96,97 @@ public class WitsMetadataClient {
                         numeric = safeReadElementText(r);
                         continue;
                     }
+
+                    if (!tag.equalsIgnoreCase("country")) {
+                        continue;
+                    }
+
+                    seen++;
+                    for (int i = 0; i < r.getAttributeCount(); i++) {
+                        String localName = r.getAttributeLocalName(i);
+                        String val = r.getAttributeValue(i);
+                        if (name == null || val == null) {
+                            continue;
+                        }
+                        localName = localName.toLowerCase();
+                        val = val.trim();
+                        if (val.isEmpty()) {
+                            continue;
+                        }
+
+                        if (localName.contains("iso3")) {
+                            iso3 = val;
+                        } else if (localName.contains("name")) {
+                            name = val;
+                        } else if (localName.equals("countrycode")) {
+                            numeric = val;
+                        }
+                    }
+
                 }
-    
+
                 if (numeric != null && iso3 != null && numeric.equalsIgnoreCase(iso3)) {
                     iso3 = name = numeric = null;
                     continue; // skip invalid group-of-country entries
                 }
-    
+
                 if (ev == XMLStreamConstants.END_ELEMENT) {
                     String end = r.getLocalName();
-    
-                    if ("country".equalsIgnoreCase(end)) {
+
+                    if (end.equalsIgnoreCase("country")) {
                         if (iso3 != null) {
                             iso3 = iso3.trim().toUpperCase();
-                            if (iso3.length() > 3)
+                            if (iso3.length() > 3) {
                                 iso3 = iso3.substring(0, 3);
-    
+                            }
+
                             String fixed = NAME_FIXUPS.get(iso3);
-                            if (fixed != null)
+                            if (fixed != null) {
                                 name = fixed;
+                            }
                         }
-    
-                        if (name != null)
+
+                        if (name != null) {
                             name = name.trim();
-                        if (numeric != null)
+                        }
+                        if (numeric != null) {
                             numeric = numeric.trim();
-    
+                        }
+
                         if (iso3 != null && iso3.length() == 3 && name != null && !name.isBlank()) {
                             batch.add(new String[]{iso3, name,
-                                    (numeric == null || numeric.isBlank()) ? null : numeric});
+                                (numeric == null || numeric.isBlank()) ? null : numeric});
                             queued++;
-    
+
                             if (batch.size() >= BATCH) {
                                 flushCountryBatch(batch);
                                 batch.clear();
                                 System.out.println("Upserted countries so far: " + queued);
                             }
                         } else if (seen <= 5) {
-                            System.out.println("DEBUG missing country fields at #" + seen +
-                                    " -> iso3=" + iso3 + ", name=" + name + ", numeric=" + numeric);
+                            System.out.println("DEBUG missing country fields at #" + seen
+                                    + " -> iso3=" + iso3 + ", name=" + name + ", numeric=" + numeric);
                         }
-    
+
                         iso3 = name = numeric = null;
                     }
                 }
             }
-    
+
             if (!batch.isEmpty()) {
                 flushCountryBatch(batch);
                 System.out.println("Final country batch upserted. Total rows: " + queued);
             }
-    
+
             System.out.println("Seen <country>: " + seen + ", queued rows: " + queued);
-            if (queued == 0)
+            if (queued == 0) {
                 System.out.println("Parsed 0 country rows.");
-    
+            }
+
         } catch (Exception e) {
             throw new RuntimeException("Failed to stream/parse countries XML", e);
         }
-    }    
+    }
 
     private static String safeReadElementText(XMLStreamReader r) throws Exception {
         //consumes the element text and its END_ELEMENT
@@ -190,11 +201,11 @@ public class WitsMetadataClient {
         }
     }
 
-
     // remove HS6 prefix, WITS leading dashes, and year notes.
     private static String cleanDesc(String hs6, String desc) {
-        if (desc == null)
+        if (desc == null) {
             return null;
+        }
         String out = desc;
 
         // remove an initial HS code like "290531" plus separators/dashes
@@ -241,7 +252,7 @@ public class WitsMetadataClient {
         // seen: how many elements encountered
         // queued: how many rows prepared for DB
         long seen = 0, queued = 0;
-        
+
         final java.util.List<String[]> batch = new java.util.ArrayList<>(BATCH);
 
         try (InputStream in = is) {
@@ -265,12 +276,14 @@ public class WitsMetadataClient {
                         for (int i = 0; i < r.getAttributeCount(); i++) {
                             String n = r.getAttributeLocalName(i);
                             String v = r.getAttributeValue(i);
-                            if (n == null || v == null)
+                            if (n == null || v == null) {
                                 continue;
+                            }
                             n = n.toLowerCase();
                             v = v.trim();
-                            if (v.isEmpty())
+                            if (v.isEmpty()) {
                                 continue;
+                            }
 
                             // HS6
                             if (n.equals("productcode")) {
@@ -287,8 +300,9 @@ public class WitsMetadataClient {
                     // <productdescription>…</productdescription>
                     if ("productdescription".equalsIgnoreCase(tag)) {
                         String t = r.getElementText(); // consume text & END_ELEMENT for productdescription
-                        if (t != null && !t.isBlank())
+                        if (t != null && !t.isBlank()) {
                             desc = t.trim();
+                        }
                         continue;
                     }
                 }
@@ -299,8 +313,9 @@ public class WitsMetadataClient {
                     if ("product".equalsIgnoreCase(end)) {
                         //finalize one product
                         if (hs6 != null && !hs6.isBlank() && desc != null && !desc.isBlank()) {
-                            if (hs6.length() > 6)
+                            if (hs6.length() > 6) {
                                 hs6 = hs6.substring(0, 6);
+                            }
 
                             //filter for Chapter 29
                             if (!hs6.startsWith("29")) {
@@ -318,7 +333,7 @@ public class WitsMetadataClient {
                                 continue;
                             }
 
-                            batch.add(new String[] { hs6, cleaned });
+                            batch.add(new String[]{hs6, cleaned});
                             queued++;
 
                             if (batch.size() >= BATCH) {
