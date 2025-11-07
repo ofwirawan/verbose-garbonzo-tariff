@@ -151,7 +151,7 @@ public class HistoryControllerTest {
                 "trade_original": "1000.00",
                 "importer_code": "%s",
                 "trade_final": "900.00",
-                "applied_rate": 
+                "applied_rate": {"suspension" : "0"}
                }
                """, LocalDate.now().toString() ,testImporter.getCountryCode());
         

@@ -11,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api")
@@ -30,6 +31,15 @@ public class TariffController {
         return ResponseEntity
                 .created(URI.create("/api/transactions/" + resp.getTransactionId()))
                 .body(resp);
+    }
+
+    @PostMapping("/calculate/batch")
+    public ResponseEntity<List<CalculateResponse>> calculateBatch(@Valid @RequestBody List<CalculateRequest> requests) {
+        List<CalculateResponse> responses = requests.stream()
+                .map(service::calculate)
+                .collect(java.util.stream.Collectors.toList());
+
+        return ResponseEntity.ok(responses);
     }
 
     @ExceptionHandler(RateNotFoundException.class)

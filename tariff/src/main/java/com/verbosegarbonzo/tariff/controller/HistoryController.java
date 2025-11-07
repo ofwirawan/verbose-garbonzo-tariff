@@ -135,8 +135,8 @@ public class HistoryController {
             
             // Save transaction
             Transaction savedTransaction = transactionRepository.save(transaction);
-            
-            return ResponseEntity.ok(savedTransaction);
+
+            return ResponseEntity.status(201).body(savedTransaction);
         } catch (Exception e) {
             return ResponseEntity.status(500).body(Map.of("message", "Error saving transaction: " + e.getMessage()));
         }
