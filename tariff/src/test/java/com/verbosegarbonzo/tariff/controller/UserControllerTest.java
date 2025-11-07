@@ -125,7 +125,7 @@ public class UserControllerTest {
                 .when()
                 .post("/auth/token")
                 .then()
-                .statusCode(403);
+                .statusCode(401);
     }
 
     @Test

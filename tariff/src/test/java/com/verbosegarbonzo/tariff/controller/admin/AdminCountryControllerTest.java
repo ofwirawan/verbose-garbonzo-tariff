@@ -1,6 +1,7 @@
 package com.verbosegarbonzo.tariff.controller.admin;
 
 import static io.restassured.RestAssured.given;
+
 import static org.hamcrest.Matchers.*;
 import static org.mockito.ArgumentMatchers.nullable;
 
@@ -19,6 +20,7 @@ import org.springframework.test.context.TestPropertySource;
 
 import com.verbosegarbonzo.tariff.model.UserInfo;
 import com.verbosegarbonzo.tariff.repository.CountryRepository;
+import com.verbosegarbonzo.tariff.repository.TransactionRepository;
 import com.verbosegarbonzo.tariff.repository.UserInfoRepository;
 import com.verbosegarbonzo.tariff.service.JwtService;
 import com.verbosegarbonzo.tariff.service.UserInfoService;
@@ -44,6 +46,9 @@ class AdminCountryControllerTest {
     private UserInfoRepository userInfoRepository;
 
     @Autowired
+    private TransactionRepository transactionRepository;
+
+    @Autowired
     private UserInfoService userInfoService;
 
     @Autowired
@@ -57,11 +62,12 @@ class AdminCountryControllerTest {
         RestAssured.enableLoggingOfRequestAndResponseIfValidationFails();
 
         // Clean database before each test
+        transactionRepository.deleteAll();
         countryRepository.deleteAll();
         userInfoRepository.deleteAll();
 
         userInfoService
-                .addUser(new UserInfo(nullable(UUID.class), "admin", "admin@email.com", "goodpassword", "ROLE_ADMIN"));
+                .addUser(new UserInfo(null, "admin", "admin@email.com", "goodpassword", "ROLE_ADMIN"));
 
         // Authenticate using the actual AuthController and get JWT token
         adminJwtToken = jwtService.token("admin@email.com");

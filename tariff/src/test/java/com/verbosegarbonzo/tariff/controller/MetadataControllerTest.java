@@ -6,6 +6,7 @@ import com.verbosegarbonzo.tariff.repository.CountryRepository;
 import com.verbosegarbonzo.tariff.repository.ProductRepository;
 import com.verbosegarbonzo.tariff.repository.UserInfoRepository;
 import com.verbosegarbonzo.tariff.service.JwtService;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,11 +14,15 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.test.context.TestPropertySource;
+
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import static io.restassured.RestAssured.given;
+
 import static org.hamcrest.Matchers.*;
 import static org.mockito.Mockito.*;
+
+import com.verbosegarbonzo.tariff.repository.TransactionRepository;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @TestPropertySource(properties = {
@@ -46,6 +51,9 @@ public class MetadataControllerTest {
     @Autowired
     private ProductRepository productRepository;
 
+    @Autowired
+    private TransactionRepository transactionRepository;
+
     @MockBean
     private WitsMetadataClient witsMetadataClient;
 
@@ -56,6 +64,7 @@ public class MetadataControllerTest {
         RestAssured.enableLoggingOfRequestAndResponseIfValidationFails();
 
         // Clean up
+        transactionRepository.deleteAll();
         countryRepository.deleteAll();
         productRepository.deleteAll();
         userInfoRepository.deleteAll();
