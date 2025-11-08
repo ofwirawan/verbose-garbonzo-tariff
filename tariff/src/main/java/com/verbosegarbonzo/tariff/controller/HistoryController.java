@@ -1,5 +1,23 @@
 package com.verbosegarbonzo.tariff.controller;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.verbosegarbonzo.tariff.model.Transaction;
 import com.verbosegarbonzo.tariff.model.UserInfo;
@@ -8,17 +26,7 @@ import com.verbosegarbonzo.tariff.repository.ProductRepository;
 import com.verbosegarbonzo.tariff.repository.TransactionRepository;
 import com.verbosegarbonzo.tariff.repository.UserInfoRepository;
 
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.web.bind.annotation.*;
 import lombok.RequiredArgsConstructor;
-
-import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/history")
@@ -135,7 +143,7 @@ public class HistoryController {
             
             // Save transaction
             Transaction savedTransaction = transactionRepository.save(transaction);
-
+            
             return ResponseEntity.status(201).body(savedTransaction);
         } catch (Exception e) {
             return ResponseEntity.status(500).body(Map.of("message", "Error saving transaction: " + e.getMessage()));
