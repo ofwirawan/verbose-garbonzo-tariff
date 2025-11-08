@@ -36,9 +36,9 @@ export function ComparisonChart({
     if (props.active && props.payload && props.payload.length) {
       const data = props.payload[0];
       return (
-        <div className="bg-white p-3 border border-black rounded-lg shadow-lg">
-          <p className="font-semibold text-sm text-black">{data.payload.country}</p>
-          <p className="text-sm text-gray-800">
+        <div className="bg-background p-3 border border-border rounded-lg shadow-lg text-foreground">
+          <p className="font-semibold text-sm">{data.payload.country}</p>
+          <p className="text-sm">
             Cost: ${data.value.toLocaleString("en-US", {
               minimumFractionDigits: 2,
               maximumFractionDigits: 2,
@@ -62,7 +62,7 @@ export function ComparisonChart({
             data={data}
             margin={{ top: 20, right: 30, left: 0, bottom: 60 }}
           >
-            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
             <XAxis
               dataKey="country"
               angle={-45}

@@ -228,7 +228,7 @@ export function DataTable<TData, TValue>({
           {showAddButton && (
             <Button
               onClick={onAdd}
-              className="bg-black text-white hover:bg-gray-800"
+              className="bg-primary text-primary-foreground hover:bg-primary/90"
               disabled={isLoading}
             >
               <Plus className="mr-2 h-4 w-4" />
@@ -239,7 +239,7 @@ export function DataTable<TData, TValue>({
       </div>
 
       {isLoading ? (
-        <div className="rounded-md border p-8 text-center text-gray-500">
+        <div className="rounded-md border p-8 text-center text-muted-foreground">
           Loading...
         </div>
       ) : (
@@ -247,7 +247,7 @@ export function DataTable<TData, TValue>({
           <div className={`rounded-md border overflow-hidden ${data.length > 10 ? 'flex flex-col' : ''}`}>
             <div className={data.length > 10 ? 'overflow-y-auto max-h-[600px]' : ''}>
               <Table>
-                <TableHeader className="bg-white sticky top-0 z-10">
+                <TableHeader className="bg-card sticky top-0 z-10">
                   {table.getHeaderGroups().map((headerGroup) => (
                     <TableRow key={headerGroup.id}>
                       {headerGroup.headers.map((header) => {
@@ -298,7 +298,7 @@ export function DataTable<TData, TValue>({
           </div>
 
           <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
-            <div className="text-sm text-gray-500">
+            <div className="text-sm text-muted-foreground">
               {table.getFilteredSelectedRowModel().rows.length} of{" "}
               {table.getFilteredRowModel().rows.length} row(s) selected.
             </div>
@@ -311,7 +311,7 @@ export function DataTable<TData, TValue>({
               >
                 Previous
               </Button>
-              <div className="text-sm font-medium text-gray-700 px-2 py-1 bg-gray-100 rounded min-w-fit">
+              <div className="text-sm font-medium text-foreground px-2 py-1 bg-muted rounded min-w-fit">
                 Page {currentPage + 1} of {totalPages}
               </div>
               <Button

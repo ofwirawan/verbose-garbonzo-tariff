@@ -32,14 +32,14 @@ export function ComparisonResults({
 }: ComparisonResultsProps) {
   if (isLoading) {
     return (
-      <div className="space-y-4 mt-6 pt-6 border-t border-gray-200">
-        <div className="h-64 bg-gray-100 rounded-lg animate-pulse" />
+      <div className="space-y-4 mt-6 pt-6 border-t border-border">
+        <div className="h-64 bg-muted rounded-lg animate-pulse" />
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 mt-6 pt-6 border-t border-gray-200">
+    <div className="space-y-6 mt-6 pt-6 border-t border-border">
       {/* Export Button */}
       <div className="flex justify-end">
         <ComparisonExport
@@ -60,18 +60,18 @@ export function ComparisonResults({
         <h3 className="text-lg font-semibold mb-4">Detailed Results by Country</h3>
         <div className="space-y-6">
           {comparison.results.map((result, index) => (
-            <div key={index} className="border-t border-gray-200 pt-6 first:border-t-0 first:pt-0">
+            <div key={index} className="border-t border-border pt-6 first:border-t-0 first:pt-0">
               {/* Country Header */}
               <div className="mb-4">
                 <div className="flex items-center gap-2">
-                  <div className="inline-flex items-center justify-center px-3 py-1 bg-black text-white rounded-md font-semibold text-sm">
+                  <div className="inline-flex items-center justify-center px-3 py-1 bg-primary text-primary-foreground rounded-md font-semibold text-sm">
                     #{result.rank}
                   </div>
                   <div>
-                    <h4 className="text-base font-semibold text-gray-900">
+                    <h4 className="text-base font-semibold text-foreground">
                       {result.countryName}
                     </h4>
-                    <p className="text-xs text-gray-500 mt-0.5">
+                    <p className="text-xs text-muted-foreground mt-0.5">
                       {result.rank === 1
                         ? "Best Option"
                         : `+${result.percentDiff.toFixed(1)}% more expensive`}

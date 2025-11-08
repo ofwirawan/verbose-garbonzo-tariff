@@ -44,13 +44,13 @@ export function ComparisonCountrySelector({
   showButton = true,
 }: ComparisonCountrySelectorProps) {
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-6">
+    <div className="bg-card rounded-lg border border-border p-6">
       {/* Header */}
       <div className="mb-5">
-        <h3 className="text-base font-semibold text-gray-900 mb-1">
+        <h3 className="text-base font-semibold text-foreground mb-1">
           Compare with Other Source Countries
         </h3>
-        <p className="text-sm text-gray-600">
+        <p className="text-sm text-muted-foreground">
           Add up to 2 additional countries to compare tariff costs side-by-side
         </p>
       </div>
@@ -59,7 +59,7 @@ export function ComparisonCountrySelector({
       <div className="space-y-3">
         {comparisonCountries.length < 2 && (
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-foreground mb-2">
               Add a country {comparisonCountries.length > 0 && `(${2 - comparisonCountries.length} remaining)`}
             </label>
             <Combobox
@@ -87,8 +87,8 @@ export function ComparisonCountrySelector({
 
       {/* Selected Countries */}
       {comparisonCountries.length > 0 && (
-        <div className="mt-5 pt-5 border-t border-gray-200">
-          <p className="text-sm font-medium text-gray-700 mb-3">
+        <div className="mt-5 pt-5 border-t border-border">
+          <p className="text-sm font-medium text-foreground mb-3">
             Selected countries:
           </p>
           <div className="flex flex-wrap gap-2">
@@ -99,12 +99,12 @@ export function ComparisonCountrySelector({
               return (
                 <div
                   key={code}
-                  className="inline-flex items-center gap-2 px-3 py-2 bg-gray-100 text-gray-900 rounded-lg border border-gray-200 text-sm font-medium hover:bg-gray-200 transition-colors"
+                  className="inline-flex items-center gap-2 px-3 py-2 bg-muted text-foreground rounded-lg border border-border text-sm font-medium hover:bg-muted/80 transition-colors"
                 >
                   {country?.name || code}
                   <button
                     onClick={() => onRemoveCountry(code)}
-                    className="text-gray-500 hover:text-gray-700 transition-colors"
+                    className="text-muted-foreground hover:text-foreground transition-colors"
                     type="button"
                     title="Remove country"
                   >
@@ -117,10 +117,10 @@ export function ComparisonCountrySelector({
 
           {/* Action Button */}
           {showButton && onViewResults && (
-            <div className="mt-4 pt-4 border-t border-gray-200">
+            <div className="mt-4 pt-4 border-t border-border">
               <Button
                 onClick={onViewResults}
-                className="w-full bg-black text-white hover:bg-gray-800 font-semibold"
+                className="w-full bg-primary text-primary-foreground hover:bg-primary/90 font-semibold"
               >
                 View Comparison Results
               </Button>
@@ -131,7 +131,7 @@ export function ComparisonCountrySelector({
 
       {/* Comparison Error */}
       {comparisonError && (
-        <div className="mt-4 pt-4 border-t border-gray-200">
+        <div className="mt-4 pt-4 border-t border-border">
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>{comparisonError}</AlertDescription>

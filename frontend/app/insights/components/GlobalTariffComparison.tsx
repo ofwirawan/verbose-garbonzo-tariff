@@ -49,65 +49,65 @@ export function GlobalTariffComparison() {
 
   if (isLoading) {
     return (
-      <div className="border border-gray-200 bg-white rounded-xl">
-        <div className="p-6 border-b border-gray-200">
-          <div className="h-6 bg-gray-200 animate-pulse mb-2 w-40 rounded"></div>
-          <div className="h-4 bg-gray-200 animate-pulse w-60 rounded"></div>
+      <div className="border border-border bg-card rounded-xl">
+        <div className="p-6 border-b border-border">
+          <div className="h-6 bg-muted animate-pulse mb-2 w-40 rounded"></div>
+          <div className="h-4 bg-muted animate-pulse w-60 rounded"></div>
         </div>
         <div className="p-6">
-          <div className="h-80 bg-gray-200 animate-pulse rounded"></div>
+          <div className="h-80 bg-muted animate-pulse rounded"></div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="border border-gray-200 bg-white rounded-xl">
-      <div className="p-6 border-b border-gray-200">
-        <h2 className="text-lg font-bold text-gray-900">Global Tariff Comparison</h2>
-        <p className="text-xs text-gray-600 mt-1">Average tariff rates by country (WITS Data)</p>
+    <div className="border border-border bg-card rounded-xl">
+      <div className="p-6 border-b border-border">
+        <h2 className="text-lg font-bold text-foreground">Global Tariff Comparison</h2>
+        <p className="text-xs text-muted-foreground mt-1">Average tariff rates by country (WITS Data)</p>
       </div>
       <div className="p-6">
         {data.length === 0 ? (
-          <div className="flex items-center justify-center h-80 text-gray-700">
+          <div className="flex items-center justify-center h-80 text-muted-foreground">
             <div className="text-center">
               <p className="text-sm">No tariff data available</p>
-              <p className="text-xs text-gray-600 mt-2">{debugInfo}</p>
+              <p className="text-xs text-muted-foreground mt-2">{debugInfo}</p>
             </div>
           </div>
         ) : (
           <>
             <ResponsiveContainer width="100%" height={350}>
               <BarChart data={data}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                 <XAxis
                   dataKey="country"
-                  stroke="#6b7280"
+                  stroke="var(--muted-foreground)"
                   style={{ fontSize: "12px" }}
                 />
                 <YAxis
-                  stroke="#6b7280"
+                  stroke="var(--muted-foreground)"
                   style={{ fontSize: "12px" }}
                   label={{ value: "Average Rate (%)", angle: -90, position: "insideLeft" }}
                 />
                 <ChartTooltip
                   contentStyle={{
-                    backgroundColor: "#ffffff",
-                    border: "1px solid #e5e7eb",
+                    backgroundColor: "var(--background)",
+                    border: "1px solid var(--border)",
                     borderRadius: "6px",
                   }}
-                  cursor={{ fill: "#f3f4f6" }}
+                  cursor={{ fill: "var(--muted)" }}
                   formatter={(value) => `${value}%`}
                 />
                 <Bar
                   dataKey="rate"
-                  fill="#000000"
+                  fill="var(--chart-1)"
                   radius={[4, 4, 0, 0]}
                 />
               </BarChart>
             </ResponsiveContainer>
             <div className="mt-4">
-              <p className="text-xs text-gray-600">
+              <p className="text-xs text-muted-foreground">
                 {debugInfo}
               </p>
             </div>
