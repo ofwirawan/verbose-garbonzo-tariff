@@ -1,11 +1,46 @@
 "use client";
+import { useState, useEffect } from "react";
 import { AppSidebar } from "@/components/app-sidebar";
 import { SiteHeader } from "@/components/site-header";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
+import { Skeleton } from "@/components/ui/skeleton";
 
 import TariffChart from "./components/TariffChart";
+import { Country, DropdownOption } from "./components/utils/types";
+import { convertProductsToOptions } from "./components/utils/service";
+import { fetchCountries, fetchProduct } from "./actions/dashboardactions";
 
 export default function Page() {
+  const [countries, setCountries] = useState<Country[]>([]);
+  const [products, setProducts] = useState<DropdownOption[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    // Fetch countries and products using server actions
+    const fetchData = async () => {
+      try {
+        setIsLoading(true);
+
+        // Fetch countries and products in parallel
+        const [countriesResult, productsResult] = await Promise.all([
+          fetchCountries(),
+          fetchProduct(),
+        ]);
+
+        setCountries(countriesResult.countries);
+        const productOptions = convertProductsToOptions(productsResult.products);
+        setProducts(productOptions);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+        // Continue with empty state - components will handle loading
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
   return (
     <SidebarProvider
       style={
@@ -32,9 +67,20 @@ export default function Page() {
                 </p>
               </div>
 
-              {/* Main Tariff Calculation Section - Centered, Clean */}
+              {/* Main Tariff Calculation Section */}
               <div className="w-full">
-                <TariffChart chartTitle="Calculate Tariff" />
+                {isLoading ? (
+                  <div className="space-y-4">
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-96 w-full" />
+                  </div>
+                ) : (
+                  <TariffChart
+                    chartTitle="Calculate Tariff"
+                    countries={countries}
+                    products={products}
+                  />
+                )}
               </div>
 
               {/* Footer Note */}

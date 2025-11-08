@@ -4,6 +4,8 @@ import {
   Country,
   DropdownOption,
   MissingRateYear,
+  ComparisonResult,
+  ComparisonAnalysis,
 } from "@/app/dashboard/components/utils/types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "";
@@ -321,4 +323,128 @@ export function getTooltipBadgeClass(
     return "bg-blue-100 text-blue-700";
   }
   return "bg-gray-100 text-gray-700";
+}
+
+/**
+ * Calculate batch tariffs for multiple scenarios
+ */
+export async function calculateBatchTariffs(
+  requests: CalculateTariffRequest[]
+): Promise<TariffCalculationResult[]> {
+  const token =
+    typeof window !== "undefined" ? localStorage.getItem("jwt_token") : null;
+
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    Accept: "application/json",
+  };
+
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
+  const response = await fetch(`${API_BASE_URL}/api/calculate/batch`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify(requests),
+  });
+
+  if (!response.ok) {
+    let errorMsg = `HTTP ${response.status}`;
+
+    try {
+      const errorData = await response.json();
+      if (errorData?.message) {
+        errorMsg = errorData.message;
+      } else if (errorData?.error) {
+        errorMsg = errorData.error;
+      } else if (typeof errorData === "string") {
+        errorMsg = errorData;
+      }
+    } catch (e) {
+      try {
+        const errorText = await response.text();
+        if (errorText) {
+          errorMsg = errorText;
+        }
+      } catch (textError) {
+        // Keep default HTTP status message
+      }
+    }
+
+    throw new Error(errorMsg);
+  }
+
+  return response.json();
+}
+
+/**
+ * Compare multiple tariff calculation results and generate analysis
+ */
+export function compareResults(
+  results: TariffCalculationResult[],
+  countryNames: Record<string, string>
+): ComparisonAnalysis {
+  // Calculate total landed cost for each result
+  const comparisonResults: ComparisonResult[] = results.map((result) => {
+    return {
+      country: result.exporterCode || "",
+      countryName: countryNames[result.exporterCode || ""] || "Unknown",
+      result,
+      rank: 0,
+      percentDiff: 0,
+    };
+  });
+
+  // Sort by total cost to determine ranking
+  const sortedByPrice = [...comparisonResults].sort(
+    (a, b) =>
+      (a.result.totalLandedCost || a.result.tradeFinal) -
+      (b.result.totalLandedCost || b.result.tradeFinal)
+  );
+
+  // Assign ranks and calculate percentage differences
+  const bestCost =
+    sortedByPrice[0].result.totalLandedCost ||
+    sortedByPrice[0].result.tradeFinal;
+
+  sortedByPrice.forEach((item, index) => {
+    const currentCost = item.result.totalLandedCost || item.result.tradeFinal;
+    item.rank = index + 1;
+    item.percentDiff = ((currentCost - bestCost) / bestCost) * 100;
+  });
+
+  // Generate chart data with black and white color coding
+  const chartData = sortedByPrice.map((item) => {
+    let fill = "#6b7280"; // Default gray
+    if (item.rank === 1) {
+      fill = "#000000"; // Black for best
+    } else if (item.rank === sortedByPrice.length) {
+      fill = "#d1d5db"; // Light gray for worst
+    } else {
+      fill = "#9ca3af"; // Medium gray for middle
+    }
+
+    return {
+      country: item.countryName,
+      cost: item.result.totalLandedCost || item.result.tradeFinal,
+      fill,
+    };
+  });
+
+  return {
+    results: sortedByPrice,
+    bestIndex: 0,
+    worstIndex: sortedByPrice.length - 1,
+    chartData,
+  };
+}
+
+/**
+ * Get color for a specific rank (black and white theme)
+ */
+export function getRankColor(rank: number, totalItems: number): string {
+  if (rank === 1) return "#000000"; // Black for best
+  if (rank === totalItems) return "#d1d5db"; // Light gray for worst
+  return "#9ca3af"; // Medium gray for middle
 }

@@ -55,7 +55,8 @@ public class SecurityConfig {
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-resources/**", "/webjars/**").permitAll()
 
                         // Role-based endpoints
-                        .requestMatchers(HttpMethod.POST, "/api/calculate").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/calculate/*").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/calculate/").permitAll()
                         .requestMatchers("/auth/user/**").hasRole("USER")
                         .requestMatchers("/auth/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")

@@ -70,3 +70,35 @@ export interface DropdownOption {
   label: string;
   value: string;
 }
+
+export interface ComparisonRequest {
+  destinationCountry: string;
+  sourceCountries: string[];
+  productCode: string;
+  tradeValue: number;
+  netWeight?: number;
+  transactionDate: string;
+  includeFreight?: boolean;
+  freightMode?: string;
+  includeInsurance?: boolean;
+  insuranceRate?: number;
+}
+
+export interface ComparisonResult {
+  country: string;
+  countryName: string;
+  result: TariffCalculationResult;
+  rank: number;
+  percentDiff: number;
+}
+
+export interface ComparisonAnalysis {
+  results: ComparisonResult[];
+  bestIndex: number;
+  worstIndex: number;
+  chartData: Array<{
+    country: string;
+    cost: number;
+    fill: string;
+  }>;
+}
