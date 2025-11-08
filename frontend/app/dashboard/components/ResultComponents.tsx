@@ -344,7 +344,10 @@ function DetailsSection({
           )}
 
           {/* Shipping Information Section */}
-          {(hasFreightData || result.insuranceCost) && (
+          {(hasFreightData || 
+            (result.insuranceRate !== undefined && result.insuranceRate !== null && result.insuranceRate > 0) ||
+            (result.insuranceCost !== undefined && result.insuranceCost !== null && result.insuranceCost > 0)
+          ) && (
             <div className="bg-white rounded-lg p-4 sm:p-5 md:p-6 border border-gray-200">
               <h5 className="text-xs font-bold text-gray-700 uppercase tracking-wide mb-4 flex items-center gap-2">
                 Shipping Information
@@ -375,7 +378,7 @@ function DetailsSection({
                     />
                   </>
                 )}
-                {result.insuranceRate !== undefined && result.insuranceRate !== null && (
+                {result.insuranceRate !== undefined && result.insuranceRate !== null && result.insuranceRate > 0 && (
                   <InfoItem
                     label="Insurance Rate"
                     value={`${result.insuranceRate.toFixed(2)}%`}

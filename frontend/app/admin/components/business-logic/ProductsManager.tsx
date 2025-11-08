@@ -117,10 +117,23 @@ export function ProductsManager() {
     {
       accessorKey: "hs6Code",
       header: "HS6 Code",
+      size: 120,
+      cell: ({ row }) => (
+        <span className="font-mono text-sm font-medium">
+          {row.original.hs6Code}
+        </span>
+      ),
     },
     {
       accessorKey: "description",
       header: "Description",
+      cell: ({ row }) => (
+        <div className="text-sm max-w-md">
+          <div className="font-medium truncate" title={row.original.description}>
+            {row.original.description}
+          </div>
+        </div>
+      ),
     },
   ];
 

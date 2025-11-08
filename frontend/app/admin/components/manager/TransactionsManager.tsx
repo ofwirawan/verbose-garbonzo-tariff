@@ -72,43 +72,66 @@ export function TransactionsManager() {
   const columns: ColumnDef<Transaction>[] = [
     {
       accessorKey: "tid",
-      header: "Transaction ID",
+      header: "ID",
+      size: 60,
     },
     {
       accessorKey: "user",
       header: "User",
+      size: 100,
     },
     {
       accessorKey: "tDate",
       header: "Date",
+      size: 100,
+      cell: ({ row }) => {
+        const date = new Date(row.original.tDate);
+        return date.toLocaleDateString('en-US', { 
+          month: 'short', 
+          day: 'numeric',
+          year: '2-digit'
+        });
+      },
     },
     {
-      accessorKey: "importer",
-      header: "Importer",
+      id: "trade",
+      header: "Trade Details",
+      cell: ({ row }) => (
+        <div className="text-sm">
+          <div className="font-medium">
+            {row.original.importer} → {row.original.exporter}
+          </div>
+          <div className="text-gray-500 truncate max-w-32">
+            {row.original.product}
+          </div>
+        </div>
+      ),
     },
     {
-      accessorKey: "exporter",
-      header: "Exporter",
-    },
-    {
-      accessorKey: "product",
-      header: "Product",
-    },
-    {
-      accessorKey: "tradeOriginal",
-      header: "Original Trade Value",
-    },
-    {
-      accessorKey: "tradeFinal",
-      header: "Final Trade Value",
+      id: "values",
+      header: "Trade Value",
+      cell: ({ row }) => (
+        <div className="text-sm text-right">
+          <div className="font-medium">
+            ${row.original.tradeFinal?.toLocaleString() || 'N/A'}
+          </div>
+          <div className="text-gray-500">
+            ${row.original.tradeOriginal?.toLocaleString() || 'N/A'}
+          </div>
+        </div>
+      ),
     },
     {
       accessorKey: "appliedRate",
-      header: "Applied Rate (%)",
-      cell: ({ row }) =>
-        row.original.appliedRate?.rate
-          ? row.original.appliedRate.rate.toFixed(2)
-          : "N/A",
+      header: "Rate %",
+      size: 80,
+      cell: ({ row }) => (
+        <span className="font-mono text-sm">
+          {row.original.appliedRate?.rate
+            ? `${row.original.appliedRate.rate.toFixed(1)}%`
+            : "N/A"}
+        </span>
+      ),
     },
   ];
 
