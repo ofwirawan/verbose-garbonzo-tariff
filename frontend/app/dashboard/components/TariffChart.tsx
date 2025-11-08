@@ -26,12 +26,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   TariffChartProps,
   DropdownOption,
@@ -309,7 +304,7 @@ function TariffChartForm({
       </div>
 
       {/* Freight & Insurance Options - Full Width Below */}
-      <div className="bg-muted rounded-lg p-4 sm:p-5 md:p-6 border border-border space-y-6">
+      <div className="border-2 rounded-lg p-4 sm:p-5 md:p-6 space-y-6">
         {/* Freight Section */}
         <div className="space-y-4">
           <div className="flex items-center gap-3">
@@ -318,7 +313,7 @@ function TariffChartForm({
               id="includeFreight"
               checked={includeFreight}
               onChange={(e) => onIncludeFreightChange(e.target.checked)}
-              className="w-4 h-4 text-primary border-border rounded focus:ring-primary"
+              className="text-primary border-primary rounded focus:ring-2 focus:ring-primary focus:ring-offset-1 cursor-pointer"
             />
             <Label
               htmlFor="includeFreight"
@@ -426,7 +421,7 @@ function TariffChartForm({
               id="includeInsurance"
               checked={includeInsurance}
               onChange={(e) => onIncludeInsuranceChange(e.target.checked)}
-              className="w-4 h-4 text-primary border-border rounded focus:ring-primary"
+              className="text-primary rounded focus:ring-2 focus:ring-primary focus:ring-offset-1 cursor-pointer"
             />
             <Label
               htmlFor="includeInsurance"
@@ -540,7 +535,9 @@ function TariffChartForm({
                         <span className="text-sm font-semibold text-foreground block">
                           High
                         </span>
-                        <span className="text-xs text-muted-foreground">2.0%</span>
+                        <span className="text-xs text-muted-foreground">
+                          2.0%
+                        </span>
                       </div>
                     </label>
 
@@ -584,7 +581,9 @@ function TariffChartForm({
                             placeholder="Enter custom rate"
                             className="h-9 text-xs border-border flex-1"
                           />
-                          <span className="text-sm text-muted-foreground">%</span>
+                          <span className="text-sm text-muted-foreground">
+                            %
+                          </span>
                         </div>
                       </div>
                     </label>
@@ -816,11 +815,21 @@ export default function TariffChart({
 
             {!isCalculating && calculationResult && (
               <div className="mt-6 pt-6 border-t border-border">
-                <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "result" | "comparison")}>
+                <Tabs
+                  value={activeTab}
+                  onValueChange={(value) =>
+                    setActiveTab(value as "result" | "comparison")
+                  }
+                >
                   <TabsList className="mb-6">
                     <TabsTrigger value="result">Result</TabsTrigger>
-                    <TabsTrigger value="comparison" disabled={comparisonCountries.length === 0}>
-                      Comparison {comparisonCountries.length > 0 && `(${comparisonCountries.length})`}
+                    <TabsTrigger
+                      value="comparison"
+                      disabled={comparisonCountries.length === 0}
+                    >
+                      Comparison{" "}
+                      {comparisonCountries.length > 0 &&
+                        `(${comparisonCountries.length})`}
                     </TabsTrigger>
                   </TabsList>
 

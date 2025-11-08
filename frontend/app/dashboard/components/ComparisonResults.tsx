@@ -91,8 +91,8 @@ export function ComparisonResults({
       </div>
 
       {/* Summary Info */}
-      <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-        <p className="text-sm text-blue-800">
+      <div className="p-4 bg-muted border border-border rounded-lg">
+        <p className="text-sm text-muted-foreground">
           <strong>Note:</strong> Results show total landed cost including product
           value, applicable tariffs, freight, and insurance. Expand each result
           to view the detailed breakdown of applied rates and charges.

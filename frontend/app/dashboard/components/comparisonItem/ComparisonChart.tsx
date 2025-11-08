@@ -68,11 +68,11 @@ export function ComparisonChart({
               angle={-45}
               textAnchor="end"
               height={80}
-              tick={{ fontSize: 12 }}
+              tick={{ fontSize: 12, fill: "var(--foreground)" }}
             />
             <YAxis
-              label={{ value: "Cost (USD)", angle: -90, position: "insideLeft" }}
-              tick={{ fontSize: 12 }}
+              label={{ value: "Cost (USD)", angle: -90, position: "insideLeft", fill: "var(--foreground)" }}
+              tick={{ fontSize: 12, fill: "var(--foreground)" }}
               tickFormatter={(value) =>
                 `$${(value / 1000).toFixed(0)}k`
               }

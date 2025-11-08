@@ -414,15 +414,15 @@ export function compareResults(
     item.percentDiff = ((currentCost - bestCost) / bestCost) * 100;
   });
 
-  // Generate chart data with black and white color coding
+  // Generate chart data with theme color coding
   const chartData = sortedByPrice.map((item) => {
-    let fill = "#6b7280"; // Default gray
+    let fill = "var(--muted)"; // Default muted
     if (item.rank === 1) {
-      fill = "#000000"; // Black for best
+      fill = "var(--primary)"; // Primary warm brown for best
     } else if (item.rank === sortedByPrice.length) {
-      fill = "#d1d5db"; // Light gray for worst
+      fill = "var(--secondary)"; // Secondary warm taupe for worst
     } else {
-      fill = "#9ca3af"; // Medium gray for middle
+      fill = "var(--muted)"; // Muted warm taupe for middle
     }
 
     return {
@@ -441,10 +441,10 @@ export function compareResults(
 }
 
 /**
- * Get color for a specific rank (black and white theme)
+ * Get color for a specific rank (using theme colors)
  */
 export function getRankColor(rank: number, totalItems: number): string {
-  if (rank === 1) return "#000000"; // Black for best
-  if (rank === totalItems) return "#d1d5db"; // Light gray for worst
-  return "#9ca3af"; // Medium gray for middle
+  if (rank === 1) return "var(--primary)"; // Primary warm brown for best
+  if (rank === totalItems) return "var(--secondary)"; // Secondary warm taupe for worst
+  return "var(--muted)"; // Muted warm taupe for middle
 }
