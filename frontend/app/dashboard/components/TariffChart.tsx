@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { CalendarIcon, InfoIcon, X } from "lucide-react";
+import { CalendarIcon, InfoIcon } from "lucide-react";
 import {
   Popover,
   PopoverContent,
@@ -27,6 +27,12 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
+import {
   TariffChartProps,
   DropdownOption,
   Country,
@@ -41,6 +47,8 @@ import {
   CalculationResults,
   CalculationResultsSkeleton,
 } from "./ResultComponents";
+import { ComparisonResults } from "./ComparisonResults";
+import { ComparisonCountrySelector } from "./ComparisonCountrySelector";
 import { useTariffData, useTariffCalculation } from "./utils/hooks";
 import {
   convertCountriesToOptions,
@@ -49,11 +57,6 @@ import {
   compareResults,
   CalculateTariffRequest,
 } from "./utils/service";
-import { ComparisonChart } from "./comparisonItem/ComparisonChart";
-import { ComparisonResultCard } from "./comparisonItem/ComparisonResultCard";
-import { ComparisonExport } from "./comparisonItem/ComparisonExport";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle } from "lucide-react";
 
 interface TariffChartFormProps {
   transactionDate: Date;
@@ -677,6 +680,9 @@ export default function TariffChart({
   const [isComparingLoading, setIsComparingLoading] = useState(false);
   const [comparisonError, setComparisonError] = useState<string | null>(null);
 
+  // Tab state
+  const [activeTab, setActiveTab] = useState<"result" | "comparison">("result");
+
   // Derived state
   const countryOptions = convertCountriesToOptions(countries);
   const productOptions =
@@ -809,87 +815,58 @@ export default function TariffChart({
             {isCalculating && <CalculationResultsSkeleton />}
 
             {!isCalculating && calculationResult && (
-              <div className="mt-6 pt-6 border-t border-gray-200 space-y-6">
-                <CalculationResults
-                  result={calculationResult}
-                  suspensionNote={suspensionNote}
-                />
+              <div className="mt-6 pt-6 border-t border-gray-200">
+                <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "result" | "comparison")}>
+                  <TabsList className="mb-6">
+                    <TabsTrigger value="result">Result</TabsTrigger>
+                    <TabsTrigger value="comparison" disabled={comparisonCountries.length === 0}>
+                      Comparison {comparisonCountries.length > 0 && `(${comparisonCountries.length})`}
+                    </TabsTrigger>
+                  </TabsList>
 
-                {/* Inline Comparison Section */}
-                <div className="mt-6 pt-4 border-t border-gray-200 space-y-4">
-                  <div>
-                    <h3 className="text-sm font-semibold text-gray-900 mb-2">
-                      Compare with Other Source Countries
-                    </h3>
-                    <p className="text-xs text-gray-600 mb-3">
-                      Add additional source countries to see a side-by-side
-                      comparison
-                    </p>
-                  </div>
-
-                  {/* Country Selector */}
-                  <div className="space-y-2">
-                    <Combobox
-                      value=""
-                      onValueChange={handleAddCountryToComparison}
-                      options={countryOptions.filter(
-                        (c) =>
-                          c.value !== exportingCountry &&
-                          !comparisonCountries.includes(c.value)
-                      )}
-                      placeholder="Select a country to compare..."
-                      searchPlaceholder="Search countries..."
-                      emptyText="No countries available."
-                      disabled={
-                        isComparingLoading || comparisonCountries.length >= 2
-                      }
+                  {/* Result Tab */}
+                  <TabsContent value="result" className="space-y-6">
+                    <CalculationResults
+                      result={calculationResult}
+                      suspensionNote={suspensionNote}
                     />
-                  </div>
 
-                  {/* Selected Countries */}
-                  {comparisonCountries.length > 0 && (
-                    <div className="flex flex-wrap gap-2 mt-3">
-                      {comparisonCountries.map((code) => {
-                        const country = countries.find(
-                          (c) => c.country_code === code
-                        );
-                        return (
-                          <div
-                            key={code}
-                            className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-900 rounded-full text-sm"
-                          >
-                            {country?.name || code}
-                            <button
-                              onClick={() =>
-                                handleRemoveComparisonCountry(code)
-                              }
-                              className="ml-1 hover:text-blue-700"
-                              type="button"
-                            >
-                              <X className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        );
-                      })}
+                    {/* Comparison Setup Section */}
+                    <div className="mt-6 pt-6 border-t border-gray-200">
+                      <ComparisonCountrySelector
+                        comparisonCountries={comparisonCountries}
+                        countryOptions={countryOptions}
+                        countries={countries}
+                        exportingCountry={exportingCountry}
+                        comparisonError={comparisonError}
+                        onAddCountry={handleAddCountryToComparison}
+                        onRemoveCountry={handleRemoveComparisonCountry}
+                        onViewResults={() => setActiveTab("comparison")}
+                        showButton={true}
+                      />
                     </div>
-                  )}
-                </div>
+                  </TabsContent>
 
-                {/* Comparison Error */}
-                {comparisonError && (
-                  <Alert variant="destructive">
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertDescription>{comparisonError}</AlertDescription>
-                  </Alert>
-                )}
+                  {/* Comparison Tab */}
+                  <TabsContent value="comparison" className="space-y-6">
+                    {/* Country Selector in Comparison Tab */}
+                    <div>
+                      <ComparisonCountrySelector
+                        comparisonCountries={comparisonCountries}
+                        countryOptions={countryOptions}
+                        countries={countries}
+                        exportingCountry={exportingCountry}
+                        comparisonError={comparisonError}
+                        onAddCountry={handleAddCountryToComparison}
+                        onRemoveCountry={handleRemoveComparisonCountry}
+                        showButton={false}
+                      />
+                    </div>
 
-                {/* Comparison Results */}
-                {comparisonResults && !isComparingLoading && (
-                  <div className="space-y-6 mt-6 pt-6 border-t border-gray-200">
-                    {/* Export Button */}
-                    <div className="flex justify-end">
-                      <ComparisonExport
-                        results={comparisonResults.results}
+                    {/* Comparison Results */}
+                    {comparisonResults && !isComparingLoading && (
+                      <ComparisonResults
+                        comparison={comparisonResults}
                         destinationCountry={
                           countries.find(
                             (c) => c.country_code === importingCountry
@@ -897,45 +874,21 @@ export default function TariffChart({
                         }
                         productCode={productCode}
                       />
-                    </div>
+                    )}
 
-                    {/* Chart */}
-                    <ComparisonChart data={comparisonResults.chartData} />
-
-                    {/* Result Cards */}
-                    <div className="space-y-3">
-                      <h3 className="text-lg font-semibold">
-                        Detailed Comparison
-                      </h3>
-                      <div className="flex flex-col gap-3 w-full">
-                        {comparisonResults.results.map((result, index) => (
-                          <ComparisonResultCard
-                            key={index}
-                            result={result}
-                            totalResults={comparisonResults.results.length}
-                          />
-                        ))}
+                    {isComparingLoading && (
+                      <div className="space-y-4">
+                        <div className="h-64 bg-gray-100 rounded-lg animate-pulse" />
                       </div>
-                    </div>
+                    )}
 
-                    {/* Summary Info */}
-                    <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                      <p className="text-sm text-blue-800">
-                        <strong>Note:</strong> Results show total landed cost
-                        including product value, applicable tariffs, freight,
-                        and insurance. Click "Show Details" on each card to view
-                        the breakdown of applied rates and additional charges.
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                {/* Loading State for Comparison */}
-                {isComparingLoading && (
-                  <div className="space-y-4 mt-6 pt-6 border-t border-gray-200">
-                    <div className="h-64 bg-gray-100 rounded-lg animate-pulse" />
-                  </div>
-                )}
+                    {!comparisonResults && !isComparingLoading && (
+                      <div className="text-center py-8 text-gray-500">
+                        <p>Select countries to compare tariff costs</p>
+                      </div>
+                    )}
+                  </TabsContent>
+                </Tabs>
               </div>
             )}
 

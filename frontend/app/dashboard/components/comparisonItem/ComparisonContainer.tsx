@@ -14,9 +14,7 @@ import {
   ComparisonAnalysis,
 } from "@/app/dashboard/components/utils/types";
 import { ComparisonForm } from "./ComparisonForm";
-import { ComparisonChart } from "./ComparisonChart";
-import { ComparisonResultCard } from "./ComparisonResultCard";
-import { ComparisonExport } from "./ComparisonExport";
+import { ComparisonResults } from "../ComparisonResults";
 import { AlertCircle } from "lucide-react";
 
 interface ComparisonContainerProps {
@@ -169,45 +167,13 @@ export function ComparisonContainer({
 
       {/* Results */}
       {comparison && comparisonData && !isLoading && (
-        <div className="space-y-6">
-          {/* Export Button */}
-          <div className="flex justify-end">
-            <ComparisonExport
-              results={comparison.results}
-              destinationCountry={getCountryName(
-                comparisonData.destinationCountry
-              )}
-              productCode={comparisonData.productCode}
-            />
-          </div>
-
-          {/* Chart */}
-          <ComparisonChart data={comparison.chartData} />
-
-          {/* Result Cards - Stack Format */}
-          <div className="w-full">
-            <h3 className="text-lg font-semibold mb-3">Detailed Comparison</h3>
-            <div className="flex flex-col gap-3 w-full">
-              {comparison.results.map((result, index) => (
-                <ComparisonResultCard
-                  key={index}
-                  result={result}
-                  totalResults={comparison.results.length}
-                />
-              ))}
-            </div>
-          </div>
-
-          {/* Summary Info */}
-          <div className="p-4 bg-gray-100 border border-gray-300 rounded-lg">
-            <p className="text-sm text-gray-800">
-              <strong>Note:</strong> Results show total landed cost including
-              product value, applicable tariffs, freight, and insurance. Click
-              "Show Details" on each card to view the breakdown of applied rates
-              and additional charges.
-            </p>
-          </div>
-        </div>
+        <ComparisonResults
+          comparison={comparison}
+          destinationCountry={getCountryName(
+            comparisonData.destinationCountry
+          )}
+          productCode={comparisonData.productCode}
+        />
       )}
     </div>
   );
