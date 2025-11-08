@@ -102,7 +102,7 @@ export function TariffNews() {
                 </div>
                 <p className="text-xs text-muted-foreground mb-2 leading-relaxed">{item.summary}</p>
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <span className="font-semibold text-blue-600 hover:underline">{item.source}</span>
+                  <span className="font-semibold text-primary hover:underline">{item.source}</span>
                   <span>{item.date}</span>
                   <span className="bg-background px-2 py-1 rounded text-foreground font-medium">
                     {item.category}

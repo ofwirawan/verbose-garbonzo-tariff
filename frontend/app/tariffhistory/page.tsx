@@ -259,7 +259,7 @@ export default function TariffHistoryPage() {
               </div>
 
               <Card className="shadow-sm">
-                <CardHeader className="border-b bg-gradient-to-r from-muted to-muted/50 pb-4">
+                <CardHeader className="border-b from-muted to-muted/50 pb-4">
                   <CardTitle className="text-lg font-semibold">
                     Chemical Products Tariff History
                   </CardTitle>

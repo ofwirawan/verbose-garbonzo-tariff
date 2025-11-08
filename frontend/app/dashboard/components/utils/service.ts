@@ -414,15 +414,15 @@ export function compareResults(
     item.percentDiff = ((currentCost - bestCost) / bestCost) * 100;
   });
 
-  // Generate chart data with theme color coding
+  // Generate chart data with theme color coding (using hex values for recharts compatibility)
   const chartData = sortedByPrice.map((item) => {
-    let fill = "var(--muted)"; // Default muted
+    let fill = "#E0DCD2"; // Default muted warm taupe
     if (item.rank === 1) {
-      fill = "var(--primary)"; // Primary warm brown for best
+      fill = "#B17457"; // Primary warm brown for best
     } else if (item.rank === sortedByPrice.length) {
-      fill = "var(--secondary)"; // Secondary warm taupe for worst
+      fill = "#D8D2C2"; // Secondary warm taupe for worst
     } else {
-      fill = "var(--muted)"; // Muted warm taupe for middle
+      fill = "#E0DCD2"; // Muted warm taupe for middle
     }
 
     return {
@@ -441,10 +441,10 @@ export function compareResults(
 }
 
 /**
- * Get color for a specific rank (using theme colors)
+ * Get color for a specific rank (using theme colors as hex)
  */
 export function getRankColor(rank: number, totalItems: number): string {
-  if (rank === 1) return "var(--primary)"; // Primary warm brown for best
-  if (rank === totalItems) return "var(--secondary)"; // Secondary warm taupe for worst
-  return "var(--muted)"; // Muted warm taupe for middle
+  if (rank === 1) return "#B17457"; // Primary warm brown for best
+  if (rank === totalItems) return "#D8D2C2"; // Secondary warm taupe for worst
+  return "#E0DCD2"; // Muted warm taupe for middle
 }

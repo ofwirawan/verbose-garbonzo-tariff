@@ -32,16 +32,16 @@ export function TariffChanges() {
 
   return (
     <div className="w-full">
-      <div className="bg-white border border-gray-200 rounded-xl p-6">
+      <div className="bg-card border border-border rounded-xl p-6">
         <div className="mb-6">
-          <h2 className="text-lg font-bold text-gray-900">Recent Tariff Changes</h2>
-          <p className="text-xs text-gray-600 mt-1">Tariff rate adjustments by country</p>
+          <h2 className="text-lg font-bold text-foreground">Recent Tariff Changes</h2>
+          <p className="text-xs text-muted-foreground mt-1">Tariff rate adjustments by country</p>
         </div>
 
         {loading ? (
           <div className="space-y-3">
             {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="h-16 bg-gray-100 animate-pulse rounded" />
+              <div key={i} className="h-16 bg-muted animate-pulse rounded" />
             ))}
           </div>
         ) : changes.length > 0 ? (
@@ -49,33 +49,33 @@ export function TariffChanges() {
             {changes.map((change) => (
               <div
                 key={`${change.country}-${change.date}`}
-                className={`border-l-4 border-l-gray-300 p-5 bg-gray-50 rounded transition-colors hover:bg-gray-100 ${
+                className={`border-l-4 border-l-border p-5 bg-muted rounded transition-colors hover:bg-muted/80 ${
                   change.direction === "up"
-                    ? "border-l-gray-700"
-                    : "border-l-gray-300"
+                    ? "border-l-primary"
+                    : "border-l-border"
                 }`}
               >
                 <div className="flex items-center justify-between mb-1.5">
                   <div className="flex items-center gap-3">
-                    <span className="font-semibold text-gray-900">{change.country}</span>
-                    <p className="text-xs text-gray-600">{change.date}</p>
+                    <span className="font-semibold text-foreground">{change.country}</span>
+                    <p className="text-xs text-muted-foreground">{change.date}</p>
                   </div>
                   <div className="flex items-center gap-2">
                     <span
                       className={`text-sm font-bold ${
-                        change.direction === "up" ? "text-gray-900" : "text-gray-600"
+                        change.direction === "up" ? "text-primary" : "text-muted-foreground"
                       }`}
                     >
                       {change.change}%
                     </span>
                   </div>
                 </div>
-                <p className="text-xs text-gray-700">{change.reason}</p>
+                <p className="text-xs text-muted-foreground">{change.reason}</p>
               </div>
             ))}
           </div>
         ) : (
-          <div className="text-center py-6 text-gray-600 text-sm">No recent changes</div>
+          <div className="text-center py-6 text-muted-foreground text-sm">No recent changes</div>
         )}
       </div>
     </div>
