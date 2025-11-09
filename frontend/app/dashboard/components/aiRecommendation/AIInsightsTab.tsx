@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   Card,
   CardContent,
@@ -11,6 +11,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
+import { Separator } from "@/components/ui/separator";
 import { ConfidenceIndicator } from "././ConfidenceIndicator";
 import { TimingRecommendationCard } from "././TimingRecommendationCard";
 import { getAIRecommendation, formatCurrency } from "../utils/ai-service";
@@ -159,7 +160,7 @@ export function AIInsightsTab({
                 </div>
 
                 {/* Max Potential Savings Card */}
-                <div className="bg-card rounded-lg border border-border p-4 sm:p-5 md:p-6">
+                <div className="bg-primary/5 rounded-2xl border border-primary/20 p-4 sm:p-5 md:p-6">
                   <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">
                     Max Potential Savings
                   </div>
@@ -172,7 +173,7 @@ export function AIInsightsTab({
                 </div>
 
                 {/* Average Confidence Card */}
-                <div className="bg-card rounded-lg border border-border p-4 sm:p-5 md:p-6">
+                <div className="bg-primary/5 rounded-lg border border-border p-4 sm:p-5 md:p-6">
                   <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">
                     Average Confidence
                   </div>
@@ -204,12 +205,13 @@ export function AIInsightsTab({
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-semibold text-primary">
-                  🎯 Best Times to Import/Export
+                  Best Times to Import/Export
                 </h3>
                 <Badge className="bg-primary">
                   {recommendation.optimalPeriods.length} periods
                 </Badge>
               </div>
+              <Separator className="my-3" />
               <div className="grid grid-cols-1 gap-3">
                 {recommendation.optimalPeriods.map((period, index) => (
                   <TimingRecommendationCard
@@ -222,6 +224,12 @@ export function AIInsightsTab({
               </div>
             </div>
           )}
+
+          {/* Divider between sections */}
+          {recommendation.optimalPeriods.length > 0 &&
+            recommendation.avoidPeriods.length > 0 && (
+              <Separator className="my-4" />
+            )}
 
           {/* Avoid Periods */}
           {recommendation.avoidPeriods.length > 0 && (

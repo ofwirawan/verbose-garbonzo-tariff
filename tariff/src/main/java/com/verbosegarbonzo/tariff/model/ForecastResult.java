@@ -23,4 +23,5 @@ public class ForecastResult {
     private Integer confidencePercent; // 0-100%
     private String modelVersion;
     private Boolean hasHistoricalData;
+    private Boolean isFromMLModel; // true if prediction from ML model, false if fallback/statistical
 }

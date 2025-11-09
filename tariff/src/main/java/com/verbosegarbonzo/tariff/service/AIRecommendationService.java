@@ -25,6 +25,8 @@ public class AIRecommendationService {
 
     private final TariffMLService mlService;
     private final MeasureRepository measureRepository;
+    private final CountryRepository countryRepository;
+    private final ProductRepository productRepository;
     private final UserInfoRepository userInfoRepository;
 
     /**
@@ -48,8 +50,10 @@ public class AIRecommendationService {
             BigDecimal currentRate = getCurrentRate(importerCode, hs6Code);
 
             // Predict rates for next 365 days
+            log.info("*** About to call mlService.predictRateRange() ***");
             List<DateRangeForecast> forecasts = mlService.predictRateRange(
                 importerCode, exporterCode, hs6Code, today, endDate);
+            log.info("*** Returned from mlService.predictRateRange() - got {} forecasts", forecasts.size());
 
             if (forecasts.isEmpty()) {
                 log.warn("No forecasts available for {}/{}", importerCode, hs6Code);
@@ -276,14 +280,20 @@ public class AIRecommendationService {
      */
     private BigDecimal getCurrentRate(String importerCode, String hs6Code) {
         try {
-            Optional<Measure> currentMeasure = measureRepository.findValidRate(
-                new Country(), // Would need proper Country lookup
-                new Product(), // Would need proper Product lookup
-                LocalDate.now());
+            // Load Country and Product from database
+            Optional<Country> country = countryRepository.findById(importerCode);
+            Optional<Product> product = productRepository.findById(hs6Code);
 
-            if (currentMeasure.isPresent()) {
-                BigDecimal rate = currentMeasure.get().getMfnAdvalRate();
-                return rate != null ? rate : BigDecimal.ZERO;
+            if (country.isPresent() && product.isPresent()) {
+                Optional<Measure> currentMeasure = measureRepository.findValidRate(
+                    country.get(),
+                    product.get(),
+                    LocalDate.now());
+
+                if (currentMeasure.isPresent()) {
+                    BigDecimal rate = currentMeasure.get().getMfnAdvalRate();
+                    return rate != null ? rate : BigDecimal.ZERO;
+                }
             }
         } catch (Exception e) {
             log.warn("Could not fetch current rate, using default", e);

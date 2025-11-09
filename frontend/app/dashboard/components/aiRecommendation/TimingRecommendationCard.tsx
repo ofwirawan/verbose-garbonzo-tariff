@@ -2,6 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 import { ConfidenceIndicator } from "./ConfidenceIndicator";
 import { OptimalPeriod, AvoidPeriod } from "../utils/types";
 import {
@@ -51,16 +52,14 @@ export function TimingRecommendationCard({
     ? (period as OptimalPeriod).estimatedSavingsAmount
     : (period as AvoidPeriod).estimatedAdditionalCostAmount;
 
-  const bgColor = isOptimal
-    ? "bg-card"
-    : "bg-card";
+  const bgColor = isOptimal ? "bg-card" : "bg-card";
   const headerBgColor = isOptimal ? "bg-muted" : "bg-muted";
   const badgeVariant = isOptimal ? "default" : "destructive";
   const Icon = isOptimal ? TrendingDown : TrendingUp;
 
   return (
     <Card className={`${bgColor} border border-border overflow-hidden`}>
-      <CardHeader className={`${headerBgColor} pb-3`}>
+      <CardHeader className={` pb-3`}>
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-2 flex-1">
             <Icon
@@ -85,6 +84,9 @@ export function TimingRecommendationCard({
           </div>
         </div>
       </CardHeader>
+      <div className="px-4 sm:px-5 md:px-6">
+        <Separator />
+      </div>
 
       <CardContent className="pt-4 space-y-4">
         {/* Period Dates */}
@@ -130,9 +132,7 @@ export function TimingRecommendationCard({
         </div>
 
         {/* Savings/Additional Cost */}
-        <div
-          className={`border-t border-border pt-3 bg-muted -mx-4 px-4 py-3`}
-        >
+        <div className={`border-t border-border pt-3 bg-muted -mx-4 px-4 py-3 overflow-hidden`} style={{ borderRadius: "12px" }}>
           <div className="flex items-center justify-between mb-2">
             <span
               className={`text-sm font-medium ${
