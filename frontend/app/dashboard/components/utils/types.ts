@@ -102,3 +102,46 @@ export interface ComparisonAnalysis {
     fill: string;
   }>;
 }
+
+// AI Recommendation Types
+export type ProfileType = 'BUSINESS_OWNER' | 'POLICY_ANALYST' | 'STUDENT';
+
+export interface OptimalPeriod {
+  startDate: string;
+  endDate: string;
+  avgRate: number;
+  currentRate: number;
+  savingsPercent: number;
+  estimatedSavingsAmount: number;
+  confidence: number;
+  reason: string;
+}
+
+export interface AvoidPeriod {
+  startDate: string;
+  endDate: string;
+  avgRate: number;
+  currentRate: number;
+  increasePercent: number;
+  estimatedAdditionalCostAmount: number;
+  confidence: number;
+  reason: string;
+}
+
+export interface AIRecommendationResponse {
+  optimalPeriods: OptimalPeriod[];
+  avoidPeriods: AvoidPeriod[];
+  explanation: string;
+  currentRate: number;
+  potentialSavings: number;
+  potentialSavingsPercent: number;
+  averageConfidence: number;
+  modelVersion: string;
+  hasInsufficientData: boolean;
+}
+
+export interface AIRecommendationRequest {
+  importerCode: string;
+  exporterCode?: string;
+  hs6Code: string;
+}

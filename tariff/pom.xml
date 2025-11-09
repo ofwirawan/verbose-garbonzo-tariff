@@ -156,6 +156,24 @@
   			<version>4.0.0</version>
 		</dependency>
 
+		<!-- Tribuo ML Library for AI recommendations -->
+		<dependency>
+			<groupId>org.tribuo</groupId>
+			<artifactId>tribuo-regression-core</artifactId>
+			<version>4.3.2</version>
+		</dependency>
+		<dependency>
+			<groupId>org.tribuo</groupId>
+			<artifactId>tribuo-regression-tree</artifactId>
+			<version>4.3.2</version>
+		</dependency>
+
+		<!-- Spring Cache for AI result caching -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-cache</artifactId>
+		</dependency>
+
 	</dependencies>
 
 	<build>

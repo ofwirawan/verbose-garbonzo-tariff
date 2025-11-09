@@ -42,8 +42,9 @@ import {
   CalculationResults,
   CalculationResultsSkeleton,
 } from "./ResultComponents";
-import { ComparisonResults } from "./ComparisonResults";
-import { ComparisonCountrySelector } from "./ComparisonCountrySelector";
+import { ComparisonResults } from "./comparisonItem/ComparisonResults";
+import { ComparisonCountrySelector } from "./comparisonItem/ComparisonCountrySelector";
+import { AIInsightsTab } from "./aiRecommendation/AIInsightsTab";
 import { useTariffData, useTariffCalculation } from "./utils/hooks";
 import {
   convertCountriesToOptions,
@@ -680,7 +681,9 @@ export default function TariffChart({
   const [comparisonError, setComparisonError] = useState<string | null>(null);
 
   // Tab state
-  const [activeTab, setActiveTab] = useState<"result" | "comparison">("result");
+  const [activeTab, setActiveTab] = useState<
+    "result" | "comparison" | "ai-insights"
+  >("result");
 
   // Derived state
   const countryOptions = convertCountriesToOptions(countries);
@@ -818,7 +821,9 @@ export default function TariffChart({
                 <Tabs
                   value={activeTab}
                   onValueChange={(value) =>
-                    setActiveTab(value as "result" | "comparison")
+                    setActiveTab(
+                      value as "result" | "comparison" | "ai-insights"
+                    )
                   }
                 >
                   <TabsList className="mb-6">
@@ -831,6 +836,7 @@ export default function TariffChart({
                       {comparisonCountries.length > 0 &&
                         `(${comparisonCountries.length})`}
                     </TabsTrigger>
+                    <TabsTrigger value="ai-insights">AI Insights</TabsTrigger>
                   </TabsList>
 
                   {/* Result Tab */}
@@ -896,6 +902,15 @@ export default function TariffChart({
                         <p>Select countries to compare tariff costs</p>
                       </div>
                     )}
+                  </TabsContent>
+
+                  {/* AI Insights Tab */}
+                  <TabsContent value="ai-insights" className="space-y-6">
+                    <AIInsightsTab
+                      importerCode={importingCountry}
+                      exporterCode={exportingCountry}
+                      hs6Code={productCode}
+                    />
                   </TabsContent>
                 </Tabs>
               </div>

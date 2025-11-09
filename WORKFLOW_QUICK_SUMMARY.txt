@@ -1,0 +1,406 @@
+================================================================================
+                    AI RECOMMENDATION WORKFLOW - QUICK SUMMARY
+================================================================================
+
+THE TRIGGER:
+User clicks "Generate Recommendations" button in AIInsightsTab component
+
+THE JOURNEY (Step by Step):
+================================================================================
+
+STEP 1: FRONTEND INITIATION
+────────────────────────────
+FILE: frontend/app/dashboard/components/AIInsightsTab.tsx
+  → User clicks button
+  → handleGenerateRecommendations() triggered
+  → loadingState changes to "loading"
+  → Spinner appears on screen
+
+STEP 2: API CALL
+────────────────────────────
+FILE: frontend/app/dashboard/components/utils/ai-service.ts
+  → getAIRecommendation(request) called
+  → Creates HTTP POST request to: /api/ai/recommendation
+  → Includes JWT token in Authorization header
+  → Includes: importerCode, exporterCode, hs6Code
+  → Network call initiated (await for response)
+
+STEP 3: BACKEND RECEIVES REQUEST
+────────────────────────────────
+FILE: tariff/src/main/java/com/verbosegarbonzo/tariff/controller/AIController.java
+  → @PostMapping("/recommendation") endpoint receives request
+  → @AuthenticationPrincipal UserInfo userInfo extracted from JWT
+  → Validates user is authenticated (401 if not)
+  → Gets user's profileType (BUSINESS_OWNER, POLICY_ANALYST, or STUDENT)
+  → Calls: aiRecommendationService.getTimingRecommendation()
+
+STEP 4: MAIN SERVICE ORCHESTRATION
+────────────────────────────────
+FILE: tariff/src/main/java/com/verbosegarbonzo/tariff/service/AIRecommendationService.java
+  → getTimingRecommendation() starts
+  → Checks cache for key: "USA-CHN-620342-BUSINESS_OWNER"
+
+  IF CACHED:
+    → Return cached result immediately (fast!)
+    → Skip to STEP 11
+
+  IF NOT CACHED:
+    → Continue processing...
+
+  Phase A: GET CURRENT RATE
+    → getCurrentRate(importerCode, hs6Code)
+    → Queries: MeasureRepository.findValidRate()
+    → Gets today's tariff rate (e.g., 5.5%)
+
+  Phase B: PREDICT FUTURE RATES (365 DAYS)
+    → Calls: mlService.predictRateRange(365 days)
+    → Initiates ML Service workflow
+
+STEP 5: ML PREDICTION SERVICE
+────────────────────────────────
+FILE: tariff/src/main/java/com/verbosegarbonzo/tariff/service/TariffMLService.java
+  → predictRateRange(startDate, endDate) called
+  → Loops through each week (52 weeks total)
+  → For each day in week:
+
+    STEP 5A: DAILY PREDICTION
+    ──────────────────────────
+    → Calls: predictTariffRate(importerCode, exporterCode, hs6Code, date)
+    → Queries historical count: MeasureRepository.countHistoricalRecords()
+
+    If NO historical data:
+      → Returns fallback forecast
+      → Confidence: 40%
+
+    If HAS historical data:
+      → Calls: FeatureEngineeringService.extractFeatures()
+      → Gets TariffFeatures object (20+ features)
+      → Uses statistical method (Tribuo fallback) to predict
+      → Adjusts confidence based on forecast distance
+      → Returns ForecastResult
+
+STEP 5B: FEATURE ENGINEERING (CALLED MULTIPLE TIMES - ONCE PER DAY)
+────────────────────────────────
+FILE: tariff/src/main/java/com/verbosegarbonzo/tariff/service/FeatureEngineeringService.java
+  → extractFeatures(importerCode, exporterCode, hs6Code, targetDate)
+  → Queries historical data (5 years back):
+
+    Query 1: MeasureRepository.findHistoricalRates()
+      → Gets all measure records for past 5 years
+      → Used for: average rate, volatility, trend
+
+    Query 2: PreferenceRepository.findHistoricalPreferences()
+      → Gets FTA/preferential agreement data
+      → Used for: checking if FTA exists, years since FTA
+
+    Query 3: SuspensionRepository.findHistoricalSuspensions()
+      → Gets suspension records
+      → Used for: checking if period has suspensions
+
+    Query 4: TransactionRepository.getUserProductPatterns()
+      → Gets user's trade history for this product
+      → Used for: trade frequency, trade value, weight patterns
+
+  → CALCULATES 20+ FEATURES:
+    Temporal Features:
+      • year, quarter, month, dayOfYear
+      • daysSinceEpoch
+
+    Rate History Features:
+      • avgRateLast3Years
+      • avgRateLast5Years
+      • rateVolatility (std deviation)
+      • trendDirection (-1, 0, or 1)
+
+    Trade Pattern Features:
+      • tradeFrequency
+      • avgTradeValue
+      • avgWeight
+
+    Policy Indicator Features:
+      • hasPreference (FTA exists)
+      • hasSuspension
+      • yearsSinceFTA
+
+    Geographic Features:
+      • importerCodeHash
+      • exporterCodeHash
+
+  → Returns: TariffFeatures object with all calculated values
+
+STEP 5C: WEEKLY AGGREGATION
+────────────────────────────────
+Back in TariffMLService:
+  → Collects all 7 daily predictions
+  → Calculates weekly average:
+    - avgRate = average of 7 daily predictions
+    - minRate = lowest prediction in week
+    - maxRate = highest prediction in week
+    - avgConfidence = average confidence scores
+
+  → Creates: DateRangeForecast
+    {
+      startDate: week start,
+      endDate: week end,
+      avgRate: 4.8%,
+      minRate: 4.5%,
+      maxRate: 5.2%,
+      confidencePercent: 72%
+    }
+
+  → Adds to results list
+
+STEP 5D: REPEAT 52 TIMES
+────────────────────────────────
+  → Loop continues for all 52 weeks
+  → Result: List<DateRangeForecast> with 52 items (one per week)
+  → Each item represents a week's predicted average rate
+  → Returns to AIRecommendationService
+
+STEP 6: IDENTIFY OPTIMAL PERIODS
+────────────────────────────────────
+Back in AIRecommendationService:
+  → Calls: findOptimalPeriods(forecasts, currentRate)
+
+  Process:
+    1. Sort forecasts by avgRate (ascending - lowest first)
+    2. Take top 3 with lowest rates
+    3. For each period:
+       - Calculate: savingsPercent = (currentRate - forecastRate) / currentRate * 100
+       - Calculate: estimatedSavings = savingsPercent * 10000 / 100
+       - Determine: reason (calls determineReason())
+    4. Create: OptimalPeriod objects (3 total)
+
+  Result: List<OptimalPeriod> - the 3 best periods to import/export
+
+STEP 7: IDENTIFY AVOID PERIODS
+────────────────────────────────────
+  → Calls: findAvoidPeriods(forecasts, currentRate)
+
+  Process:
+    1. Sort forecasts by avgRate (descending - highest first)
+    2. Take top 2 with highest rates
+    3. For each period:
+       - Calculate: increasePercent = (forecastRate - currentRate) / currentRate * 100
+       - Calculate: estimatedAdditionalCost = increasePercent * 10000 / 100
+       - Determine: reason (calls determineReason())
+    4. Create: AvoidPeriod objects (2 total)
+
+  Result: List<AvoidPeriod> - the 2 periods to avoid
+
+STEP 8: CALCULATE POTENTIAL SAVINGS
+────────────────────────────────────────
+  → Calls: calculatePotentialSavings(optimalPeriods, currentRate)
+  → Uses the BEST (first) optimal period
+  → Calculates: savingsPercent * 10000 / 100
+  → Result: BigDecimal (potential maximum savings)
+
+STEP 9: GENERATE PERSONALIZED EXPLANATION
+────────────────────────────────────────────
+  → Calls: generateExplanation(optimalPeriods, avoidPeriods,
+                               profileType, importerCode, hs6Code)
+
+  IF profileType == BUSINESS_OWNER:
+    Explanation template:
+      "Based on historical tariff data analysis, we've identified the
+       best timing for your imports/exports. The optimal period is
+       [DATE] to [DATE] with an estimated rate of X% (Y% savings).
+       Schedule your transactions during recommended periods to maximize
+       cost efficiency. Avoid [DATE] to [DATE] when rates are expected
+       to increase to X%."
+
+  IF profileType == POLICY_ANALYST:
+    Explanation template:
+      "Historical tariff analysis for HS6 code [CODE]: We observe
+       seasonal variations in tariff rates. Q2 (April-June) typically
+       shows lower rates due to preferential trade agreement renewal
+       cycles. Current data shows rate volatility of ±2-3% throughout
+       the year. These patterns can inform policy discussions on trade
+       timing and economic impacts."
+
+  IF profileType == STUDENT:
+    Explanation template:
+      "Educational insight: Tariff rates for this product vary
+       throughout the year. This variation depends on international
+       trade agreements, policy changes, and market conditions. By
+       analyzing historical patterns, we can identify periods when
+       rates are typically lower or higher. This demonstrates how
+       macroeconomic factors affect import/export decisions."
+
+STEP 10: BUILD RESPONSE OBJECT
+────────────────────────────────
+  → Creates AIRecommendationResponse:
+    {
+      optimalPeriods: [3 OptimalPeriod objects],
+      avoidPeriods: [2 AvoidPeriod objects],
+      explanation: "[Generated explanation]",
+      currentRate: 5.50,
+      potentialSavings: 825.00,
+      potentialSavingsPercent: 15.00,
+      averageConfidence: 75,
+      modelVersion: "1.0.0",
+      hasInsufficientData: false
+    }
+
+  → Caches response with key: "USA-CHN-620342-BUSINESS_OWNER"
+  → Returns response object
+
+STEP 11: HTTP RESPONSE SENT
+────────────────────────────
+  → AIController sends response back to frontend
+  → Status: 200 OK
+  → Body: AIRecommendationResponse (JSON format)
+  → HTTP request completes
+
+STEP 12: FRONTEND RECEIVES RESPONSE
+────────────────────────────────
+FILE: frontend/app/dashboard/components/utils/ai-service.ts
+  → Response promise resolves
+  → Response data parsed as JSON
+  → Returns AIRecommendationResponse object
+
+STEP 13: COMPONENT STATE UPDATE
+────────────────────────────────
+FILE: frontend/app/dashboard/components/AIInsightsTab.tsx
+  → catch block of try-catch executes
+  → recommendation state updated with received data
+  → loadingState changed to "success"
+  → error cleared to null
+  → Component re-renders (React triggers render)
+
+STEP 14: RENDER SUCCESS STATE
+────────────────────────────────
+  → AIInsightsTab.tsx renders SUCCESS template:
+
+    1. Summary Card displays:
+       - Current Rate: 5.50%
+       - Max Potential Savings: 15.00% ($1,500.00)
+       - Average Confidence: 75%
+       - Explanation text
+
+    2. Optimal Periods Section displays:
+       Loop through optimalPeriods array (3 items):
+         FOR EACH optimal period:
+           → Render: TimingRecommendationCard.tsx
+             ├─ Display dates (DD/MM/YYYY format)
+             ├─ Display days until period
+             ├─ Display rate comparison
+             ├─ Display savings amount ($)
+             ├─ Render: ConfidenceIndicator.tsx
+             │  └─ Shows progress bar (color: 40-100%)
+             │  └─ Color: Green (80+), Blue (60-79), Yellow (40-59), Red (<40)
+             └─ Display reason text
+
+    3. Avoid Periods Section displays:
+       Loop through avoidPeriods array (2 items):
+         FOR EACH avoid period:
+           → Render: TimingRecommendationCard.tsx (red variant)
+             ├─ Display dates
+             ├─ Display days until period
+             ├─ Display rate comparison
+             ├─ Display additional cost ($)
+             ├─ Render: ConfidenceIndicator.tsx (red colors)
+             └─ Display reason text
+
+    4. Regenerate button
+       → Allows user to refresh recommendations
+
+STEP 15: USER SEES RESULTS
+────────────────────────────
+  → Beautiful cards appear on screen
+  → Shows optimal timing with savings potential
+  → Shows periods to avoid with cost warnings
+  → All with confidence indicators
+  → Personalized explanation based on profile type
+
+OPTIONAL STEP 16: USER REGENERATES
+────────────────────────────────────
+  → User clicks "Regenerate Recommendations" button
+  → Process loops back to STEP 1
+  → If same parameters: returns cached result (fast!)
+  → If different parameters: new processing happens (slower)
+
+================================================================================
+                                KEY FILES INVOLVED
+================================================================================
+
+FRONTEND:
+  • AIInsightsTab.tsx              - Main container, triggers request
+  • ai-service.ts                  - API client function
+  • TimingRecommendationCard.tsx   - Renders individual period cards
+  • ConfidenceIndicator.tsx        - Renders confidence bars
+  • TariffChart.tsx                - Main component with tabs
+
+BACKEND:
+  • AIController.java              - REST endpoint
+  • AIRecommendationService.java   - Main orchestration logic
+  • TariffMLService.java           - Rate prediction/forecasting
+  • FeatureEngineeringService.java - Feature extraction (20+ features)
+  • Repositories (4 types)         - Database queries for historical data
+
+DATABASE:
+  • measure                        - Tariff rates
+  • preference                     - FTA/preferential agreements
+  • suspension                     - Rate suspensions
+  • transaction                    - User trade history
+
+================================================================================
+                                TIME ESTIMATE
+================================================================================
+
+First Request (No Cache):
+  • Frontend: 100ms (API call)
+  • Backend Processing: 300-500ms
+    - Historical data queries: 50ms
+    - Feature extraction (52 days): 200ms
+    - Period identification: 30ms
+    - Caching: 20ms
+  • Frontend Rendering: 100ms
+  • TOTAL: ~600ms (0.6 seconds) visible to user
+
+Subsequent Request (From Cache):
+  • API call: 50ms
+  • Cache retrieval: 5ms
+  • Response return: 50ms
+  • Frontend render: 100ms
+  • TOTAL: ~200ms (0.2 seconds) - 3x faster!
+
+================================================================================
+                            WORKFLOW VISUALIZATION
+================================================================================
+
+User Button Click
+    │
+    ▼
+AIInsightsTab.tsx
+    │
+    ├─→ ai-service.ts (HTTP POST)
+    │      │
+    │      ▼
+    │   AIController.java
+    │      │
+    │      ├─→ AIRecommendationService.java
+    │      │      │
+    │      │      ├─→ TariffMLService.java (prediction)
+    │      │      │      │
+    │      │      │      └─→ FeatureEngineeringService.java (20+ features)
+    │      │      │              │
+    │      │      │              └─→ Repositories (DB queries)
+    │      │      │
+    │      │      ├─→ findOptimalPeriods() - 3 periods
+    │      │      ├─→ findAvoidPeriods() - 2 periods
+    │      │      └─→ generateExplanation() - profile-specific
+    │      │
+    │      └─→ AIRecommendationResponse (JSON)
+    │
+    └─→ Component Re-render
+           │
+           ├─→ TimingRecommendationCard (x5)
+           │      │
+           │      └─→ ConfidenceIndicator (x5)
+           │
+           └─→ User sees beautiful recommendations
+
+================================================================================
+                                  END OF SUMMARY
+================================================================================

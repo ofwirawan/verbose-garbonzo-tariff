@@ -54,7 +54,7 @@ public class UserControllerTest {
         userInfoRepository.deleteAll();
 
         // Create a test user and token
-        userInfoService.addUser(new UserInfo(null, "testuser", "test@example.com", "password123", "ROLE_USER"));
+        userInfoService.addUser(new UserInfo(null, "testuser", "test@example.com", "password123", "ROLE_USER", null));
 
         userJwt = jwtService.token("test@example.com");
         testUser = userInfoRepository.findByEmail("test@example.com").orElse(null);

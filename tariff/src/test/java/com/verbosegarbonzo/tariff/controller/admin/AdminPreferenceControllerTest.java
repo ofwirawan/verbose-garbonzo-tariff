@@ -67,7 +67,7 @@ class AdminPreferenceControllerTest {
         productRepository.deleteAll();
         userInfoRepository.deleteAll();
 
-        userInfoService.addUser(new UserInfo(null, "admin", "admin@email.com", "goodpassword", "ROLE_ADMIN"));
+        userInfoService.addUser(new UserInfo(null, "admin", "admin@email.com", "goodpassword", "ROLE_ADMIN", null));
         adminJwtToken = jwtService.token("admin@email.com");
 
         // seed importer + exporter + product

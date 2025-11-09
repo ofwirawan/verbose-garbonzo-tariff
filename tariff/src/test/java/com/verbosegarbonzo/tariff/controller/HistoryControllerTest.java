@@ -75,7 +75,7 @@ public class HistoryControllerTest {
         countryRepository.deleteAll();
 
         // Create a test user
-        testUser = new UserInfo(null, "admin", "admin@email.com", "goodpassword", "ROLE_ADMIN");
+        testUser = new UserInfo(null, "admin", "admin@email.com", "goodpassword", "ROLE_ADMIN", null);
         userInfoRepository.save(testUser);
 
         // Generate the JWT token

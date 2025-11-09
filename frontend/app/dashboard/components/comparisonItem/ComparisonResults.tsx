@@ -1,9 +1,9 @@
 "use client";
 
-import { ComparisonAnalysis } from "./utils/types";
-import { CalculationResults } from "./ResultComponents";
-import { ComparisonChart } from "./comparisonItem/ComparisonChart";
-import { ComparisonExport } from "./comparisonItem/ComparisonExport";
+import { ComparisonAnalysis } from "../utils/types";
+import { CalculationResults } from "../ResultComponents";
+import { ComparisonChart } from "../comparisonItem/ComparisonChart";
+import { ComparisonExport } from "../comparisonItem/ComparisonExport";
 
 interface ComparisonResultsProps {
   comparison: ComparisonAnalysis;
@@ -57,10 +57,15 @@ export function ComparisonResults({
 
       {/* Individual Results */}
       <div>
-        <h3 className="text-lg font-semibold mb-4">Detailed Results by Country</h3>
+        <h3 className="text-lg font-semibold mb-4">
+          Detailed Results by Country
+        </h3>
         <div className="space-y-6">
           {comparison.results.map((result, index) => (
-            <div key={index} className="border-t border-border pt-6 first:border-t-0 first:pt-0">
+            <div
+              key={index}
+              className="border-t border-border pt-6 first:border-t-0 first:pt-0"
+            >
               {/* Country Header */}
               <div className="mb-4">
                 <div className="flex items-center gap-2">
@@ -93,9 +98,9 @@ export function ComparisonResults({
       {/* Summary Info */}
       <div className="p-4 bg-muted border border-border rounded-lg">
         <p className="text-sm text-muted-foreground">
-          <strong>Note:</strong> Results show total landed cost including product
-          value, applicable tariffs, freight, and insurance. Expand each result
-          to view the detailed breakdown of applied rates and charges.
+          <strong>Note:</strong> Results show total landed cost including
+          product value, applicable tariffs, freight, and insurance. Expand each
+          result to view the detailed breakdown of applied rates and charges.
         </p>
       </div>
     </div>

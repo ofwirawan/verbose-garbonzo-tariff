@@ -76,11 +76,11 @@ class AdminTransactionControllerTest {
     countryRepository.deleteAll();
     userInfoRepository.deleteAll();
 
-        userInfoService.addUser(new UserInfo(null, "admin", "admin@email.com", "goodpassword", "ROLE_ADMIN"));
+        userInfoService.addUser(new UserInfo(null, "admin", "admin@email.com", "goodpassword", "ROLE_ADMIN", null));
         adminJwtToken = jwtService.token("admin@email.com");
 
         // seed user (other than admin), country and product
-        userInfoRepository.save(new com.verbosegarbonzo.tariff.model.UserInfo(null, "U", "u@x.com", "p", "ROLE_USER"));
+        userInfoRepository.save(new com.verbosegarbonzo.tariff.model.UserInfo(null, "U", "u@x.com", "p", "ROLE_USER", null));
         countryRepository.save(new com.verbosegarbonzo.tariff.model.Country("IMP", "CountryA", "001", "City", null));
         productRepository.save(new com.verbosegarbonzo.tariff.model.Product("PROD01", "Product 1"));
     }

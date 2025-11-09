@@ -4,8 +4,8 @@ import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
-import { Country, DropdownOption } from "./utils/types";
-import { Combobox } from "./SharedComponents";
+import { Country, DropdownOption } from "../utils/types";
+import { Combobox } from "../SharedComponents";
 
 interface ComparisonCountrySelectorProps {
   comparisonCountries: string[];
@@ -60,7 +60,9 @@ export function ComparisonCountrySelector({
         {comparisonCountries.length < 2 && (
           <div>
             <label className="block text-sm font-medium text-foreground mb-2">
-              Add a country {comparisonCountries.length > 0 && `(${2 - comparisonCountries.length} remaining)`}
+              Add a country{" "}
+              {comparisonCountries.length > 0 &&
+                `(${2 - comparisonCountries.length} remaining)`}
             </label>
             <Combobox
               value=""
@@ -93,9 +95,7 @@ export function ComparisonCountrySelector({
           </p>
           <div className="flex flex-wrap gap-2">
             {comparisonCountries.map((code) => {
-              const country = countries.find(
-                (c) => c.country_code === code
-              );
+              const country = countries.find((c) => c.country_code === code);
               return (
                 <div
                   key={code}

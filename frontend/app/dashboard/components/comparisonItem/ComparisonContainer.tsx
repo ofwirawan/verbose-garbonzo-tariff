@@ -14,7 +14,7 @@ import {
   ComparisonAnalysis,
 } from "@/app/dashboard/components/utils/types";
 import { ComparisonForm } from "./ComparisonForm";
-import { ComparisonResults } from "../ComparisonResults";
+import { ComparisonResults } from "././ComparisonResults";
 import { AlertCircle } from "lucide-react";
 
 interface ComparisonContainerProps {
@@ -169,9 +169,7 @@ export function ComparisonContainer({
       {comparison && comparisonData && !isLoading && (
         <ComparisonResults
           comparison={comparison}
-          destinationCountry={getCountryName(
-            comparisonData.destinationCountry
-          )}
+          destinationCountry={getCountryName(comparisonData.destinationCountry)}
           productCode={comparisonData.productCode}
         />
       )}

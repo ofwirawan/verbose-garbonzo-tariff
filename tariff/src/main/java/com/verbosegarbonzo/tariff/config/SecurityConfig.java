@@ -61,6 +61,9 @@ public class SecurityConfig {
                         .requestMatchers("/auth/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
 
+                        // AI endpoints require authentication
+                        .requestMatchers("/api/ai/**").authenticated()
+
                         // History endpoints now require authentication
                         .requestMatchers("/api/history/**").authenticated()
 

@@ -77,7 +77,7 @@ class AdminUserControllerTest {
         countryRepository.deleteAll();
         userInfoRepository.deleteAll();
 
-        userInfoService.addUser(new UserInfo(null, "admin", "admin@email.com", "goodpassword", "ROLE_ADMIN"));
+        userInfoService.addUser(new UserInfo(null, "admin", "admin@email.com", "goodpassword", "ROLE_ADMIN", null));
         adminJwtToken = jwtService.token("admin@email.com");
     }
 
@@ -120,7 +120,7 @@ class AdminUserControllerTest {
     @Test
     @DisplayName("Delete user via admin endpoint")
     void deleteUser() {
-        var saved = userInfoRepository.save(new com.verbosegarbonzo.tariff.model.UserInfo(null, "T", "t@e.com", "p", "ROLE_USER"));
+        var saved = userInfoRepository.save(new com.verbosegarbonzo.tariff.model.UserInfo(null, "T", "t@e.com", "p", "ROLE_USER", null));
         UUID uid = saved.getUid();
 
         given()
