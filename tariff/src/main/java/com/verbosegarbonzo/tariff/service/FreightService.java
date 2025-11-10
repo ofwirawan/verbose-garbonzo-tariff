@@ -6,6 +6,7 @@ import com.verbosegarbonzo.tariff.repository.CountryRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -26,9 +27,12 @@ public class FreightService {
     }
 
     /**
-     * Holds freight cost details including min, average, max and transit time
+     * Holds freight cost details including min, average, max and transit time.
+     * Implements Serializable to support caching in Redis and distributed caches.
      */
-    public static class FreightDetails {
+    public static class FreightDetails implements java.io.Serializable {
+        private static final long serialVersionUID = 1L;
+
         public Double costMin;
         public Double costAverage;
         public Double costMax;
@@ -81,7 +85,11 @@ public class FreightService {
      * Calculates freight cost using Freightos GET API (JSON mode).
      * Returns freight details including min, average, max costs and transit days.
      * Uses city names stored in the Country entity.
+     *
+     * Results are cached by freight mode, country codes, and weight to avoid
+     * redundant API calls for identical routes.
      */
+    @Cacheable(value = "freightData", key = "#mode + '-' + #importerCode + '-' + #exporterCode + '-' + #weight")
     public FreightDetails calculateFreight(String mode, String importerCode, String exporterCode, double weight) {
         Country importer = countryRepository.findById(importerCode)
                 .orElseThrow(() -> new IllegalArgumentException("Importer not found: " + importerCode));

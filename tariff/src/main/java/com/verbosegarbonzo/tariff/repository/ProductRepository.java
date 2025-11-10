@@ -1,6 +1,7 @@
 package com.verbosegarbonzo.tariff.repository;
 
 import com.verbosegarbonzo.tariff.model.Product;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.*;
@@ -8,7 +9,17 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Optional;
+
 public interface ProductRepository extends JpaRepository<Product, String> {
+
+    /**
+     * Find product by HS6 code with caching.
+     * Product data is static and rarely changes, so caching is beneficial.
+     */
+    @Override
+    @Cacheable(value = "productData", key = "#id")
+    Optional<Product> findById(@org.springframework.lang.NonNull String id);
 
 
     @Modifying
