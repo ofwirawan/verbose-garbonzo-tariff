@@ -145,3 +145,16 @@ export interface AIRecommendationRequest {
   exporterCode?: string;
   hs6Code: string;
 }
+
+export interface GeminiSummaryRequest {
+  importerCode: string;
+  exporterCode?: string;
+  hs6Code: string;
+  recommendation: AIRecommendationResponse;
+}
+
+export interface GeminiSummaryResponse {
+  summary: string;
+  profileType: ProfileType;
+  success: boolean;
+}

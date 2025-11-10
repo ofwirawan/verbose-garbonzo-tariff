@@ -1,4 +1,4 @@
-import { AIRecommendationRequest, AIRecommendationResponse } from "@/app/dashboard/components/utils/types";
+import { AIRecommendationRequest, AIRecommendationResponse, GeminiSummaryRequest, GeminiSummaryResponse } from "@/app/dashboard/components/utils/types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
@@ -155,4 +155,49 @@ export function isPastPeriod(endDateStr: string): boolean {
 export function calculateSavingsPercentage(savings: number, currentRate: number): number {
   if (currentRate === 0) return 0;
   return (savings / currentRate) * 100;
+}
+
+/**
+ * Get Gemini 2.5 AI-powered summary for recommendations (Option 1: Two-Phase Approach)
+ * This is called asynchronously after ML results are displayed
+ */
+export async function getGeminiSummary(
+  request: GeminiSummaryRequest
+): Promise<GeminiSummaryResponse> {
+  const token =
+    typeof window !== "undefined" ? localStorage.getItem("jwt_token") : null;
+
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    Accept: "application/json",
+  };
+
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
+  const response = await fetch(`${API_BASE_URL}/api/ai/gemini-summary`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify(request),
+  });
+
+  if (!response.ok) {
+    let errorMsg = `HTTP ${response.status}`;
+
+    try {
+      const errorData = await response.json();
+      if (errorData?.message) {
+        errorMsg = errorData.message;
+      } else if (errorData?.error) {
+        errorMsg = errorData.error;
+      }
+    } catch (e) {
+      // Keep default error message
+    }
+
+    throw new Error(errorMsg);
+  }
+
+  return response.json();
 }

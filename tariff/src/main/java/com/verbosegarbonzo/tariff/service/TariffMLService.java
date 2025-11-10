@@ -181,8 +181,44 @@ public class TariffMLService {
     }
 
     /**
+     * Optimized prediction for batch operations.
+     * Uses pre-fetched historical data to avoid repeated database queries.
+     * Internal method used by predictRateRange() to minimize database calls.
+     */
+    private ForecastResult predictTariffRateOptimized(
+            String importerCode,
+            String exporterCode,
+            String hs6Code,
+            LocalDate targetDate,
+            List<Measure> cachedHistoricalRates) {
+
+        try {
+            if (cachedHistoricalRates.isEmpty()) {
+                return createFallbackForecastOptimized(importerCode, exporterCode, hs6Code, targetDate, false, cachedHistoricalRates);
+            }
+
+            // Try to get trained model for this trade route
+            String tradeRoute = importerCode + "-" + hs6Code;
+            TariffMLModel model = tradeRouteModels.get(tradeRoute);
+
+            if (model != null && modelTrained) {
+                // Use ML model prediction with cached features
+                return predictWithMLModelOptimized(model, importerCode, exporterCode, hs6Code, targetDate, cachedHistoricalRates);
+            } else {
+                // Use fallback with pre-fetched data
+                return createFallbackForecastOptimized(importerCode, exporterCode, hs6Code, targetDate, true, cachedHistoricalRates);
+            }
+
+        } catch (Exception e) {
+            log.error("Optimized prediction failed, using fallback", e);
+            return createFallbackForecastOptimized(importerCode, exporterCode, hs6Code, targetDate, true, cachedHistoricalRates);
+        }
+    }
+
+    /**
      * Predict rates for a date range using trained models.
      * Used to identify optimal and avoid periods.
+     * Optimized to minimize database queries by caching historical data.
      */
     public List<DateRangeForecast> predictRateRange(
             String importerCode,
@@ -201,6 +237,13 @@ public class TariffMLService {
             log.info("*** Training completed. Models count: {}", tradeRouteModels.size());
         }
 
+        // Pre-fetch historical data once instead of querying for every date
+        LocalDate threeYearsAgo = LocalDate.now().minusYears(3);
+        List<Measure> cachedHistoricalRates = measureRepository.findHistoricalRates(
+            importerCode, hs6Code, threeYearsAgo, LocalDate.now());
+        log.info("Pre-fetched {} historical records for {}-{} to optimize queries",
+            cachedHistoricalRates.size(), importerCode, hs6Code);
+
         List<DateRangeForecast> results = new ArrayList<>();
         LocalDate currentDate = startDate;
 
@@ -212,7 +255,7 @@ public class TariffMLService {
             // Predict each day in the week
             LocalDate dayIterator = currentDate;
             while (dayIterator.isBefore(weekEnd.plusDays(1)) && dayIterator.isBefore(endDate)) {
-                ForecastResult forecast = predictTariffRate(importerCode, exporterCode, hs6Code, dayIterator);
+                ForecastResult forecast = predictTariffRateOptimized(importerCode, exporterCode, hs6Code, dayIterator, cachedHistoricalRates);
                 weekForecasts.add(forecast);
                 dayIterator = dayIterator.plusDays(1);
             }
@@ -252,6 +295,8 @@ public class TariffMLService {
             currentDate = weekEnd.plusDays(1);
         }
 
+        log.info("✅ Completed rate range prediction. Total: {} weeks, Cached data reused: {} times",
+            results.size(), results.size() * 7); // ~7 days per week
         return results;
     }
 
@@ -289,6 +334,45 @@ public class TariffMLService {
         } catch (Exception e) {
             log.warn("ML model prediction failed, falling back to statistical method", e);
             return createFallbackForecast(importerCode, exporterCode, hs6Code, targetDate, true);
+        }
+    }
+
+    /**
+     * Optimized ML model prediction using cached historical data.
+     * Reduces database calls for batch operations.
+     */
+    private ForecastResult predictWithMLModelOptimized(
+            TariffMLModel model,
+            String importerCode,
+            String exporterCode,
+            String hs6Code,
+            LocalDate targetDate,
+            List<Measure> cachedHistoricalRates) {
+
+        try {
+            // Extract features using cached data
+            Map<String, Double> features = extractFeaturesOptimized(targetDate, cachedHistoricalRates);
+
+            // Get prediction from model
+            Double predictedRate = model.predict(features);
+            Integer confidence = model.getConfidenceScore(features);
+
+            BigDecimal rate = BigDecimal.valueOf(predictedRate).setScale(2, RoundingMode.HALF_UP);
+
+            return ForecastResult.builder()
+                .forecastDate(targetDate)
+                .predictedRate(rate)
+                .confidenceLower(rate.multiply(new BigDecimal("0.9")))
+                .confidenceUpper(rate.multiply(new BigDecimal("1.1")))
+                .confidencePercent(confidence)
+                .modelVersion(mlProperties.getModel().getVersion())
+                .hasHistoricalData(true)
+                .isFromMLModel(true)
+                .build();
+
+        } catch (Exception e) {
+            log.warn("Optimized ML model prediction failed, falling back to statistical method", e);
+            return createFallbackForecastOptimized(importerCode, exporterCode, hs6Code, targetDate, true, cachedHistoricalRates);
         }
     }
 
@@ -332,6 +416,53 @@ public class TariffMLService {
                 confidence = (int) Math.min(100, Math.max(40, logConfidence));
                 log.debug("Confidence scaled based on {} historical records using logarithmic formula: {}%", numRecords, confidence);
             }
+        }
+
+        // Adjust confidence based on forecast distance
+        long daysInFuture = ChronoUnit.DAYS.between(LocalDate.now(), targetDate);
+        if (daysInFuture > 365) {
+            confidence = Math.max(40, confidence - 15);
+        }
+
+        return ForecastResult.builder()
+            .forecastDate(targetDate)
+            .predictedRate(predictedRate)
+            .confidenceLower(predictedRate.multiply(new BigDecimal("0.8")))
+            .confidenceUpper(predictedRate.multiply(new BigDecimal("1.2")))
+            .confidencePercent(confidence)
+            .modelVersion(mlProperties.getModel().getVersion())
+            .hasHistoricalData(hasHistoricalData)
+            .isFromMLModel(false)
+            .build();
+    }
+
+    /**
+     * Optimized fallback forecast using pre-fetched historical data.
+     * Reduces database calls for batch operations.
+     */
+    private ForecastResult createFallbackForecastOptimized(
+            String importerCode,
+            String exporterCode,
+            String hs6Code,
+            LocalDate targetDate,
+            boolean hasHistoricalData,
+            List<Measure> cachedHistoricalRates) {
+
+        BigDecimal predictedRate = BigDecimal.ZERO;
+        int confidence = 40;
+
+        if (hasHistoricalData && !cachedHistoricalRates.isEmpty()) {
+            // Use cached historical data
+            predictedRate = cachedHistoricalRates.stream()
+                .map(Measure::getMfnAdvalRate)
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add)
+                .divide(BigDecimal.valueOf(cachedHistoricalRates.size()), 2, RoundingMode.HALF_UP);
+
+            // Scale confidence based on number of historical records
+            int numRecords = cachedHistoricalRates.size();
+            double logConfidence = 40.0 + (50.0 * Math.log(numRecords) / Math.log(100.0));
+            confidence = (int) Math.min(100, Math.max(40, logConfidence));
         }
 
         // Adjust confidence based on forecast distance
@@ -418,6 +549,35 @@ public class TariffMLService {
                 .filter(Objects::nonNull)
                 .reduce(BigDecimal.ZERO, BigDecimal::add)
                 .divide(BigDecimal.valueOf(historicalRates.size()), 4, RoundingMode.HALF_UP);
+            features.put("historical_avg", avgRate.doubleValue());
+        }
+
+        return features;
+    }
+
+    /**
+     * Optimized feature extraction using cached historical data.
+     * Reduces database calls for batch operations.
+     */
+    private Map<String, Double> extractFeaturesOptimized(LocalDate targetDate, List<Measure> cachedHistoricalRates) {
+        Map<String, Double> features = new HashMap<>();
+
+        // Month-based seasonality
+        int month = targetDate.getMonthValue();
+        features.put("month_sin", Math.sin(2 * Math.PI * month / 12));
+        features.put("month_cos", Math.cos(2 * Math.PI * month / 12));
+
+        // Days into year (trend)
+        int dayOfYear = targetDate.getDayOfYear();
+        features.put("day_of_year_norm", dayOfYear / 365.0);
+
+        // Historical average as baseline (using cached data)
+        if (!cachedHistoricalRates.isEmpty()) {
+            BigDecimal avgRate = cachedHistoricalRates.stream()
+                .map(Measure::getMfnAdvalRate)
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add)
+                .divide(BigDecimal.valueOf(cachedHistoricalRates.size()), 4, RoundingMode.HALF_UP);
             features.put("historical_avg", avgRate.doubleValue());
         }
 
