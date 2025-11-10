@@ -23,30 +23,30 @@ interface CalculationResultsProps {
 
 export function CalculationResultsSkeleton() {
   return (
-    <div className="mt-6 pt-6 border-t border-gray-200">
+    <div className="mt-6 pt-6 border-t border-border">
       <div className="mt-8 space-y-4 animate-pulse">
         {/* Cost Summary Skeleton */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {[...Array(3)].map((_, i) => (
             <div
               key={i}
-              className="bg-gray-50 p-6 rounded-lg border border-gray-200"
+              className="bg-muted p-6 rounded-lg border border-border"
             >
-              <div className="h-3 w-24 bg-gray-200 rounded mb-3"></div>
-              <div className="h-8 w-32 bg-gray-200 rounded mb-2"></div>
-              <div className="h-3 w-20 bg-gray-200 rounded"></div>
+              <div className="h-3 w-24 bg-border rounded mb-3"></div>
+              <div className="h-8 w-32 bg-border rounded mb-2"></div>
+              <div className="h-3 w-20 bg-border rounded"></div>
             </div>
           ))}
         </div>
 
         {/* Details Skeleton */}
-        <div className="bg-gray-50 p-6 rounded-lg border border-gray-200">
-          <div className="h-4 w-32 bg-gray-200 rounded mb-4"></div>
+        <div className="bg-muted p-6 rounded-lg border border-border">
+          <div className="h-4 w-32 bg-border rounded mb-4"></div>
           <div className="space-y-3">
             {[...Array(3)].map((_, i) => (
               <div key={i} className="flex justify-between">
-                <div className="h-3 w-24 bg-gray-200 rounded"></div>
-                <div className="h-3 w-32 bg-gray-200 rounded"></div>
+                <div className="h-3 w-24 bg-border rounded"></div>
+                <div className="h-3 w-32 bg-border rounded"></div>
               </div>
             ))}
           </div>
@@ -117,58 +117,58 @@ function CostSummary({
       {/* Visual Cost Breakdown Cards */}
       <div className={`grid grid-cols-1 ${gridCols} gap-4`}>
         {/* Trade Value Card */}
-        <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-5 md:p-6">
+        <div className="bg-card rounded-lg border border-border p-4 sm:p-5 md:p-6">
           <div className="flex items-start justify-between mb-2">
-            <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+            <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
               Trade Value
             </div>
           </div>
-          <div className="text-lg sm:text-2xl font-bold text-gray-900 break-words">
+          <div className="text-lg sm:text-2xl font-bold text-foreground break-words">
             $
             {Number(result.tradeOriginal).toLocaleString("en-US", {
               minimumFractionDigits: 2,
             })}
           </div>
-          <div className="text-xs text-gray-500 mt-1">
+          <div className="text-xs text-muted-foreground mt-1">
             Base transaction value
           </div>
         </div>
 
         {/* Tariff Duty Card */}
-        <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-5 md:p-6">
+        <div className="bg-card rounded-lg border border-border p-4 sm:p-5 md:p-6">
           <div className="flex items-start justify-between mb-2">
-            <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+            <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
               Tariff Duty
             </div>
             {result.suspensionActive === true && (
-              <span className="bg-black text-white text-[10px] font-bold px-2 py-0.5 rounded uppercase">
+              <span className="bg-foreground text-background text-[10px] font-bold px-2 py-0.5 rounded uppercase">
                 Suspended
               </span>
             )}
           </div>
-          <div className="text-lg sm:text-2xl font-bold text-gray-900 break-words">
+          <div className="text-lg sm:text-2xl font-bold text-foreground break-words">
             ${dutyAmount.toLocaleString("en-US", { minimumFractionDigits: 2 })}
           </div>
-          <div className="text-xs text-gray-500 mt-1">
+          <div className="text-xs text-muted-foreground mt-1">
             {rateInfo.rate.toFixed(2)}% · {rateInfo.type}
           </div>
         </div>
 
         {/* Freight Card (if applicable) */}
         {hasFreightData ? (
-          <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-5 md:p-6">
+          <div className="bg-card rounded-lg border border-border p-4 sm:p-5 md:p-6">
             <div className="flex items-start justify-between mb-2">
-              <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+              <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                 Freight Cost
               </div>
             </div>
-            <div className="text-lg sm:text-2xl font-bold text-gray-900 break-words">
+            <div className="text-lg sm:text-2xl font-bold text-foreground break-words">
               $
               {Number(result.freightCost).toLocaleString("en-US", {
                 minimumFractionDigits: 2,
               })}
             </div>
-            <div className="text-xs text-gray-500 mt-1">
+            <div className="text-xs text-muted-foreground mt-1">
               {result.freightType === "air"
                 ? "Air Freight"
                 : result.freightType === "ocean"
@@ -180,20 +180,20 @@ function CostSummary({
 
         {/* Valuation Basis Card (if applicable) */}
         {hasValuationBasis ? (
-          <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-5 md:p-6">
-            <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">
+          <div className="bg-card rounded-lg border border-border p-4 sm:p-5 md:p-6">
+            <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">
               Valuation Basis
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <div className="text-xs text-gray-600 font-medium mb-1">Declared</div>
-                <div className="text-lg sm:text-2xl font-bold text-gray-900">
+                <div className="text-xs text-muted-foreground font-medium mb-1">Declared</div>
+                <div className="text-lg sm:text-2xl font-bold text-foreground">
                   {result.valuationBasisDeclared || "—"}
                 </div>
               </div>
               <div>
-                <div className="text-xs text-gray-600 font-medium mb-1">Applied</div>
-                <div className="text-lg sm:text-2xl font-bold text-gray-900">
+                <div className="text-xs text-muted-foreground font-medium mb-1">Applied</div>
+                <div className="text-lg sm:text-2xl font-bold text-foreground">
                   {result.valuationBasisApplied || "—"}
                 </div>
               </div>
@@ -204,19 +204,19 @@ function CostSummary({
       </div>
 
       {/* Total Landed Cost - Prominent Display */}
-      <div className="bg-gray-100 rounded-lg p-4 sm:p-5 md:p-6">
+      <div className="bg-muted rounded-lg p-4 sm:p-5 md:p-6 border border-border">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <div className="text-sm font-medium text-black uppercase tracking-wide mb-1">
+            <div className="text-sm font-medium text-foreground uppercase tracking-wide mb-1">
               Total Landed Cost
             </div>
-            <div className="text-xs text-black break-words">
+            <div className="text-xs text-muted-foreground break-words">
               {result.hs6} · {result.importerCode} ←{" "}
               {result.exporterCode || "—"}
             </div>
           </div>
           <div className="sm:text-right">
-            <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-black break-words">
+            <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-foreground break-words">
               ${totalCost.toLocaleString("en-US", { minimumFractionDigits: 2 })}
             </div>
           </div>
@@ -239,23 +239,23 @@ function DetailsSection({
   const appliedRate = result.appliedRate || {};
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+    <div className="bg-card rounded-lg border border-border overflow-hidden">
       {/* Collapsible Header */}
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors border-b border-gray-100"
+        className="w-full px-6 py-4 flex items-center justify-between hover:bg-muted transition-colors border-b border-border"
       >
         <div className="flex items-center gap-2">
-          <h4 className="text-sm font-semibold text-gray-900">
+          <h4 className="text-sm font-semibold text-foreground">
             Transaction Details
           </h4>
         </div>
         <div className="flex items-center gap-3">
-          <span className="text-xs text-gray-500">
+          <span className="text-xs text-muted-foreground">
             {isExpanded ? "Hide details" : "View details"}
           </span>
           <svg
-            className={`w-5 h-5 text-gray-400 transition-transform ${
+            className={`w-5 h-5 text-muted-foreground transition-transform ${
               isExpanded ? "rotate-180" : ""
             }`}
             fill="none"
@@ -274,10 +274,10 @@ function DetailsSection({
 
       {/* Expandable Content */}
       {isExpanded && (
-        <div className="p-4 sm:p-5 md:p-6 space-y-6 bg-gray-50">
+        <div className="p-4 sm:p-5 md:p-6 space-y-6 bg-background">
           {/* Transaction Info Section */}
-          <div className="bg-white rounded-lg p-4 sm:p-5 md:p-6 border border-gray-200">
-            <h5 className="text-xs font-bold text-gray-700 uppercase tracking-wide mb-4 flex items-center gap-2">
+          <div className="bg-card rounded-lg p-4 sm:p-5 md:p-6 border border-border">
+            <h5 className="text-xs font-bold text-foreground uppercase tracking-wide mb-4 flex items-center gap-2">
               Transaction Information
             </h5>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -292,8 +292,8 @@ function DetailsSection({
                 value={result.exporterCode || "—"}
               />
             </div>
-            <div className="mt-4 pt-4 border-t border-gray-100">
-              <p className="text-xs text-gray-500">
+            <div className="mt-4 pt-4 border-t border-border">
+              <p className="text-xs text-muted-foreground">
                 <span className="font-semibold">Transaction ID:</span>{" "}
                 <span className="font-mono">{result.transactionId}</span>
               </p>
@@ -304,37 +304,37 @@ function DetailsSection({
           {(appliedRate.mfnAdval !== undefined ||
             appliedRate.prefAdval !== undefined ||
             appliedRate.specific !== undefined) && (
-            <div className="bg-white rounded-lg p-4 sm:p-5 md:p-6 border border-gray-200">
-              <h5 className="text-xs font-bold text-gray-700 uppercase tracking-wide mb-4 flex items-center gap-2">
+            <div className="bg-card rounded-lg p-4 sm:p-5 md:p-6 border border-border">
+              <h5 className="text-xs font-bold text-foreground uppercase tracking-wide mb-4 flex items-center gap-2">
                 Tariff Rate Breakdown
               </h5>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {appliedRate.prefAdval !== undefined && (
-                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                    <div className="text-xs text-gray-600 font-medium mb-1">
+                  <div className="bg-muted p-4 rounded-lg border border-border">
+                    <div className="text-xs text-muted-foreground font-medium mb-1">
                       Preferential Rate (FTA)
                     </div>
-                    <div className="text-lg sm:text-2xl font-bold text-gray-900">
+                    <div className="text-lg sm:text-2xl font-bold text-foreground">
                       {appliedRate.prefAdval.toFixed(2)}%
                     </div>
                   </div>
                 )}
                 {appliedRate.mfnAdval !== undefined && (
-                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                    <div className="text-xs text-gray-600 font-medium mb-1">
+                  <div className="bg-muted p-4 rounded-lg border border-border">
+                    <div className="text-xs text-muted-foreground font-medium mb-1">
                       MFN Ad-valorem
                     </div>
-                    <div className="text-lg sm:text-2xl font-bold text-gray-900">
+                    <div className="text-lg sm:text-2xl font-bold text-foreground">
                       {appliedRate.mfnAdval.toFixed(2)}%
                     </div>
                   </div>
                 )}
                 {appliedRate.specific !== undefined && (
-                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                    <div className="text-xs text-gray-600 font-medium mb-1">
+                  <div className="bg-muted p-4 rounded-lg border border-border">
+                    <div className="text-xs text-muted-foreground font-medium mb-1">
                       Specific Duty
                     </div>
-                    <div className="text-lg sm:text-2xl font-bold text-gray-900">
+                    <div className="text-lg sm:text-2xl font-bold text-foreground">
                       ${appliedRate.specific.toFixed(2)}/kg
                     </div>
                   </div>
@@ -345,8 +345,8 @@ function DetailsSection({
 
           {/* Shipping Information Section */}
           {(hasFreightData || result.insuranceCost) && (
-            <div className="bg-white rounded-lg p-4 sm:p-5 md:p-6 border border-gray-200">
-              <h5 className="text-xs font-bold text-gray-700 uppercase tracking-wide mb-4 flex items-center gap-2">
+            <div className="bg-card rounded-lg p-4 sm:p-5 md:p-6 border border-border">
+              <h5 className="text-xs font-bold text-foreground uppercase tracking-wide mb-4 flex items-center gap-2">
                 Shipping Information
               </h5>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -396,8 +396,8 @@ function DetailsSection({
 
           {/* Warnings Section */}
           {result.warnings && result.warnings.length > 0 && (
-            <div className="bg-white rounded-lg p-4 sm:p-5 md:p-6 border border-amber-200 bg-amber-50">
-              <h5 className="text-xs font-bold text-amber-900 uppercase tracking-wide mb-4 flex items-center gap-2">
+            <div className="bg-card rounded-lg p-4 sm:p-5 md:p-6 border border-border">
+              <h5 className="text-xs font-bold text-foreground uppercase tracking-wide mb-4 flex items-center gap-2">
                 <svg
                   className="w-4 h-4 flex-shrink-0"
                   fill="currentColor"
@@ -413,8 +413,8 @@ function DetailsSection({
               </h5>
               <ul className="space-y-2">
                 {result.warnings.map((warning, index) => (
-                  <li key={index} className="text-sm text-amber-800 flex gap-3">
-                    <span className="text-amber-600 font-bold min-w-fit">•</span>
+                  <li key={index} className="text-sm text-muted-foreground flex gap-3">
+                    <span className="text-primary font-bold min-w-fit">•</span>
                     <span>{warning}</span>
                   </li>
                 ))}
@@ -424,10 +424,10 @@ function DetailsSection({
 
           {/* Suspension Note */}
           {suspensionNote && (
-            <div className="bg-black rounded-lg p-4 sm:p-5 md:p-6 border-l-4 border-white">
+            <div className="bg-foreground rounded-lg p-4 sm:p-5 md:p-6 border-l-4 border-primary">
               <div className="flex items-start gap-3">
                 <svg
-                  className="w-5 h-5 text-white mt-0.5 flex-shrink-0"
+                  className="w-5 h-5 text-background mt-0.5 flex-shrink-0"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -440,10 +440,10 @@ function DetailsSection({
                   />
                 </svg>
                 <div>
-                  <p className="text-xs font-bold text-white uppercase tracking-wide mb-2">
+                  <p className="text-xs font-bold text-background uppercase tracking-wide mb-2">
                     Tariff Suspension Notice
                   </p>
-                  <p className="text-sm text-gray-300 leading-relaxed">
+                  <p className="text-sm text-muted-foreground leading-relaxed">
                     {suspensionNote}
                   </p>
                 </div>
@@ -459,8 +459,8 @@ function DetailsSection({
 function InfoItem({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <div className="text-xs text-gray-500 font-medium mb-1">{label}</div>
-      <div className="text-sm text-gray-900 font-semibold break-words">
+      <div className="text-xs text-muted-foreground font-medium mb-1">{label}</div>
+      <div className="text-sm text-foreground font-semibold break-words">
         {value}
       </div>
     </div>
@@ -531,7 +531,7 @@ function SaveHistoryButton({ result }: { result: TariffCalculationResult }) {
         <Button
           onClick={() => setIsDialogOpen(true)}
           disabled={!canSaveHistory}
-          className="bg-black text-white hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed px-6 py-2 font-semibold text-sm uppercase tracking-wide"
+          className="bg-primary text-primary-foreground hover:bg-primary/80 disabled:opacity-40 disabled:cursor-not-allowed px-6 py-2 font-semibold text-sm uppercase tracking-wide"
         >
           Save to History
         </Button>

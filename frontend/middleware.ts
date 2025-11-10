@@ -5,14 +5,6 @@ export function middleware(request: NextRequest) {
   const token = request.cookies.get("jwt_token")?.value;
   const pathname = request.nextUrl.pathname;
 
-  // Debug logging
-  console.log("🔍 Middleware debug:", {
-    pathname,
-    hasToken: !!token,
-    tokenPreview: token ? `${token.substring(0, 20)}...` : "No token",
-    cookies: request.cookies.getAll().map(c => c.name),
-  });
-
   // Public routes that don't require authentication
   const publicRoutes = ["/login", "/signup"];
 

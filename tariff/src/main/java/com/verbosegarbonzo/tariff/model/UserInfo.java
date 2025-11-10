@@ -1,6 +1,7 @@
 package com.verbosegarbonzo.tariff.model;
 
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -28,4 +29,8 @@ public class UserInfo {
     private String email;
     private String password;
     private String roles;
+
+    @Column(name = "profile_type", length = 50)
+    @Convert(converter = ProfileTypeConverter.class)
+    private ProfileType profileType;
 }

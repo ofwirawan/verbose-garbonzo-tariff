@@ -52,7 +52,7 @@ export function Combobox({
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className="w-full justify-between h-11 px-4 bg-white border border-gray-300 hover:bg-gray-50 transition-all"
+          className="w-full justify-between h-11 px-4 bg-card border border-border hover:border-ring transition-colors"
         >
           <span className="truncate">
             {value

@@ -62,7 +62,7 @@ export function FormDialog({
             <Button
               type="submit"
               disabled={isSubmitting}
-              className="bg-black text-white hover:bg-gray-800"
+              className="bg-primary text-primary-foreground hover:bg-primary/90"
             >
               {isSubmitting ? "Saving..." : submitLabel}
             </Button>

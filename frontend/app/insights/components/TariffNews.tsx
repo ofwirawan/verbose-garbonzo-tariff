@@ -63,16 +63,16 @@ export function TariffNews() {
 
   return (
     <div className="w-full">
-      <div className="bg-white border border-gray-200 rounded-xl p-6">
+      <div className="bg-card border border-border rounded-xl p-6">
         <div className="mb-6 flex items-center justify-between">
           <div>
-            <h2 className="text-lg font-bold text-gray-900">Trade & Tariff News</h2>
-            <p className="text-xs text-gray-600 mt-1">Latest developments in international trade</p>
+            <h2 className="text-lg font-bold text-foreground">Trade & Tariff News</h2>
+            <p className="text-xs text-muted-foreground mt-1">Latest developments in international trade</p>
           </div>
           <button
             onClick={fetchNews}
             disabled={isFetching || loading}
-            className="px-4 py-2 bg-gray-900 text-white text-sm font-semibold rounded hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors whitespace-nowrap"
+            className="px-4 py-2 bg-primary text-primary-foreground text-sm font-semibold rounded hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors whitespace-nowrap"
           >
             {isFetching ? "Fetching..." : "Refresh News"}
           </button>
@@ -81,7 +81,7 @@ export function TariffNews() {
         {loading ? (
           <div className="space-y-3">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="h-20 bg-gray-100 animate-pulse rounded" />
+              <div key={i} className="h-20 bg-muted animate-pulse rounded" />
             ))}
           </div>
         ) : news.length > 0 ? (
@@ -92,19 +92,19 @@ export function TariffNews() {
                 href={item.url || "#"}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="border-l-4 border-l-gray-300 p-4 bg-gray-50 rounded transition-colors hover:bg-gray-100 cursor-pointer block no-underline"
+                className="border-l-4 border-l-border p-4 bg-muted rounded transition-colors hover:bg-muted/80 cursor-pointer block no-underline"
               >
                 <div className="flex items-start justify-between gap-4 mb-2">
-                  <h3 className="font-semibold text-gray-900 text-sm flex-1 hover:underline">{item.title}</h3>
-                  <span className="text-xs font-semibold text-gray-700 whitespace-nowrap">
+                  <h3 className="font-semibold text-foreground text-sm flex-1 hover:underline">{item.title}</h3>
+                  <span className="text-xs font-semibold text-muted-foreground whitespace-nowrap">
                     {getImpactLabel(item.impact)}
                   </span>
                 </div>
-                <p className="text-xs text-gray-700 mb-2 leading-relaxed">{item.summary}</p>
-                <div className="flex items-center gap-2 text-xs text-gray-700">
-                  <span className="font-semibold text-blue-600 hover:underline">{item.source}</span>
+                <p className="text-xs text-muted-foreground mb-2 leading-relaxed">{item.summary}</p>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <span className="font-semibold text-primary hover:underline">{item.source}</span>
                   <span>{item.date}</span>
-                  <span className="bg-gray-200 px-2 py-1 rounded text-gray-900 font-medium">
+                  <span className="bg-background px-2 py-1 rounded text-foreground font-medium">
                     {item.category}
                   </span>
                 </div>
@@ -112,7 +112,7 @@ export function TariffNews() {
             ))}
           </div>
         ) : (
-          <div className="text-center py-6 text-gray-600 text-sm">No news available</div>
+          <div className="text-center py-6 text-muted-foreground text-sm">No news available</div>
         )}
       </div>
     </div>

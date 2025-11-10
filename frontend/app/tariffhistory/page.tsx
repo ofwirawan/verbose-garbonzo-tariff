@@ -250,16 +250,16 @@ export default function TariffHistoryPage() {
             <div className="flex flex-col gap-6 p-4 md:p-8 mx-auto w-full">
               {/* Page Header */}
               <div>
-                <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                <h1 className="text-3xl font-bold text-foreground mb-2">
                   Tariff History
                 </h1>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-muted-foreground">
                   Explore historical tariff rate trends for chemical products
                 </p>
               </div>
 
               <Card className="shadow-sm">
-                <CardHeader className="border-b bg-gradient-to-r from-gray-50 to-gray-100/50 pb-4">
+                <CardHeader className="border-b from-muted to-muted/50 pb-4">
                   <CardTitle className="text-lg font-semibold">
                     Chemical Products Tariff History
                   </CardTitle>
@@ -275,7 +275,7 @@ export default function TariffHistoryPage() {
                       <div className="space-y-2">
                         <Label
                           htmlFor="country"
-                          className="text-sm font-bold text-black uppercase tracking-wide"
+                          className="text-sm font-bold text-foreground uppercase tracking-wide"
                         >
                           Country (Reporter)
                         </Label>
@@ -293,7 +293,7 @@ export default function TariffHistoryPage() {
                       <div className="space-y-2">
                         <Label
                           htmlFor="product"
-                          className="text-sm font-bold text-black uppercase tracking-wide"
+                          className="text-sm font-bold text-foreground uppercase tracking-wide"
                         >
                           Chemical Product
                         </Label>
@@ -316,11 +316,11 @@ export default function TariffHistoryPage() {
                         disabled={
                           !selectedCountry || !selectedProduct || isFetching
                         }
-                        className="w-full sm:w-auto bg-black text-white hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed h-10 px-6 font-semibold text-sm uppercase tracking-wide transition-all duration-200"
+                        className="w-full sm:w-auto bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed h-10 px-6 font-semibold text-sm uppercase tracking-wide transition-all duration-200"
                       >
                         {isFetching ? (
                           <span className="flex items-center gap-3">
-                            <span className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                            <span className="h-4 w-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin"></span>
                             Fetching...
                           </span>
                         ) : (
@@ -422,7 +422,7 @@ export default function TariffHistoryPage() {
                           <CardContent>
                             <div className="overflow-x-auto">
                               <table className="w-full text-sm">
-                                <thead className="bg-gray-50">
+                                <thead className="bg-muted">
                                   <tr>
                                     <th className="p-3 text-left font-bold">
                                       Year

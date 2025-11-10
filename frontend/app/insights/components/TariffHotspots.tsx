@@ -49,16 +49,16 @@ export function TariffHotspots() {
 
   return (
     <div className="w-full">
-      <div className="bg-white border border-gray-200 rounded-xl p-6">
+      <div className="bg-card border border-border rounded-xl p-6">
         <div className="mb-6">
-          <h2 className="text-lg font-bold text-gray-900">Tariff Hotspots</h2>
-          <p className="text-xs text-gray-600 mt-1">Critical tariff rate adjustments</p>
+          <h2 className="text-lg font-bold text-foreground">Tariff Hotspots</h2>
+          <p className="text-xs text-muted-foreground mt-1">Critical tariff rate adjustments</p>
         </div>
 
         {loading ? (
           <div className="space-y-3">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="h-20 bg-gray-100 animate-pulse rounded" />
+              <div key={i} className="h-20 bg-muted animate-pulse rounded" />
             ))}
           </div>
         ) : hotspots.length > 0 ? (
@@ -68,27 +68,27 @@ export function TariffHotspots() {
               const isUp = hotspot.change.startsWith("+");
 
               return (
-                <div key={hotspot.id} className="border-l-4 border-l-gray-300 p-5 bg-gray-50 rounded hover:bg-gray-100 transition-colors">
+                <div key={hotspot.id} className="border-l-4 border-l-border p-5 bg-muted rounded hover:bg-muted/80 transition-colors">
                   <div className="flex justify-between items-start mb-2">
                     <div>
-                      <h3 className="font-semibold text-gray-900 text-sm">{hotspot.country}</h3>
-                      <p className="text-xs text-gray-600 mt-0.5">{hotspot.sector}</p>
+                      <h3 className="font-semibold text-foreground text-sm">{hotspot.country}</h3>
+                      <p className="text-xs text-muted-foreground mt-0.5">{hotspot.sector}</p>
                     </div>
                     <div className="text-right">
-                      <div className={`font-bold text-sm ${isUp ? "text-gray-900" : "text-gray-600"}`}>
+                      <div className={`font-bold text-sm ${isUp ? "text-foreground" : "text-muted-foreground"}`}>
                         {hotspot.change}
                       </div>
-                      <div className="text-xs text-gray-700 font-semibold mt-0.5">{severityInfo.label}</div>
+                      <div className="text-xs text-muted-foreground font-semibold mt-0.5">{severityInfo.label}</div>
                     </div>
                   </div>
 
-                  <p className="text-xs text-gray-700 mb-2 leading-relaxed">{hotspot.impact}</p>
+                  <p className="text-xs text-muted-foreground mb-2 leading-relaxed">{hotspot.impact}</p>
 
                   <div className="flex flex-wrap gap-2">
                     {hotspot.affectedCountries.map((country) => (
                       <span
                         key={country}
-                        className="px-2 py-1 bg-gray-900 text-white text-xs font-mono rounded"
+                        className="px-2 py-1 bg-primary text-primary-foreground text-xs font-mono rounded"
                       >
                         {country}
                       </span>
@@ -99,7 +99,7 @@ export function TariffHotspots() {
             })}
           </div>
         ) : (
-          <div className="text-center py-6 text-gray-600 text-sm">No hotspots detected</div>
+          <div className="text-center py-6 text-muted-foreground text-sm">No hotspots detected</div>
         )}
       </div>
     </div>
