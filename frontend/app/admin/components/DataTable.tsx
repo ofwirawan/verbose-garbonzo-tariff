@@ -72,7 +72,6 @@ export function DataTable<TData, TValue>({
   onSearch,
   title,
   emptyMessage = "No data found",
-  filterColumnId,
   showAddButton = true,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -82,7 +81,9 @@ export function DataTable<TData, TValue>({
   const [deleteRow, setDeleteRow] = useState<TData | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [filterValue, setFilterValue] = useState("");
-  const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
+  const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(
+    null
+  );
 
   // Add actions column dynamically
   const columnsWithActions: ColumnDef<TData, TValue>[] = [
@@ -244,8 +245,16 @@ export function DataTable<TData, TValue>({
         </div>
       ) : (
         <>
-          <div className={`rounded-md border overflow-hidden ${data.length > 10 ? 'flex flex-col' : ''}`}>
-            <div className={data.length > 10 ? 'overflow-y-auto max-h-[600px]' : ''}>
+          <div
+            className={`rounded-md border overflow-hidden ${
+              data.length > 10 ? "flex flex-col" : ""
+            }`}
+          >
+            <div
+              className={
+                data.length > 10 ? "overflow-y-auto max-h-[600px]" : ""
+              }
+            >
               <Table>
                 <TableHeader className="bg-card sticky top-0 z-10">
                   {table.getHeaderGroups().map((headerGroup) => (

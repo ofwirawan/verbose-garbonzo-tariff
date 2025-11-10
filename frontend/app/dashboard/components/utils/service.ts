@@ -59,17 +59,17 @@ export async function calculateTariff(
         errorMsg = errorData.message;
       } else if (errorData?.error) {
         errorMsg = errorData.error;
-      } else if (typeof errorData === 'string') {
+      } else if (typeof errorData === "string") {
         errorMsg = errorData;
       }
-    } catch (e) {
+    } catch {
       // If JSON parsing fails, try to get text
       try {
         const errorText = await response.text();
         if (errorText) {
           errorMsg = errorText;
         }
-      } catch (textError) {
+      } catch {
         // Keep default HTTP status message
       }
     }
@@ -361,13 +361,13 @@ export async function calculateBatchTariffs(
       } else if (typeof errorData === "string") {
         errorMsg = errorData;
       }
-    } catch (e) {
+    } catch {
       try {
         const errorText = await response.text();
         if (errorText) {
           errorMsg = errorText;
         }
-      } catch (textError) {
+      } catch {
         // Keep default HTTP status message
       }
     }

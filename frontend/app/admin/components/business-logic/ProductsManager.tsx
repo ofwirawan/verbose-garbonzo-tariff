@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { DataTable } from "../DataTable";
 import { FormDialog } from "../FormDialog";
-import { productAPI, Product, PaginatedResponse } from "@/app/admin/lib/api";
+import { productAPI, Product } from "@/app/admin/lib/api";
 
 export function ProductsManager() {
   const [products, setProducts] = useState<Product[]>([]);
