@@ -21,7 +21,6 @@ import {
   Preference,
   Country,
   Product,
-  PaginatedResponse,
 } from "@/app/admin/lib/api";
 
 export function PreferencesManager() {
@@ -237,7 +236,10 @@ export function PreferencesManager() {
               </SelectTrigger>
               <SelectContent>
                 {countries.map((country) => (
-                  <SelectItem key={country.countryCode} value={country.countryCode}>
+                  <SelectItem
+                    key={country.countryCode}
+                    value={country.countryCode}
+                  >
                     {country.countryCode} - {country.name}
                   </SelectItem>
                 ))}
@@ -257,7 +259,10 @@ export function PreferencesManager() {
               </SelectTrigger>
               <SelectContent>
                 {countries.map((country) => (
-                  <SelectItem key={country.countryCode} value={country.countryCode}>
+                  <SelectItem
+                    key={country.countryCode}
+                    value={country.countryCode}
+                  >
                     {country.countryCode} - {country.name}
                   </SelectItem>
                 ))}
@@ -316,7 +321,8 @@ export function PreferencesManager() {
               onChange={(e) =>
                 setFormData({
                   ...formData,
-                  prefAdValRate: e.target.value === "" ? 0 : parseFloat(e.target.value),
+                  prefAdValRate:
+                    e.target.value === "" ? 0 : parseFloat(e.target.value),
                 })
               }
             />

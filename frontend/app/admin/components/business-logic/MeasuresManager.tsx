@@ -14,7 +14,14 @@ import {
 } from "@/components/ui/select";
 import { DataTable } from "../DataTable";
 import { FormDialog } from "../FormDialog";
-import { measureAPI, countryAPI, productAPI, Measure, Country, Product, PaginatedResponse } from "@/app/admin/lib/api";
+import {
+  measureAPI,
+  countryAPI,
+  productAPI,
+  Measure,
+  Country,
+  Product,
+} from "@/app/admin/lib/api";
 
 export function MeasuresManager() {
   const [measures, setMeasures] = useState<Measure[]>([]);
@@ -231,7 +238,10 @@ export function MeasuresManager() {
               </SelectTrigger>
               <SelectContent>
                 {countries.map((country) => (
-                  <SelectItem key={country.countryCode} value={country.countryCode}>
+                  <SelectItem
+                    key={country.countryCode}
+                    value={country.countryCode}
+                  >
                     {country.countryCode} - {country.name}
                   </SelectItem>
                 ))}

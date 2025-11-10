@@ -1,4 +1,9 @@
-import { AIRecommendationRequest, AIRecommendationResponse, GeminiSummaryRequest, GeminiSummaryResponse } from "@/app/dashboard/components/utils/types";
+import {
+  AIRecommendationRequest,
+  AIRecommendationResponse,
+  GeminiSummaryRequest,
+  GeminiSummaryResponse,
+} from "@/app/dashboard/components/utils/types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
@@ -39,13 +44,13 @@ export async function getAIRecommendation(
       } else if (typeof errorData === "string") {
         errorMsg = errorData;
       }
-    } catch (e) {
+    } catch {
       try {
         const errorText = await response.text();
         if (errorText) {
           errorMsg = errorText;
         }
-      } catch (textError) {
+      } catch {
         // Keep default HTTP status message
       }
     }
@@ -152,7 +157,10 @@ export function isPastPeriod(endDateStr: string): boolean {
 /**
  * Calculate savings amount in percentage for easy display
  */
-export function calculateSavingsPercentage(savings: number, currentRate: number): number {
+export function calculateSavingsPercentage(
+  savings: number,
+  currentRate: number
+): number {
   if (currentRate === 0) return 0;
   return (savings / currentRate) * 100;
 }
@@ -192,7 +200,7 @@ export async function getGeminiSummary(
       } else if (errorData?.error) {
         errorMsg = errorData.error;
       }
-    } catch (e) {
+    } catch {
       // Keep default error message
     }
 

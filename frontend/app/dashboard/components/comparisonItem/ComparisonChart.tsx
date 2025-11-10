@@ -11,7 +11,13 @@ import {
   ResponsiveContainer,
   Cell,
 } from "recharts";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 
 interface ComparisonChartProps {
   data: Array<{
@@ -32,14 +38,18 @@ export function ComparisonChart({
     return null;
   }
 
-  const CustomTooltip = (props: any) => {
+  const CustomTooltip = (props: {
+    active?: boolean;
+    payload?: Array<{ payload: { country: string }; value: number }>;
+  }) => {
     if (props.active && props.payload && props.payload.length) {
       const data = props.payload[0];
       return (
         <div className="bg-background p-3 border border-border rounded-lg shadow-lg text-foreground">
           <p className="font-semibold text-sm">{data.payload.country}</p>
           <p className="text-sm">
-            Cost: ${data.value.toLocaleString("en-US", {
+            Cost: $
+            {data.value.toLocaleString("en-US", {
               minimumFractionDigits: 2,
               maximumFractionDigits: 2,
             })}
@@ -71,11 +81,14 @@ export function ComparisonChart({
               tick={{ fontSize: 12, fill: "#4B4947" }}
             />
             <YAxis
-              label={{ value: "Cost (USD)", angle: -90, position: "insideLeft", fill: "#4B4947" }}
+              label={{
+                value: "Cost (USD)",
+                angle: -90,
+                position: "insideLeft",
+                fill: "#4B4947",
+              }}
               tick={{ fontSize: 12, fill: "#4B4947" }}
-              tickFormatter={(value) =>
-                `$${(value / 1000).toFixed(0)}k`
-              }
+              tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
             />
             <Tooltip content={<CustomTooltip />} />
             <Legend />

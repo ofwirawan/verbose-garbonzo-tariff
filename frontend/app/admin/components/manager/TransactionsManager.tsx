@@ -4,11 +4,7 @@ import { useEffect, useState } from "react";
 import { ColumnDef } from "@tanstack/react-table";
 import { toast } from "sonner";
 import { DataTable } from "../DataTable";
-import {
-  transactionAPI,
-  Transaction,
-  PaginatedResponse,
-} from "@/app/admin/lib/api";
+import { transactionAPI, Transaction } from "@/app/admin/lib/api";
 
 export function TransactionsManager() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -20,7 +16,12 @@ export function TransactionsManager() {
   const loadTransactions = async (page = 0, search = "") => {
     try {
       setIsLoading(true);
-      console.log("📥 Loading transactions from page:", page, "search:", search);
+      console.log(
+        "📥 Loading transactions from page:",
+        page,
+        "search:",
+        search
+      );
       const response = await transactionAPI.getAll(page, 25, search);
       console.log("✅ Transactions loaded:", {
         page,
