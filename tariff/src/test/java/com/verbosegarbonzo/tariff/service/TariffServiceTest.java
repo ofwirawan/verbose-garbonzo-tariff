@@ -94,7 +94,7 @@ class TariffServiceTest {
                 .thenReturn(Optional.of(pref));
 
         CalculateResponse resp = tariffService.calculate(req);
-        assertEquals(new BigDecimal("110.00"), resp.getTradeFinal());
+        assertEquals(new BigDecimal("111.00"), resp.getTradeFinal());
         assertNotNull(resp.getWarnings());
         assertFalse(resp.getWarnings().isEmpty());
 
@@ -115,7 +115,7 @@ class TariffServiceTest {
                 .thenReturn(Optional.of(susp));
 
         CalculateResponse resp = tariffService.calculate(req);
-        assertEquals(new BigDecimal("105.00"), resp.getTradeFinal());
+        assertEquals(new BigDecimal("106.00"), resp.getTradeFinal());
         assertTrue(resp.getAppliedRate().has("suspension") || resp.getAppliedRate().isObject());
         assertNotNull(resp.getWarnings());
         assertFalse(resp.getWarnings().isEmpty());
@@ -134,7 +134,7 @@ class TariffServiceTest {
                 .thenReturn(Optional.of(m));
 
         CalculateResponse resp = tariffService.calculate(req);
-        assertEquals(new BigDecimal("107.50"), resp.getTradeFinal());
+        assertEquals(new BigDecimal("108.50"), resp.getTradeFinal());
         assertTrue(resp.getAppliedRate().has("mfnAdval"));
     }
 

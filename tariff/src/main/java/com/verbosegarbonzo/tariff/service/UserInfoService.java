@@ -22,15 +22,15 @@ public class UserInfoService implements UserDetailsService {
     private final UserInfoRepository repository;
     private final PasswordEncoder encoder;
 
-    public UserInfoService(UserInfoRepository repository) {
-        this.repository = repository;
-        encoder = new BCryptPasswordEncoder();
-    }
-
     public UserInfoService(UserInfoRepository repository, PasswordEncoder encoder) {
         this.repository = repository;
         this.encoder = encoder;
     }
+
+    // public UserInfoService(UserInfoRepository repository, PasswordEncoder encoder) {
+    //     this.repository = repository;
+    //     this.encoder = encoder;
+    // }
 
     // Method to load user details by username (email)
     @Override

@@ -167,6 +167,7 @@ public class TariffService {
                 log.info("Net weight provided but suspension only has ad-valorem rate");
             }
 
+            
             // tariff suspended
             return buildResponse(req, TEMP_USER_ID, duty, null, null, null, rateSusp, warnings);
         }
@@ -600,6 +601,7 @@ public class TariffService {
 
         resp.setAppliedRate(rateNode);
         resp.setWarnings(warnings);
+        resp.setTradeFinal(totalCost);
         return resp;
     }
 }
