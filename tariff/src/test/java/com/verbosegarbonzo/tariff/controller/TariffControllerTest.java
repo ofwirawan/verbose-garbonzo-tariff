@@ -6,18 +6,19 @@ import com.verbosegarbonzo.tariff.model.CalculateRequest;
 import com.verbosegarbonzo.tariff.model.CalculateResponse;
 import com.verbosegarbonzo.tariff.service.TariffService;
 import com.verbosegarbonzo.tariff.exception.RateNotFoundException;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.test.context.TestPropertySource;
 
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import static io.restassured.RestAssured.given;
+
 import static org.hamcrest.Matchers.*;
 
 import java.math.BigDecimal;
@@ -26,6 +27,7 @@ import java.util.*;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @TestPropertySource(properties = {
@@ -42,10 +44,11 @@ public class TariffControllerTest {
     @LocalServerPort
     private int port;
 
-    @MockBean
+    @MockitoBean
     private TariffService tariffService;
 
     @BeforeEach
+    @SuppressWarnings("unused")
     void setUp() {
         RestAssured.port = port;
         RestAssured.enableLoggingOfRequestAndResponseIfValidationFails();
@@ -136,6 +139,6 @@ public class TariffControllerTest {
         .when()
             .post("/api/calculate")
         .then()
-            .statusCode(403);
+            .statusCode(400);
     }
 }

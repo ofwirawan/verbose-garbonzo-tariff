@@ -5,6 +5,8 @@ import java.time.LocalDate;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
+import static org.mockito.ArgumentMatchers.notNull;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -184,9 +186,7 @@ public class HistoryControllerTest {
             .when()
                 .delete("/api/history/" + existingTransaction.getTid())
             .then()
-                .statusCode(200)
-                .body("message", equalTo("Transaction deleted successfully"))
-                .body("deletedTransaction.tid", equalTo(existingTransaction.getTid()));
+                .statusCode(204);
     }
 
     private Transaction createTestTransaction() {

@@ -1,19 +1,20 @@
 package com.verbosegarbonzo.tariff.service;
 
-import com.verbosegarbonzo.tariff.model.UserInfo;
-import com.verbosegarbonzo.tariff.repository.UserInfoRepository;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
+import com.verbosegarbonzo.tariff.model.UserInfo;
+import com.verbosegarbonzo.tariff.repository.UserInfoRepository;
 
 @Service
 public class UserInfoService implements UserDetailsService {
@@ -25,6 +26,11 @@ public class UserInfoService implements UserDetailsService {
         this.repository = repository;
         this.encoder = encoder;
     }
+
+    // public UserInfoService(UserInfoRepository repository, PasswordEncoder encoder) {
+    //     this.repository = repository;
+    //     this.encoder = encoder;
+    // }
 
     // Method to load user details by username (email)
     @Override
@@ -48,8 +54,6 @@ public class UserInfoService implements UserDetailsService {
     // Add any additional methods for registering or managing users
     public String addUser(UserInfo userInfo) {
         // Encrypt password before saving
-
-        
         userInfo.setPassword(encoder.encode(userInfo.getPassword())); 
         repository.save(userInfo);
         return "User added successfully!";
