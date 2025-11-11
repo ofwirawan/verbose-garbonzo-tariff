@@ -27,7 +27,6 @@ public class AIRecommendationService {
     private final MeasureRepository measureRepository;
     private final CountryRepository countryRepository;
     private final ProductRepository productRepository;
-    private final UserInfoRepository userInfoRepository;
 
     /**
      * Get AI timing recommendations for a specific trade route.

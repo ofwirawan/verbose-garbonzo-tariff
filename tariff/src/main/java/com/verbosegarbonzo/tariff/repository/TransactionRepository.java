@@ -6,7 +6,6 @@ import com.verbosegarbonzo.tariff.model.UserInfo;
 import org.springframework.data.jpa.repository.*;
 import org.springframework.data.repository.query.Param;
 import java.util.List;
-import java.time.LocalDate;
 
 public interface TransactionRepository extends JpaRepository<Transaction, Integer> {
     
