@@ -14,12 +14,8 @@ import {
   VisibilityState,
 } from "@tanstack/react-table";
 
-import {
-  IconTrash,
-  IconFilter2
-} from "@tabler/icons-react";
+import { IconTrash, IconFilter2 } from "@tabler/icons-react";
 
-import { ChevronDown } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -225,11 +221,11 @@ export const columns: ColumnDef<HistoryItem>[] = [
     cell: ({ row }) => {
       const cost = row.getValue<number>("freightCost");
       const type = row.original.freightType;
-      
+
       if (cost === null || cost === undefined) {
         return <div className="text-gray-500">N/A</div>;
       }
-      
+
       return (
         <div>
           <div>${cost.toLocaleString()}</div>
@@ -244,11 +240,11 @@ export const columns: ColumnDef<HistoryItem>[] = [
     cell: ({ row }) => {
       const cost = row.getValue<number>("insuranceCost");
       const rate = row.original.insuranceRate;
-      
+
       if (cost === null || cost === undefined) {
         return <div className="text-gray-500">N/A</div>;
       }
-      
+
       return (
         <div>
           <div>${cost.toLocaleString()}</div>
@@ -326,8 +322,8 @@ export function HistoryTable({ data }: HistoryTableProps) {
         <AlertDialog>
           <AlertDialogTrigger asChild>
             <Button
-              variant="outline" 
-              size="sm" 
+              variant="outline"
+              size="sm"
               className="ml-auto"
               disabled={table.getFilteredSelectedRowModel().rows.length === 0}
             >
@@ -399,10 +395,9 @@ export function HistoryTable({ data }: HistoryTableProps) {
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            
             <Button variant="outline" size="sm" className="ml-auto">
               <IconFilter2 className="h4 w4" />
-              Filter 
+              Filter
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">

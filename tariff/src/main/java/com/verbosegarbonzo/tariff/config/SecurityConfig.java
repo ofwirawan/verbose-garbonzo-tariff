@@ -66,10 +66,14 @@ public class SecurityConfig {
                         .permitAll()
 
                         // Role-based endpoints
-                        .requestMatchers(HttpMethod.POST, "/api/calculate").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/calculate/*").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/calculate/").permitAll()
                         .requestMatchers("/auth/user/**").hasRole("USER")
                         .requestMatchers("/auth/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
+
+                        // AI endpoints require authentication
+                        .requestMatchers("/api/ai/**").authenticated()
 
                         // History endpoints now require authentication
                         .requestMatchers("/api/history/**").authenticated()

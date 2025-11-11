@@ -70,7 +70,7 @@ public class MetadataControllerTest {
         userInfoRepository.deleteAll();
 
         // Create admin user
-        userInfoRepository.save(new UserInfo(null, "admin", "admin@email.com", "goodpassword", "ROLE_ADMIN"));
+        userInfoRepository.save(new UserInfo(null, "admin", "admin@email.com", "goodpassword", "ROLE_ADMIN", null));
 
         // Generate JWT token
         adminJwtToken = jwtService.token("admin@email.com");

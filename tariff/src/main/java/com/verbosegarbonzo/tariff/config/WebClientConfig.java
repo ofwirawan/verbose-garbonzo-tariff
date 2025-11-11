@@ -4,9 +4,11 @@ import io.netty.channel.ChannelOption;
 import io.netty.handler.timeout.ReadTimeoutHandler;
 import io.netty.handler.timeout.WriteTimeoutHandler;
 
+import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.context.annotation.Bean;
 
 import org.springframework.context.annotation.Configuration;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import reactor.netty.http.client.HttpClient;
@@ -52,6 +54,15 @@ public class WebClientConfig {
                 .baseUrl(props.getTariff().getBaseUrl()) // tariff base url
                 .defaultHeader("User-Agent", "TariffApp/1.0")
                 .clientConnector(new ReactorClientHttpConnector(httpClient()))
+                .build();
+    }
+
+    @Bean
+    public RestTemplate restTemplate(RestTemplateBuilder builder) {
+        return builder
+                .setConnectTimeout(Duration.ofSeconds(30))
+                .setReadTimeout(Duration.ofSeconds(30))
+                .defaultHeader("User-Agent", "TariffApp/1.0")
                 .build();
     }
 }

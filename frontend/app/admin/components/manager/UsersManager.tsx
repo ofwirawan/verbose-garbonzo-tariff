@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { DataTable } from "../DataTable";
 import { FormDialog } from "../FormDialog";
-import { userAPI, User, PaginatedResponse } from "@/app/admin/lib/api";
+import { userAPI, User } from "@/app/admin/lib/api";
 
 export function UsersManager() {
   const [users, setUsers] = useState<User[]>([]);

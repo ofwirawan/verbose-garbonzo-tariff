@@ -157,7 +157,9 @@ export async function getCalculationTrends() {
     transactions.forEach((tx) => {
       if (tx.t_date) {
         const date = new Date(tx.t_date);
-        const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+        const monthKey = `${date.getFullYear()}-${String(
+          date.getMonth() + 1
+        ).padStart(2, "0")}`;
         monthlyData[monthKey] = (monthlyData[monthKey] || 0) + 1;
       }
     });
@@ -166,10 +168,20 @@ export async function getCalculationTrends() {
     const trends = Object.entries(monthlyData)
       .slice(-10)
       .map(([month, calculations]) => {
-        const [year, monthNum] = month.split("-");
+        const [, monthNum] = month.split("-");
         const monthNames = [
-          "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-          "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+          "Jan",
+          "Feb",
+          "Mar",
+          "Apr",
+          "May",
+          "Jun",
+          "Jul",
+          "Aug",
+          "Sep",
+          "Oct",
+          "Nov",
+          "Dec",
         ];
         return {
           month: monthNames[parseInt(monthNum) - 1],
@@ -230,7 +242,8 @@ export async function getRegionalComparison() {
           }
         });
 
-        avgRate = rateCount > 0 ? parseFloat((avgRate / rateCount).toFixed(1)) : 0;
+        avgRate =
+          rateCount > 0 ? parseFloat((avgRate / rateCount).toFixed(1)) : 0;
 
         return {
           region: country?.name || item.importer_code,
@@ -384,7 +397,9 @@ export async function getTradeAgreements(limit = 5) {
 
         return {
           id: `${pref.importer_code}-${pref.exporter_code}`,
-          name: `${importerCountry?.name || pref.importer_code} ↔ ${exporterCountry?.name || pref.exporter_code}`,
+          name: `${importerCountry?.name || pref.importer_code} ↔ ${
+            exporterCountry?.name || pref.exporter_code
+          }`,
           countries: [pref.importer_code, pref.exporter_code],
           status,
           suspendedTariffs: suspendedCount,
@@ -405,7 +420,10 @@ export async function getTradeAgreements(limit = 5) {
 /**
  * Mock tariff data based on recent WITS data
  */
-const mockTariffData: Record<string, { country: string; rate: number; name: string }> = {
+const mockTariffData: Record<
+  string,
+  { country: string; rate: number; name: string }
+> = {
   USA: { country: "USA", rate: 3.76, name: "United States" },
   CHN: { country: "CHN", rate: 5.22, name: "China" },
   DEU: { country: "DEU", rate: 2.41, name: "Germany" },
@@ -426,7 +444,10 @@ export async function getGlobalTariffRates(
 ) {
   try {
     const tariffData = countries
-      .map((country) => mockTariffData[country] || { country, rate: 0, name: country })
+      .map(
+        (country) =>
+          mockTariffData[country] || { country, rate: 0, name: country }
+      )
       .filter((t) => t.rate > 0)
       .sort((a, b) => b.rate - a.rate);
 
@@ -439,76 +460,13 @@ export async function getGlobalTariffRates(
     console.error("Error in getGlobalTariffRates:", error);
     return {
       globalTariffs: countries
-        .map((country) => mockTariffData[country] || { country, rate: 0, name: country })
+        .map(
+          (country) =>
+            mockTariffData[country] || { country, rate: 0, name: country }
+        )
         .filter((t) => t.rate > 0)
         .sort((a, b) => b.rate - a.rate),
     };
-  }
-}
-
-/**
- * Parse WITS XML response to extract tariff rate value
- */
-function parseWitsXmlResponse(xmlText: string): number {
-  try {
-    // Create a DOM parser to parse the XML
-    const parser = new DOMParser();
-    const xmlDoc = parser.parseFromString(xmlText, "application/xml");
-
-    // Check for parsing errors
-    if (xmlDoc.documentElement.nodeName === "parsererror") {
-      console.error("XML parsing error:", xmlDoc.documentElement);
-      return 0;
-    }
-
-    // Look for observation elements (OBS or Observation tag)
-    let observations = xmlDoc.getElementsByTagName("Obs");
-    if (observations.length === 0) {
-      observations = xmlDoc.getElementsByTagName("Observation");
-    }
-
-    // Extract values from observations
-    const rates: number[] = [];
-
-    for (let i = 0; i < observations.length; i++) {
-      const obs = observations[i];
-
-      // Try to get OBS_VALUE attribute
-      const obsValue = obs.getAttribute("OBS_VALUE") || obs.getAttribute("value");
-
-      if (obsValue) {
-        const rate = parseFloat(obsValue);
-        if (!isNaN(rate)) {
-          rates.push(rate);
-        }
-      }
-
-      // Also check for nested GenericData or DataSet elements
-      const dataElements = obs.querySelectorAll("[OBS_VALUE], [value]");
-      dataElements.forEach((elem) => {
-        const val =
-          elem.getAttribute("OBS_VALUE") || elem.getAttribute("value");
-        if (val) {
-          const rate = parseFloat(val);
-          if (!isNaN(rate)) {
-            rates.push(rate);
-          }
-        }
-      });
-    }
-
-    // Calculate average of extracted rates
-    if (rates.length > 0) {
-      const average = rates.reduce((a, b) => a + b, 0) / rates.length;
-      console.log(`Parsed ${rates.length} rates, average: ${average}`);
-      return average;
-    }
-
-    console.warn("No rates found in WITS XML response");
-    return 0;
-  } catch (error) {
-    console.error("Error parsing WITS XML:", error);
-    return 0;
   }
 }
 
@@ -526,12 +484,12 @@ export async function getBilateralTariffData(
 
     const response = await fetch(
       `https://wits.worldbank.org/api/v1/Tariff?` +
-      `reporter=${importer}&` +
-      `partner=${exporter}&` +
-      `product=ALL&` +
-      `year=${year}&` +
-      `indicator=MRDFRT&` +
-      `format=json`,
+        `reporter=${importer}&` +
+        `partner=${exporter}&` +
+        `product=ALL&` +
+        `year=${year}&` +
+        `indicator=MRDFRT&` +
+        `format=json`,
       { signal: controller.signal }
     );
 
@@ -579,12 +537,12 @@ export async function getProductTariffData(
   try {
     const response = await fetch(
       `https://wits.worldbank.org/api/v1/Tariff?` +
-      `reporter=${country}&` +
-      `partner=WLD&` +
-      `product=${hsCode}&` +
-      `year=${year}&` +
-      `indicator=MRDFRT&` +
-      `format=json`
+        `reporter=${country}&` +
+        `partner=WLD&` +
+        `product=${hsCode}&` +
+        `year=${year}&` +
+        `indicator=MRDFRT&` +
+        `format=json`
     );
 
     if (!response.ok) {
@@ -623,12 +581,12 @@ export async function getTariffTrendData(
           try {
             const response = await fetch(
               `https://wits.worldbank.org/api/v1/Tariff?` +
-              `reporter=${country}&` +
-              `partner=WLD&` +
-              `product=ALL&` +
-              `year=${year}&` +
-              `indicator=MRDFRT&` +
-              `format=json`
+                `reporter=${country}&` +
+                `partner=WLD&` +
+                `product=ALL&` +
+                `year=${year}&` +
+                `indicator=MRDFRT&` +
+                `format=json`
             );
 
             if (response.ok) {
@@ -659,12 +617,48 @@ export async function getTariffTrendData(
 export async function getTariffChanges() {
   try {
     const changes = [
-      { country: "USA", change: 2.5, direction: "up", reason: "Steel tariffs increased", date: "2025-10-15" },
-      { country: "China", change: 1.8, direction: "down", reason: "Trade negotiation agreement", date: "2025-10-10" },
-      { country: "EU", change: 3.2, direction: "up", reason: "Agricultural protection measures", date: "2025-10-08" },
-      { country: "India", change: 0.5, direction: "down", reason: "Regional trade agreement", date: "2025-10-05" },
-      { country: "Mexico", change: 1.2, direction: "up", reason: "New import restrictions", date: "2025-10-01" },
-      { country: "Japan", change: 0.3, direction: "down", reason: "Tariff reduction phase", date: "2025-09-28" },
+      {
+        country: "USA",
+        change: 2.5,
+        direction: "up",
+        reason: "Steel tariffs increased",
+        date: "2025-10-15",
+      },
+      {
+        country: "China",
+        change: 1.8,
+        direction: "down",
+        reason: "Trade negotiation agreement",
+        date: "2025-10-10",
+      },
+      {
+        country: "EU",
+        change: 3.2,
+        direction: "up",
+        reason: "Agricultural protection measures",
+        date: "2025-10-08",
+      },
+      {
+        country: "India",
+        change: 0.5,
+        direction: "down",
+        reason: "Regional trade agreement",
+        date: "2025-10-05",
+      },
+      {
+        country: "Mexico",
+        change: 1.2,
+        direction: "up",
+        reason: "New import restrictions",
+        date: "2025-10-01",
+      },
+      {
+        country: "Japan",
+        change: 0.3,
+        direction: "down",
+        reason: "Tariff reduction phase",
+        date: "2025-09-28",
+      },
     ];
 
     return { tariffChanges: changes };
@@ -679,11 +673,15 @@ export async function getTariffChanges() {
  */
 async function scrapeWTOArticles() {
   try {
-    const response = await fetch("https://www.wto.org/english/news_e/news_e.htm", {
-      headers: {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-      },
-    });
+    const response = await fetch(
+      "https://www.wto.org/english/news_e/news_e.htm",
+      {
+        headers: {
+          "User-Agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+        },
+      }
+    );
 
     if (!response.ok) return null;
 
@@ -691,7 +689,8 @@ async function scrapeWTOArticles() {
 
     // Collect multiple articles
     const articles = [];
-    const articleRegex = /<a\s+href="([^"]*\/english\/news_e\/[^"]+\.htm)"[^>]*>([^<]{15,})<\/a>/gi;
+    const articleRegex =
+      /<a\s+href="([^"]*\/english\/news_e\/[^"]+\.htm)"[^>]*>([^<]{15,})<\/a>/gi;
     let match;
 
     while ((match = articleRegex.exec(html)) && articles.length < 5) {
@@ -699,11 +698,15 @@ async function scrapeWTOArticles() {
       const title = match[2]?.trim();
 
       // Skip generic pages and navigation
-      if (title &&
-          !href.includes('news_e.htm') &&
-          !href.includes('news_e/news') &&
-          title.length > 15) {
-        const url = href.startsWith("http") ? href : `https://www.wto.org${href}`;
+      if (
+        title &&
+        !href.includes("news_e.htm") &&
+        !href.includes("news_e/news") &&
+        title.length > 15
+      ) {
+        const url = href.startsWith("http")
+          ? href
+          : `https://www.wto.org${href}`;
         articles.push({
           title: title,
           url: url,
@@ -712,7 +715,9 @@ async function scrapeWTOArticles() {
     }
 
     // Return random article from collected articles
-    return articles.length > 0 ? articles[Math.floor(Math.random() * articles.length)] : null;
+    return articles.length > 0
+      ? articles[Math.floor(Math.random() * articles.length)]
+      : null;
   } catch (error) {
     console.error("Error scraping WTO:", error);
     return null;
@@ -726,7 +731,8 @@ async function scrapeUSITCArticles() {
   try {
     const response = await fetch("https://www.usitc.gov", {
       headers: {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
       },
     });
 
@@ -736,12 +742,15 @@ async function scrapeUSITCArticles() {
 
     // Collect multiple press release links
     const articles = [];
-    const articleRegex = /<a\s+href="([^"]*\/press_room\/news_release\/\d{4}\/[^"]+\.htm)"[^>]*>([^<]{10,})<\/a>/gi;
+    const articleRegex =
+      /<a\s+href="([^"]*\/press_room\/news_release\/\d{4}\/[^"]+\.htm)"[^>]*>([^<]{10,})<\/a>/gi;
     let match;
 
     while ((match = articleRegex.exec(html)) && articles.length < 5) {
       if (match[1]) {
-        const url = match[1].startsWith("http") ? match[1] : `https://www.usitc.gov${match[1]}`;
+        const url = match[1].startsWith("http")
+          ? match[1]
+          : `https://www.usitc.gov${match[1]}`;
         articles.push({
           title: match[2]?.trim() || "USITC News Release",
           url: url,
@@ -750,7 +759,9 @@ async function scrapeUSITCArticles() {
     }
 
     // Return random article from collected articles
-    return articles.length > 0 ? articles[Math.floor(Math.random() * articles.length)] : null;
+    return articles.length > 0
+      ? articles[Math.floor(Math.random() * articles.length)]
+      : null;
   } catch (error) {
     console.error("Error scraping USITC:", error);
     return null;
@@ -764,7 +775,8 @@ async function scrapeEUTradeArticles() {
   try {
     const response = await fetch("https://ec.europa.eu/trade/news", {
       headers: {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
       },
     });
 
@@ -782,11 +794,15 @@ async function scrapeEUTradeArticles() {
       const title = match[2]?.trim();
 
       // Make sure it's not just the main news page
-      if (title &&
-          !href.endsWith('/news') &&
-          !href.endsWith('/news/') &&
-          href.includes('_')) {
-        const url = href.startsWith("http") ? href : `https://ec.europa.eu${href}`;
+      if (
+        title &&
+        !href.endsWith("/news") &&
+        !href.endsWith("/news/") &&
+        href.includes("_")
+      ) {
+        const url = href.startsWith("http")
+          ? href
+          : `https://ec.europa.eu${href}`;
         articles.push({
           title: title,
           url: url,
@@ -795,7 +811,9 @@ async function scrapeEUTradeArticles() {
     }
 
     // Return random article from collected articles
-    return articles.length > 0 ? articles[Math.floor(Math.random() * articles.length)] : null;
+    return articles.length > 0
+      ? articles[Math.floor(Math.random() * articles.length)]
+      : null;
   } catch (error) {
     console.error("Error scraping EU:", error);
     return null;
@@ -810,7 +828,8 @@ async function scrapeChemicalProductsNews() {
     // Chemical & Engineering News (ACS) - reliable source for chemical industry news
     const response = await fetch("https://cen.acs.org/", {
       headers: {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
       },
     });
 
@@ -820,13 +839,16 @@ async function scrapeChemicalProductsNews() {
 
     // Collect multiple article links
     const articles = [];
-    const articleRegex = /<a\s+href="([^"]*\/articles\/\d+\/[^"]*\.html)"[^>]*>([^<]{10,})<\/a>/gi;
+    const articleRegex =
+      /<a\s+href="([^"]*\/articles\/\d+\/[^"]*\.html)"[^>]*>([^<]{10,})<\/a>/gi;
     let match;
 
     while ((match = articleRegex.exec(html)) && articles.length < 5) {
       if (match[1]) {
         const href = match[1];
-        const url = href.startsWith("http") ? href : `https://cen.acs.org${href}`;
+        const url = href.startsWith("http")
+          ? href
+          : `https://cen.acs.org${href}`;
         articles.push({
           title: match[2]?.trim() || "Chemical & Engineering News Article",
           url: url,
@@ -835,7 +857,9 @@ async function scrapeChemicalProductsNews() {
     }
 
     // Return random article from collected articles
-    return articles.length > 0 ? articles[Math.floor(Math.random() * articles.length)] : null;
+    return articles.length > 0
+      ? articles[Math.floor(Math.random() * articles.length)]
+      : null;
   } catch (error) {
     console.error("Error scraping chemical products news:", error);
     return null;
@@ -850,7 +874,8 @@ async function scrapeAsiaPacificNews() {
     // Asia Times - reliable source for Asia-Pacific trade and economic news
     const response = await fetch("https://asiatimes.com/", {
       headers: {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
       },
     });
 
@@ -860,7 +885,8 @@ async function scrapeAsiaPacificNews() {
 
     // Collect multiple article links
     const articles = [];
-    const articleRegex = /<a\s+href="(https:\/\/asiatimes\.com\/\d{4}\/\d{2}\/[^"]+\/)"[^>]*>([^<]{10,})<\/a>/gi;
+    const articleRegex =
+      /<a\s+href="(https:\/\/asiatimes\.com\/\d{4}\/\d{2}\/[^"]+\/)"[^>]*>([^<]{10,})<\/a>/gi;
     let match;
 
     while ((match = articleRegex.exec(html)) && articles.length < 5) {
@@ -873,7 +899,9 @@ async function scrapeAsiaPacificNews() {
     }
 
     // Return random article from collected articles
-    return articles.length > 0 ? articles[Math.floor(Math.random() * articles.length)] : null;
+    return articles.length > 0
+      ? articles[Math.floor(Math.random() * articles.length)]
+      : null;
   } catch (error) {
     console.error("Error scraping Asia-Pacific news:", error);
     return null;
@@ -928,19 +956,40 @@ export async function getTradeNews() {
       scrapedArticles = [];
     }
 
-    const wtoData = scrapedArticles[0]?.status === "fulfilled" ? scrapedArticles[0].value : null;
-    const usitcData = scrapedArticles[1]?.status === "fulfilled" ? scrapedArticles[1].value : null;
-    const euData = scrapedArticles[2]?.status === "fulfilled" ? scrapedArticles[2].value : null;
-    const chemicalData = scrapedArticles[3]?.status === "fulfilled" ? scrapedArticles[3].value : null;
-    const asiaPacificData = scrapedArticles[4]?.status === "fulfilled" ? scrapedArticles[4].value : null;
+    const wtoData =
+      scrapedArticles[0]?.status === "fulfilled"
+        ? scrapedArticles[0].value
+        : null;
+    const usitcData =
+      scrapedArticles[1]?.status === "fulfilled"
+        ? scrapedArticles[1].value
+        : null;
+    const euData =
+      scrapedArticles[2]?.status === "fulfilled"
+        ? scrapedArticles[2].value
+        : null;
+    const chemicalData =
+      scrapedArticles[3]?.status === "fulfilled"
+        ? scrapedArticles[3].value
+        : null;
+    const asiaPacificData =
+      scrapedArticles[4]?.status === "fulfilled"
+        ? scrapedArticles[4].value
+        : null;
 
     // Log successful scrapes for debugging
     console.log("Scrape results:");
     console.log("  WTO:", wtoData ? `✓ ${wtoData.title}` : "✗ Failed");
     console.log("  USITC:", usitcData ? `✓ ${usitcData.title}` : "✗ Failed");
     console.log("  EU:", euData ? `✓ ${euData.title}` : "✗ Failed");
-    console.log("  Chemical:", chemicalData ? `✓ ${chemicalData.title}` : "✗ Failed");
-    console.log("  Asia-Pacific:", asiaPacificData ? `✓ ${asiaPacificData.title}` : "✗ Failed");
+    console.log(
+      "  Chemical:",
+      chemicalData ? `✓ ${chemicalData.title}` : "✗ Failed"
+    );
+    console.log(
+      "  Asia-Pacific:",
+      asiaPacificData ? `✓ ${asiaPacificData.title}` : "✗ Failed"
+    );
 
     const news = [
       {
@@ -948,50 +997,56 @@ export async function getTradeNews() {
         title: wtoData?.title || "WTO Press Releases",
         source: "wto.org",
         url: wtoData?.url || "https://www.wto.org/news/pressreleases",
-        date: today.toISOString().split('T')[0],
+        date: today.toISOString().split("T")[0],
         impact: "high" as const,
         category: "International",
-        summary: "World Trade Organization publishes latest trade statistics, tariff analysis, and global trade updates.",
+        summary:
+          "World Trade Organization publishes latest trade statistics, tariff analysis, and global trade updates.",
       },
       {
         id: 2,
         title: usitcData?.title || "USITC News Releases",
         source: "usitc.gov",
-        url: usitcData?.url || "https://www.usitc.gov/news-events/news-releases",
-        date: yesterday.toISOString().split('T')[0],
+        url:
+          usitcData?.url || "https://www.usitc.gov/news-events/news-releases",
+        date: yesterday.toISOString().split("T")[0],
         impact: "high" as const,
         category: "USA",
-        summary: "US International Trade Commission updates tariff schedules and announces trade remedy investigations.",
+        summary:
+          "US International Trade Commission updates tariff schedules and announces trade remedy investigations.",
       },
       {
         id: 3,
         title: euData?.title || "EU Trade News",
         source: "ec.europa.eu",
         url: euData?.url || "https://ec.europa.eu/trade/news",
-        date: twoDaysAgo.toISOString().split('T')[0],
+        date: twoDaysAgo.toISOString().split("T")[0],
         impact: "high" as const,
         category: "EU",
-        summary: "European Commission announces trade policy changes, tariff adjustments, and commercial agreements.",
+        summary:
+          "European Commission announces trade policy changes, tariff adjustments, and commercial agreements.",
       },
       {
         id: 4,
         title: chemicalData?.title || "Chemical & Engineering News",
         source: "cen.acs.org",
         url: chemicalData?.url || "https://cen.acs.org/",
-        date: threeDaysAgo.toISOString().split('T')[0],
+        date: threeDaysAgo.toISOString().split("T")[0],
         impact: "medium" as const,
         category: "Chemicals",
-        summary: "Chemical & Engineering News (ACS) covers chemical industry developments, tariff policies, and market trends affecting chemical product manufacturing and trade.",
+        summary:
+          "Chemical & Engineering News (ACS) covers chemical industry developments, tariff policies, and market trends affecting chemical product manufacturing and trade.",
       },
       {
         id: 5,
         title: asiaPacificData?.title || "Asia-Pacific Economic News",
         source: "asiatimes.com",
         url: asiaPacificData?.url || "https://asiatimes.com/",
-        date: fourDaysAgo.toISOString().split('T')[0],
+        date: fourDaysAgo.toISOString().split("T")[0],
         impact: "medium" as const,
         category: "Regional",
-        summary: "Asia Times provides comprehensive coverage of Asia-Pacific trade developments, economic trends, tariff policies, and regional trade agreements affecting the region.",
+        summary:
+          "Asia Times provides comprehensive coverage of Asia-Pacific trade developments, economic trends, tariff policies, and regional trade agreements affecting the region.",
       },
     ];
 
@@ -1007,7 +1062,7 @@ export async function getTradeNews() {
           title: "WTO Press Releases",
           source: "wto.org",
           url: "https://www.wto.org/news/pressreleases",
-          date: new Date().toISOString().split('T')[0],
+          date: new Date().toISOString().split("T")[0],
           impact: "high" as const,
           category: "International",
           summary: "Visit WTO for latest trade news and statistics.",
@@ -1017,7 +1072,7 @@ export async function getTradeNews() {
           title: "USITC News Releases",
           source: "usitc.gov",
           url: "https://www.usitc.gov/news-events/news-releases",
-          date: new Date(Date.now() - 86400000).toISOString().split('T')[0],
+          date: new Date(Date.now() - 86400000).toISOString().split("T")[0],
           impact: "high" as const,
           category: "USA",
           summary: "Visit USITC for tariff and trade investigation updates.",
@@ -1027,12 +1082,12 @@ export async function getTradeNews() {
           title: "EU Trade News",
           source: "ec.europa.eu",
           url: "https://ec.europa.eu/trade/news",
-          date: new Date(Date.now() - 172800000).toISOString().split('T')[0],
+          date: new Date(Date.now() - 172800000).toISOString().split("T")[0],
           impact: "high" as const,
           category: "EU",
           summary: "Visit EU Commission for trade policy updates.",
         },
-      ]
+      ],
     };
   }
 }
@@ -1043,12 +1098,42 @@ export async function getTradeNews() {
 export async function getTariffVolatility() {
   try {
     const volatility = [
-      { sector: "Steel & Metals", volatility: 8.5, trend: "increasing", products: "Steel, Aluminum, Iron ore" },
-      { sector: "Agricultural", volatility: 6.2, trend: "stable", products: "Grains, Dairy, Meat" },
-      { sector: "Technology", volatility: 7.1, trend: "increasing", products: "Semiconductors, Electronics" },
-      { sector: "Chemicals", volatility: 4.8, trend: "decreasing", products: "Pharmaceuticals, Plastics" },
-      { sector: "Textiles", volatility: 5.3, trend: "stable", products: "Clothing, Fabric, Yarn" },
-      { sector: "Automotive", volatility: 6.9, trend: "increasing", products: "Vehicles, Parts, Components" },
+      {
+        sector: "Steel & Metals",
+        volatility: 8.5,
+        trend: "increasing",
+        products: "Steel, Aluminum, Iron ore",
+      },
+      {
+        sector: "Agricultural",
+        volatility: 6.2,
+        trend: "stable",
+        products: "Grains, Dairy, Meat",
+      },
+      {
+        sector: "Technology",
+        volatility: 7.1,
+        trend: "increasing",
+        products: "Semiconductors, Electronics",
+      },
+      {
+        sector: "Chemicals",
+        volatility: 4.8,
+        trend: "decreasing",
+        products: "Pharmaceuticals, Plastics",
+      },
+      {
+        sector: "Textiles",
+        volatility: 5.3,
+        trend: "stable",
+        products: "Clothing, Fabric, Yarn",
+      },
+      {
+        sector: "Automotive",
+        volatility: 6.9,
+        trend: "increasing",
+        products: "Vehicles, Parts, Components",
+      },
     ];
 
     return { volatility };
@@ -1061,11 +1146,20 @@ export async function getTariffVolatility() {
 /**
  * Get bilateral tariff comparison between two countries
  */
-export async function getBilateralComparison(country1: string, country2: string) {
+export async function getBilateralComparison(
+  country1: string,
+  country2: string
+) {
   try {
-    const comparisons: Record<string, Record<string, { rate: number; products: string[] }>> = {
+    const comparisons: Record<
+      string,
+      Record<string, { rate: number; products: string[] }>
+    > = {
       USA: {
-        CHN: { rate: 12.5, products: ["Electronics", "Machinery", "Chemicals"] },
+        CHN: {
+          rate: 12.5,
+          products: ["Electronics", "Machinery", "Chemicals"],
+        },
         MEX: { rate: 2.1, products: ["Automotive", "Chemicals", "Plastics"] },
         DEU: { rate: 3.2, products: ["Machinery", "Vehicles", "Chemicals"] },
       },

@@ -70,3 +70,91 @@ export interface DropdownOption {
   label: string;
   value: string;
 }
+
+export interface ComparisonRequest {
+  destinationCountry: string;
+  sourceCountries: string[];
+  productCode: string;
+  tradeValue: number;
+  netWeight?: number;
+  transactionDate: string;
+  includeFreight?: boolean;
+  freightMode?: string;
+  includeInsurance?: boolean;
+  insuranceRate?: number;
+}
+
+export interface ComparisonResult {
+  country: string;
+  countryName: string;
+  result: TariffCalculationResult;
+  rank: number;
+  percentDiff: number;
+}
+
+export interface ComparisonAnalysis {
+  results: ComparisonResult[];
+  bestIndex: number;
+  worstIndex: number;
+  chartData: Array<{
+    country: string;
+    cost: number;
+    fill: string;
+  }>;
+}
+
+// AI Recommendation Types
+export type ProfileType = 'BUSINESS_OWNER' | 'POLICY_ANALYST' | 'STUDENT';
+
+export interface OptimalPeriod {
+  startDate: string;
+  endDate: string;
+  avgRate: number;
+  currentRate: number;
+  savingsPercent: number;
+  estimatedSavingsAmount: number;
+  confidence: number;
+  reason: string;
+}
+
+export interface AvoidPeriod {
+  startDate: string;
+  endDate: string;
+  avgRate: number;
+  currentRate: number;
+  increasePercent: number;
+  estimatedAdditionalCostAmount: number;
+  confidence: number;
+  reason: string;
+}
+
+export interface AIRecommendationResponse {
+  optimalPeriods: OptimalPeriod[];
+  avoidPeriods: AvoidPeriod[];
+  explanation: string;
+  currentRate: number;
+  potentialSavings: number;
+  potentialSavingsPercent: number;
+  averageConfidence: number;
+  modelVersion: string;
+  hasInsufficientData: boolean;
+}
+
+export interface AIRecommendationRequest {
+  importerCode: string;
+  exporterCode?: string;
+  hs6Code: string;
+}
+
+export interface GeminiSummaryRequest {
+  importerCode: string;
+  exporterCode?: string;
+  hs6Code: string;
+  recommendation: AIRecommendationResponse;
+}
+
+export interface GeminiSummaryResponse {
+  summary: string;
+  profileType: ProfileType;
+  success: boolean;
+}

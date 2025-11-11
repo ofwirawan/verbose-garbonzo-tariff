@@ -26,9 +26,12 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   TariffChartProps,
   DropdownOption,
+  Country,
+  ComparisonAnalysis,
 } from "@/app/dashboard/components/utils/types";
 import {
   LoadingSkeleton,
@@ -39,10 +42,16 @@ import {
   CalculationResults,
   CalculationResultsSkeleton,
 } from "./ResultComponents";
+import { ComparisonResults } from "./comparisonItem/ComparisonResults";
+import { ComparisonCountrySelector } from "./comparisonItem/ComparisonCountrySelector";
+import { AIInsightsTab } from "./aiRecommendation/AIInsightsTab";
 import { useTariffData, useTariffCalculation } from "./utils/hooks";
 import {
   convertCountriesToOptions,
   convertProductsToOptions,
+  calculateBatchTariffs,
+  compareResults,
+  CalculateTariffRequest,
 } from "./utils/service";
 
 interface TariffChartFormProps {
@@ -105,9 +114,9 @@ function TariffChartForm({
       {/* Two-column split layout */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         {/* LEFT COLUMN - Product & Countries */}
-        <div className="bg-white rounded-lg p-4 sm:p-5 md:p-6 border border-gray-200 space-y-5">
-          <div className="pb-3 border-b border-gray-200">
-            <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">
+        <div className="bg-card rounded-lg p-4 sm:p-5 md:p-6 border border-border space-y-5">
+          <div className="pb-3 border-b border-border">
+            <h3 className="text-sm font-semibold text-foreground uppercase tracking-wide">
               Product & Trade Partners
             </h3>
           </div>
@@ -117,7 +126,7 @@ function TariffChartForm({
             <div className="h-6 flex items-center">
               <Label
                 htmlFor="productCode"
-                className="text-sm font-medium text-gray-700"
+                className="text-sm font-medium text-foreground"
               >
                 Product Code
               </Label>
@@ -139,10 +148,10 @@ function TariffChartForm({
             <div className="h-6 flex items-center">
               <Label
                 htmlFor="importingCountry"
-                className="text-sm font-medium text-gray-700 flex items-center gap-2 flex-1"
+                className="text-sm font-medium text-foreground flex items-center gap-2 flex-1"
               >
                 Importing Country
-                <span className="text-xs bg-black text-white px-2 py-0.5 rounded font-medium ml-auto">
+                <span className="text-xs bg-primary text-primary-foreground px-2 py-0.5 rounded font-medium ml-auto">
                   Sets Rate
                 </span>
               </Label>
@@ -163,10 +172,10 @@ function TariffChartForm({
             <div className="h-6 flex items-center">
               <Label
                 htmlFor="exportingCountry"
-                className="text-sm font-medium text-gray-700 flex items-center gap-2 flex-1"
+                className="text-sm font-medium text-foreground flex items-center gap-2 flex-1"
               >
                 Exporting Country
-                <span className="text-xs bg-white text-black border border-gray-300 px-2 py-0.5 rounded font-medium ml-auto">
+                <span className="text-xs bg-background text-foreground border border-border px-2 py-0.5 rounded font-medium ml-auto">
                   Pays Duty
                 </span>
               </Label>
@@ -184,9 +193,9 @@ function TariffChartForm({
         </div>
 
         {/* RIGHT COLUMN - Values & Details */}
-        <div className="bg-white rounded-lg p-4 sm:p-5 md:p-6 border border-gray-200 space-y-5">
-          <div className="pb-3 border-b border-gray-200">
-            <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">
+        <div className="bg-card rounded-lg p-4 sm:p-5 md:p-6 border border-border space-y-5">
+          <div className="pb-3 border-b border-border">
+            <h3 className="text-sm font-semibold text-foreground uppercase tracking-wide">
               Transaction Values
             </h3>
           </div>
@@ -196,13 +205,13 @@ function TariffChartForm({
             <div className="h-6 flex items-center">
               <Label
                 htmlFor="tradeValue"
-                className="text-sm font-medium text-gray-700"
+                className="text-sm font-medium text-foreground"
               >
                 Trade Value
               </Label>
             </div>
             <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
                 $
               </span>
               <Input
@@ -213,7 +222,7 @@ function TariffChartForm({
                 value={tradeValue}
                 onChange={(e) => onTradeValueChange(e.target.value)}
                 placeholder="10000"
-                className="h-11 pl-7 pr-4 border-gray-300"
+                className="h-11 pl-7 pr-4 border-border"
               />
             </div>
           </div>
@@ -223,10 +232,10 @@ function TariffChartForm({
             <div className="h-6 flex items-center">
               <Label
                 htmlFor="netWeight"
-                className="text-sm font-medium text-gray-700 flex items-center gap-2 flex-1"
+                className="text-sm font-medium text-foreground flex items-center gap-2 flex-1"
               >
                 Net Weight
-                <span className="text-xs bg-gray-100 text-gray-600 px-2 rounded font-medium ml-auto">
+                <span className="text-xs bg-muted text-muted-foreground px-2 rounded font-medium ml-auto">
                   Optional
                 </span>
               </Label>
@@ -240,9 +249,9 @@ function TariffChartForm({
                 value={netWeight}
                 onChange={(e) => onNetWeightChange(e.target.value)}
                 placeholder="100"
-                className="h-11 pr-12 border-gray-300"
+                className="h-11 pr-12 border-border"
               />
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
                 kg
               </span>
             </div>
@@ -253,7 +262,7 @@ function TariffChartForm({
             <div className="h-6 flex items-center">
               <Label
                 htmlFor="transactionDate"
-                className="text-sm font-medium text-gray-700"
+                className="text-sm font-medium text-foreground"
               >
                 Transaction Date
               </Label>
@@ -264,8 +273,8 @@ function TariffChartForm({
                   id="transactionDate"
                   variant="outline"
                   className={cn(
-                    "w-full justify-start text-left h-11 px-3 border-gray-300 hover:bg-gray-50 font-normal",
-                    !transactionDate && "text-gray-500"
+                    "w-full justify-start text-left h-11 px-3 border-border hover:border-ring transition-colors font-normal",
+                    !transactionDate && "text-muted-foreground"
                   )}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
@@ -296,7 +305,7 @@ function TariffChartForm({
       </div>
 
       {/* Freight & Insurance Options - Full Width Below */}
-      <div className="bg-gray-50 rounded-lg p-4 sm:p-5 md:p-6 border border-gray-200 space-y-6">
+      <div className="border-2 rounded-lg p-4 sm:p-5 md:p-6 space-y-6">
         {/* Freight Section */}
         <div className="space-y-4">
           <div className="flex items-center gap-3">
@@ -305,11 +314,11 @@ function TariffChartForm({
               id="includeFreight"
               checked={includeFreight}
               onChange={(e) => onIncludeFreightChange(e.target.checked)}
-              className="w-4 h-4 text-gray-900 border-gray-300 rounded focus:ring-gray-900"
+              className="text-primary border-primary rounded focus:ring-2 focus:ring-primary focus:ring-offset-1 cursor-pointer"
             />
             <Label
               htmlFor="includeFreight"
-              className="text-sm font-medium text-gray-700 cursor-pointer"
+              className="text-sm font-medium text-foreground cursor-pointer"
             >
               Include freight cost estimation
             </Label>
@@ -318,13 +327,13 @@ function TariffChartForm({
                 <TooltipTrigger asChild>
                   <button
                     type="button"
-                    className="text-gray-400 hover:text-gray-600 transition-colors"
+                    className="text-muted-foreground hover:text-foreground transition-colors"
                     aria-label="Freight calculation information"
                   >
                     <InfoIcon className="w-4 h-4" />
                   </button>
                 </TooltipTrigger>
-                <TooltipContent className="max-w-xs p-4 bg-black text-white">
+                <TooltipContent className="max-w-xs p-4 bg-foreground text-background">
                   <div className="space-y-2 text-xs">
                     <p className="font-semibold">
                       How freight costs are calculated:
@@ -339,7 +348,7 @@ function TariffChartForm({
                       </li>
                       <li>Costs shown as min-max range with average</li>
                     </ul>
-                    <p className="text-gray-300 italic mt-2">
+                    <p className="text-muted-foreground italic mt-2">
                       Note: Actual shipping costs may vary based on carrier,
                       exact location, package size, and current market rates.
                     </p>
@@ -350,12 +359,12 @@ function TariffChartForm({
           </div>
 
           {includeFreight && (
-            <div className="pt-2 border-t border-gray-300">
-              <Label className="text-xs font-medium text-gray-600 uppercase tracking-wide mb-3 block">
+            <div className="pt-2 border-t border-border">
+              <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3 block">
                 Select Shipping Mode
               </Label>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <label className="flex items-start gap-3 cursor-pointer p-4 rounded-lg border-2 border-gray-300 hover:border-gray-900 transition-all bg-white">
+                <label className="flex items-start gap-3 cursor-pointer p-4 rounded-lg border-2 border-border hover:border-foreground transition-all bg-card">
                   <input
                     type="radio"
                     name="freightMode"
@@ -364,19 +373,19 @@ function TariffChartForm({
                     onChange={(e) =>
                       onFreightModeChange(e.target.value as "air")
                     }
-                    className="w-4 h-4 mt-0.5 text-gray-900 border-gray-300 focus:ring-gray-900"
+                    className="w-4 h-4 mt-0.5 text-primary border-border focus:ring-primary"
                   />
                   <div className="flex-1">
-                    <span className="text-sm font-semibold text-gray-900 block">
+                    <span className="text-sm font-semibold text-foreground block">
                       Air Freight
                     </span>
-                    <p className="text-xs text-gray-500 mt-0.5">
+                    <p className="text-xs text-muted-foreground mt-0.5">
                       Fast delivery
                     </p>
-                    <p className="text-xs text-gray-400">3-7 days</p>
+                    <p className="text-xs text-muted-foreground">3-7 days</p>
                   </div>
                 </label>
-                <label className="flex items-start gap-3 cursor-pointer p-4 rounded-lg border-2 border-gray-300 hover:border-gray-900 transition-all bg-white">
+                <label className="flex items-start gap-3 cursor-pointer p-4 rounded-lg border-2 border-border hover:border-foreground transition-all bg-card">
                   <input
                     type="radio"
                     name="freightMode"
@@ -385,16 +394,16 @@ function TariffChartForm({
                     onChange={(e) =>
                       onFreightModeChange(e.target.value as "ocean")
                     }
-                    className="w-4 h-4 mt-0.5 text-gray-900 border-gray-300 focus:ring-gray-900"
+                    className="w-4 h-4 mt-0.5 text-primary border-border focus:ring-primary"
                   />
                   <div className="flex-1">
-                    <span className="text-sm font-semibold text-gray-900 block">
+                    <span className="text-sm font-semibold text-foreground block">
                       Ocean Freight
                     </span>
-                    <p className="text-xs text-gray-500 mt-0.5">
+                    <p className="text-xs text-muted-foreground mt-0.5">
                       Economical option
                     </p>
-                    <p className="text-xs text-gray-400">20-45 days</p>
+                    <p className="text-xs text-muted-foreground">20-45 days</p>
                   </div>
                 </label>
               </div>
@@ -403,7 +412,7 @@ function TariffChartForm({
         </div>
 
         {/* Divider */}
-        <div className="border-t border-gray-300"></div>
+        <div className="border-t border-border"></div>
 
         {/* Insurance Section */}
         <div className="space-y-4">
@@ -413,11 +422,11 @@ function TariffChartForm({
               id="includeInsurance"
               checked={includeInsurance}
               onChange={(e) => onIncludeInsuranceChange(e.target.checked)}
-              className="w-4 h-4 text-gray-900 border-gray-300 rounded focus:ring-gray-900"
+              className="text-primary rounded focus:ring-2 focus:ring-primary focus:ring-offset-1 cursor-pointer"
             />
             <Label
               htmlFor="includeInsurance"
-              className="text-sm font-medium text-gray-700 cursor-pointer"
+              className="text-sm font-medium text-foreground cursor-pointer"
             >
               Include insurance cost estimation
             </Label>
@@ -426,13 +435,13 @@ function TariffChartForm({
                 <TooltipTrigger asChild>
                   <button
                     type="button"
-                    className="text-gray-400 hover:text-gray-600 transition-colors"
+                    className="text-muted-foreground hover:text-foreground transition-colors"
                     aria-label="Insurance calculation information"
                   >
                     <InfoIcon className="w-4 h-4" />
                   </button>
                 </TooltipTrigger>
-                <TooltipContent className="max-w-xs p-4 bg-black text-white">
+                <TooltipContent className="max-w-xs p-4 bg-foreground text-background">
                   <div className="space-y-2 text-xs">
                     <p className="font-semibold">
                       How insurance costs are calculated:
@@ -451,7 +460,7 @@ function TariffChartForm({
                         insurance
                       </li>
                     </ul>
-                    <p className="text-gray-300 italic mt-2">
+                    <p className="text-muted-foreground italic mt-2">
                       Default rate is 1% if not specified. Enter 0 to exclude
                       insurance.
                     </p>
@@ -462,11 +471,11 @@ function TariffChartForm({
           </div>
 
           {includeInsurance && (
-            <div className="pt-2 border-t border-gray-300">
+            <div className="pt-2 border-t border-border">
               <div className="space-y-2">
                 <Label
                   htmlFor="insuranceRate"
-                  className="text-sm font-medium text-gray-700"
+                  className="text-sm font-medium text-foreground"
                 >
                   Insurance Rate
                 </Label>
@@ -482,8 +491,8 @@ function TariffChartForm({
                         key={option.value}
                         className={`flex items-center gap-3 cursor-pointer p-3 rounded-lg border-2 transition-all ${
                           insuranceRate === option.value
-                            ? "border-gray-900 bg-gray-50"
-                            : "border-gray-300 hover:border-gray-500 bg-white"
+                            ? "border-primary bg-muted"
+                            : "border-border hover:border-foreground bg-card"
                         }`}
                       >
                         <input
@@ -494,13 +503,13 @@ function TariffChartForm({
                           onChange={(e) =>
                             onInsuranceRateChange(e.target.value)
                           }
-                          className="w-4 h-4 text-gray-900 border-gray-300 focus:ring-gray-900"
+                          className="w-4 h-4 text-primary border-border focus:ring-primary"
                         />
                         <div className="flex-1">
-                          <span className="text-sm font-semibold text-gray-900 block">
+                          <span className="text-sm font-semibold text-foreground block">
                             {option.label}
                           </span>
-                          <span className="text-xs text-gray-500">
+                          <span className="text-xs text-muted-foreground">
                             {option.value}%
                           </span>
                         </div>
@@ -511,8 +520,8 @@ function TariffChartForm({
                     <label
                       className={`flex items-center gap-3 cursor-pointer p-3 rounded-lg border-2 transition-all ${
                         insuranceRate === "2.0"
-                          ? "border-gray-900 bg-gray-50"
-                          : "border-gray-300 hover:border-gray-500 bg-white"
+                          ? "border-primary bg-muted"
+                          : "border-border hover:border-foreground bg-card"
                       }`}
                     >
                       <input
@@ -521,18 +530,20 @@ function TariffChartForm({
                         value="2.0"
                         checked={insuranceRate === "2.0"}
                         onChange={(e) => onInsuranceRateChange(e.target.value)}
-                        className="w-4 h-4 text-gray-900 border-gray-300 focus:ring-gray-900"
+                        className="w-4 h-4 text-primary border-border focus:ring-primary"
                       />
                       <div className="flex-1">
-                        <span className="text-sm font-semibold text-gray-900 block">
+                        <span className="text-sm font-semibold text-foreground block">
                           High
                         </span>
-                        <span className="text-xs text-gray-500">2.0%</span>
+                        <span className="text-xs text-muted-foreground">
+                          2.0%
+                        </span>
                       </div>
                     </label>
 
                     {/* Custom Amount */}
-                    <label className="flex items-start gap-3 cursor-pointer p-3 rounded-lg border-2 border-gray-300 hover:border-gray-500 transition-all bg-white">
+                    <label className="flex items-start gap-3 cursor-pointer p-3 rounded-lg border-2 border-border hover:border-foreground transition-all bg-card">
                       <input
                         type="radio"
                         name="insuranceRate"
@@ -545,10 +556,10 @@ function TariffChartForm({
                         onChange={() => {
                           // Just switch to custom mode, keep existing value
                         }}
-                        className="w-4 h-4 text-gray-900 border-gray-300 focus:ring-gray-900 mt-3"
+                        className="w-4 h-4 text-primary border-border focus:ring-primary mt-3"
                       />
                       <div className="flex-1">
-                        <span className="text-sm font-semibold text-gray-900 block">
+                        <span className="text-sm font-semibold text-foreground block">
                           Custom Amount
                         </span>
                         <div className="mt-2 flex items-center gap-2">
@@ -569,15 +580,17 @@ function TariffChartForm({
                               onInsuranceRateChange(e.target.value)
                             }
                             placeholder="Enter custom rate"
-                            className="h-9 text-xs border-gray-300 flex-1"
+                            className="h-9 text-xs border-border flex-1"
                           />
-                          <span className="text-sm text-gray-500">%</span>
+                          <span className="text-sm text-muted-foreground">
+                            %
+                          </span>
                         </div>
                       </div>
                     </label>
                   </div>
                 </div>
-                <p className="text-xs text-gray-500 mt-3">
+                <p className="text-xs text-muted-foreground mt-3">
                   Insurance is calculated as a percentage of trade value and is
                   applicable to CIF valuations only. CFR and FOB valuations will
                   exclude insurance.
@@ -593,7 +606,7 @@ function TariffChartForm({
         <Button
           onClick={onCalculate}
           disabled={!importingCountry || !tradeValue || isCalculating}
-          className="w-full sm:w-auto bg-black text-white hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed h-10 px-6 font-semibold text-sm uppercase tracking-wide transition-all duration-200"
+          className="w-full sm:w-auto bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed h-10 px-6 font-semibold text-sm uppercase tracking-wide transition-all duration-200"
         >
           {isCalculating ? (
             <span className="flex items-center gap-3">
@@ -609,14 +622,29 @@ function TariffChartForm({
   );
 }
 
+interface TariffChartExtendedProps extends TariffChartProps {
+  countries?: Country[];
+  products?: DropdownOption[];
+}
+
 export default function TariffChart({
   initialImportingCountry = "",
   initialExportingCountry = "",
   initialProductCode = "",
   chartTitle = "Tariff Data Analysis",
-}: TariffChartProps) {
+  countries: propsCountries = [],
+  products: propsProducts = [],
+}: TariffChartExtendedProps) {
   // Data fetching hook
-  const { countries, product, isLoading } = useTariffData();
+  const {
+    countries: hookCountries,
+    product,
+    isLoading: hookIsLoading,
+  } = useTariffData();
+
+  // Use passed countries/products if provided, otherwise use hook data
+  const countries = propsCountries.length > 0 ? propsCountries : hookCountries;
+  const isLoading = propsCountries.length === 0 ? hookIsLoading : false;
 
   // Calculation hook
   const {
@@ -645,9 +673,24 @@ export default function TariffChart({
   const [includeInsurance, setIncludeInsurance] = useState(false);
   const [insuranceRate, setInsuranceRate] = useState("1.0");
 
+  // Comparison state
+  const [comparisonCountries, setComparisonCountries] = useState<string[]>([]);
+  const [comparisonResults, setComparisonResults] =
+    useState<ComparisonAnalysis | null>(null);
+  const [isComparingLoading, setIsComparingLoading] = useState(false);
+  const [comparisonError, setComparisonError] = useState<string | null>(null);
+
+  // Tab state
+  const [activeTab, setActiveTab] = useState<
+    "result" | "comparison" | "ai-insights"
+  >("result");
+
   // Derived state
   const countryOptions = convertCountriesToOptions(countries);
-  const productOptions = convertProductsToOptions(product);
+  const productOptions =
+    propsProducts.length > 0
+      ? propsProducts
+      : convertProductsToOptions(product);
 
   const handleCalculate = () => {
     calculateTariff({
@@ -664,13 +707,70 @@ export default function TariffChart({
     });
   };
 
+  const handleAddCountryToComparison = async (countryCode: string) => {
+    if (!calculationResult) return;
+
+    const newComparisonCountries = [...comparisonCountries, countryCode];
+    setComparisonCountries(newComparisonCountries);
+    setIsComparingLoading(true);
+    setComparisonError(null);
+
+    try {
+      // Build batch requests including original + new countries
+      const allSourceCountries = [exportingCountry, ...newComparisonCountries];
+      const requests: CalculateTariffRequest[] = allSourceCountries.map(
+        (sourceCountry) => ({
+          importerCode: importingCountry,
+          exporterCode: sourceCountry,
+          hs6: productCode,
+          tradeOriginal: parseFloat(tradeValue),
+          netWeight: netWeight ? parseFloat(netWeight) : null,
+          transactionDate: transactionDate.toISOString().split("T")[0],
+          includeFreight: includeFreight,
+          freightMode: freightMode,
+          includeInsurance: includeInsurance,
+          insuranceRate: parseFloat(insuranceRate) || 1.0,
+        })
+      );
+
+      const results = await calculateBatchTariffs(requests);
+
+      // Create country name mapping
+      const countryNameMap: Record<string, string> = {};
+      allSourceCountries.forEach((code) => {
+        const country = countries.find((c) => c.country_code === code);
+        countryNameMap[code] = country?.name || code;
+      });
+
+      // Compare results
+      const analysis = compareResults(results, countryNameMap);
+      setComparisonResults(analysis);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      setComparisonError(errorMessage);
+    } finally {
+      setIsComparingLoading(false);
+    }
+  };
+
+  const handleRemoveComparisonCountry = (countryCode: string) => {
+    const newComparisonCountries = comparisonCountries.filter(
+      (c) => c !== countryCode
+    );
+    setComparisonCountries(newComparisonCountries);
+
+    if (newComparisonCountries.length === 0) {
+      setComparisonResults(null);
+    }
+  };
+
   return (
     <Card className="@container/card shadow-sm">
-      <CardHeader className="border-b border-gray-200 pb-6 pt-6">
-        <CardTitle className="text-xl font-bold text-gray-900">
+      <CardHeader className="border-b border-border pb-6 pt-6">
+        <CardTitle className="text-xl font-bold text-foreground">
           {chartTitle}
         </CardTitle>
-        <CardDescription className="text-sm mt-2 text-gray-600">
+        <CardDescription className="text-sm mt-2 text-muted-foreground">
           Enter transaction details and shipping options to calculate import
           duties and freight costs
         </CardDescription>
@@ -717,16 +817,107 @@ export default function TariffChart({
             {isCalculating && <CalculationResultsSkeleton />}
 
             {!isCalculating && calculationResult && (
-              <div className="mt-6 pt-6 border-t border-gray-200">
-                <CalculationResults
-                  result={calculationResult}
-                  suspensionNote={suspensionNote}
-                />
+              <div className="mt-6 pt-6 border-t border-border">
+                <Tabs
+                  value={activeTab}
+                  onValueChange={(value) =>
+                    setActiveTab(
+                      value as "result" | "comparison" | "ai-insights"
+                    )
+                  }
+                >
+                  <TabsList className="mb-6">
+                    <TabsTrigger value="result">Result</TabsTrigger>
+                    <TabsTrigger
+                      value="comparison"
+                      disabled={comparisonCountries.length === 0}
+                    >
+                      Comparison{" "}
+                      {comparisonCountries.length > 0 &&
+                        `(${comparisonCountries.length})`}
+                    </TabsTrigger>
+                    <TabsTrigger value="ai-insights">AI Insights</TabsTrigger>
+                  </TabsList>
+
+                  {/* Result Tab */}
+                  <TabsContent value="result" className="space-y-6">
+                    <CalculationResults
+                      result={calculationResult}
+                      suspensionNote={suspensionNote}
+                    />
+
+                    {/* Comparison Setup Section */}
+                    <div className="mt-6 pt-6 border-t border-border">
+                      <ComparisonCountrySelector
+                        comparisonCountries={comparisonCountries}
+                        countryOptions={countryOptions}
+                        countries={countries}
+                        exportingCountry={exportingCountry}
+                        comparisonError={comparisonError}
+                        onAddCountry={handleAddCountryToComparison}
+                        onRemoveCountry={handleRemoveComparisonCountry}
+                        onViewResults={() => setActiveTab("comparison")}
+                        showButton={true}
+                      />
+                    </div>
+                  </TabsContent>
+
+                  {/* Comparison Tab */}
+                  <TabsContent value="comparison" className="space-y-6">
+                    {/* Country Selector in Comparison Tab */}
+                    <div>
+                      <ComparisonCountrySelector
+                        comparisonCountries={comparisonCountries}
+                        countryOptions={countryOptions}
+                        countries={countries}
+                        exportingCountry={exportingCountry}
+                        comparisonError={comparisonError}
+                        onAddCountry={handleAddCountryToComparison}
+                        onRemoveCountry={handleRemoveComparisonCountry}
+                        showButton={false}
+                      />
+                    </div>
+
+                    {/* Comparison Results */}
+                    {comparisonResults && !isComparingLoading && (
+                      <ComparisonResults
+                        comparison={comparisonResults}
+                        destinationCountry={
+                          countries.find(
+                            (c) => c.country_code === importingCountry
+                          )?.name || importingCountry
+                        }
+                        productCode={productCode}
+                      />
+                    )}
+
+                    {isComparingLoading && (
+                      <div className="space-y-4">
+                        <div className="h-64 bg-muted rounded-lg animate-pulse" />
+                      </div>
+                    )}
+
+                    {!comparisonResults && !isComparingLoading && (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <p>Select countries to compare tariff costs</p>
+                      </div>
+                    )}
+                  </TabsContent>
+
+                  {/* AI Insights Tab */}
+                  <TabsContent value="ai-insights" className="space-y-6">
+                    <AIInsightsTab
+                      importerCode={importingCountry}
+                      exporterCode={exportingCountry}
+                      hs6Code={productCode}
+                    />
+                  </TabsContent>
+                </Tabs>
               </div>
             )}
 
             {!isCalculating && calculationResult?.warning && (
-              <div className="mt-6 pt-6 border-t border-gray-200">
+              <div className="mt-6 pt-6 border-t border-border">
                 <div className="bg-amber-50 border border-amber-200 rounded-lg p-6">
                   <div className="flex items-start gap-3">
                     <svg
@@ -756,11 +947,11 @@ export default function TariffChart({
             )}
 
             {hasError && (
-              <div className="mt-6 pt-6 border-t border-gray-200">
-                <div className="bg-gray-50 border border-gray-300 rounded-lg p-6">
+              <div className="mt-6 pt-6 border-t border-border">
+                <div className="bg-muted border border-border rounded-lg p-6">
                   <div className="flex items-start gap-3">
                     <svg
-                      className="h-5 w-5 text-gray-600 flex-shrink-0 mt-0.5"
+                      className="h-5 w-5 text-muted-foreground flex-shrink-0 mt-0.5"
                       fill="none"
                       viewBox="0 0 24 24"
                       stroke="currentColor"
@@ -773,12 +964,12 @@ export default function TariffChart({
                       />
                     </svg>
                     <div className="flex-1">
-                      <h3 className="text-sm font-semibold text-gray-900 mb-1">
+                      <h3 className="text-sm font-semibold text-foreground mb-1">
                         {errorMessage?.includes("Net weight cannot be used")
                           ? "Net Weight Not Applicable"
                           : "No Tariff Data Available"}
                       </h3>
-                      <p className="text-sm text-gray-700 leading-relaxed">
+                      <p className="text-sm text-muted-foreground leading-relaxed">
                         {errorMessage ||
                           "No tariff data available for the specified transaction. This data may not be available in the WITS database for this combination."}
                       </p>

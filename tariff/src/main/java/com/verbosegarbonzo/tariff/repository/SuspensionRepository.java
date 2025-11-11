@@ -3,13 +3,12 @@ package com.verbosegarbonzo.tariff.repository;
 import com.verbosegarbonzo.tariff.model.Country;
 import com.verbosegarbonzo.tariff.model.Product;
 import com.verbosegarbonzo.tariff.model.Suspension;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.domain.*;
+import org.springframework.data.jpa.repository.*;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 
 public interface SuspensionRepository extends JpaRepository<Suspension, Integer> {
@@ -37,4 +36,19 @@ public interface SuspensionRepository extends JpaRepository<Suspension, Integer>
     // Search by importer code or product code
     Page<Suspension> findByImporterCountryCodeContainingIgnoreCaseOrProductHs6CodeContainingIgnoreCase(
             String importerCode, String productCode, Pageable pageable);
+
+    // Time-series queries for AI model training
+    @Query("""
+        SELECT s FROM Suspension s
+        WHERE s.importer.countryCode = :importerCode
+          AND s.product.hs6Code = :hs6Code
+          AND s.validFrom >= :startDate
+          AND s.validFrom <= :endDate
+        ORDER BY s.validFrom ASC
+        """)
+    List<Suspension> findHistoricalSuspensions(
+        @Param("importerCode") String importerCode,
+        @Param("hs6Code") String hs6Code,
+        @Param("startDate") LocalDate startDate,
+        @Param("endDate") LocalDate endDate);
 }

@@ -64,7 +64,7 @@ class AdminCountryControllerTest {
         userInfoRepository.deleteAll();
 
         userInfoService
-                .addUser(new UserInfo(null, "admin", "admin@email.com", "goodpassword", "ROLE_ADMIN"));
+                .addUser(new UserInfo(null, "admin", "admin@email.com", "goodpassword", "ROLE_ADMIN", null));
 
         // Authenticate using the actual AuthController and get JWT token
         adminJwtToken = jwtService.token("admin@email.com");
