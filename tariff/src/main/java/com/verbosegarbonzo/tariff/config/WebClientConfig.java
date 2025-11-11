@@ -35,6 +35,7 @@ public class WebClientConfig {
                 );
     }
 
+    @SuppressWarnings("null")
     @Bean
     public WebClient metadataWebClient() {
         return WebClient.builder()
@@ -44,6 +45,7 @@ public class WebClientConfig {
                 .build();
     }
 
+    @SuppressWarnings("null")
     @Bean
     public WebClient tariffWebClient() {
         return WebClient.builder()

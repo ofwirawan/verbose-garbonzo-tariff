@@ -97,7 +97,7 @@ public class FreightService {
 
         try {
             // Build query URL
-            String url = UriComponentsBuilder.fromHttpUrl(freightApiUrl)
+            String url = UriComponentsBuilder.fromUriString(freightApiUrl)
                     .queryParam("loadtype", "boxes")
                     .queryParam("weight", weight)
                     .queryParam("width", 50)

@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.verbosegarbonzo.tariff.model.Transaction;
@@ -44,7 +46,7 @@ public class HistoryController {
     public ResponseEntity<?> getAllHistory(@AuthenticationPrincipal UserDetails userDetails) {
         try {
             if (userDetails == null) {
-                return ResponseEntity.status(401).body(Map.of("message", "Authentication required"));
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Authentication required"));
             }
             
             // Get user by email (username in JWT)
@@ -52,7 +54,7 @@ public class HistoryController {
             Optional<UserInfo> userInfoOpt = userInfoRepository.findByEmail(email);
             
             if (userInfoOpt.isEmpty()) {
-                return ResponseEntity.status(404).body(Map.of("message", "User not found"));
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message", "User not found"));
             }
             
             UserInfo userInfo = userInfoOpt.get();
@@ -60,7 +62,7 @@ public class HistoryController {
             
             return ResponseEntity.ok(transactions);
         } catch (Exception e) {
-            return ResponseEntity.status(500).body(Map.of("message", "Error fetching history: " + e.getMessage()));
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Error fetching history: " + e.getMessage());
         }
     }
 
@@ -69,7 +71,7 @@ public class HistoryController {
                                       @AuthenticationPrincipal UserDetails userDetails) {
         try {
             if (userDetails == null) {
-                return ResponseEntity.status(401).body(Map.of("message", "Authentication required"));
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Authentication required"));
             }
             
             // Validate required fields
@@ -94,7 +96,7 @@ public class HistoryController {
             Optional<UserInfo> userInfoOpt = userInfoRepository.findByEmail(email);
             
             if (userInfoOpt.isEmpty()) {
-                return ResponseEntity.status(404).body(Map.of("message", "User not found"));
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message", "User not found"));
             }
             
             UserInfo userInfo = userInfoOpt.get();
@@ -143,10 +145,10 @@ public class HistoryController {
             
             // Save transaction
             Transaction savedTransaction = transactionRepository.save(transaction);
-            
-            return ResponseEntity.status(201).body(savedTransaction);
+            return ResponseEntity.status(HttpStatus.CREATED).body(savedTransaction);
+
         } catch (Exception e) {
-            return ResponseEntity.status(500).body(Map.of("message", "Error saving transaction: " + e.getMessage()));
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Error saving transaction: " + e.getMessage());
         }
     }
 
@@ -155,7 +157,7 @@ public class HistoryController {
                                          @AuthenticationPrincipal UserDetails userDetails) {
         try {
             if (userDetails == null) {
-                return ResponseEntity.status(401).body(Map.of("message", "Authentication required"));
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Authentication required"));
             }
             
             // Get user by email (username in JWT)
@@ -163,7 +165,7 @@ public class HistoryController {
             Optional<UserInfo> userInfoOpt = userInfoRepository.findByEmail(email);
             
             if (userInfoOpt.isEmpty()) {
-                return ResponseEntity.status(404).body(Map.of("message", "User not found"));
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message", "User not found"));
             }
             
             UserInfo userInfo = userInfoOpt.get();
@@ -172,15 +174,15 @@ public class HistoryController {
             Transaction transaction = transactionRepository.findByUidAndTid(userInfo, id);
             
             if (transaction == null) {
-                return ResponseEntity.status(404).body(Map.of("message", "Transaction not found or access denied"));
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message", "Transaction not found or access denied"));
             }
             
             // Delete transaction
             transactionRepository.delete(transaction);
             
-            return ResponseEntity.ok(Map.of("message", "Transaction deleted successfully", "deletedTransaction", transaction));
+            return ResponseEntity.status(HttpStatus.NO_CONTENT).body(Map.of("message", "Transaction deleted successfully", "deletedTransaction", transaction));
         } catch (Exception e) {
-            return ResponseEntity.status(500).body(Map.of("message", "Error deleting transaction: " + e.getMessage()));
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Error deleting transaction: " + e.getMessage());
         }
     }
 }

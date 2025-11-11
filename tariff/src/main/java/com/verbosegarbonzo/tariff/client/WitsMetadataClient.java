@@ -133,43 +133,49 @@ public class WitsMetadataClient {
                 if (ev == XMLStreamConstants.END_ELEMENT) {
                     String end = r.getLocalName();
 
-                    if (end.equalsIgnoreCase("country")) {
-                        if (iso3 != null) {
-                            iso3 = iso3.trim().toUpperCase();
-                            if (iso3.length() > 3) {
-                                iso3 = iso3.substring(0, 3);
-                            }
-
-                            String fixed = NAME_FIXUPS.get(iso3);
-                            if (fixed != null) {
-                                name = fixed;
-                            }
-                        }
-
-                        if (name != null) {
-                            name = name.trim();
-                        }
-                        if (numeric != null) {
-                            numeric = numeric.trim();
-                        }
-
-                        if (iso3 != null && iso3.length() == 3 && name != null && !name.isBlank()) {
-                            batch.add(new String[]{iso3, name,
-                                (numeric == null || numeric.isBlank()) ? null : numeric});
-                            queued++;
-
-                            if (batch.size() >= BATCH) {
-                                flushCountryBatch(batch);
-                                batch.clear();
-                                System.out.println("Upserted countries so far: " + queued);
-                            }
-                        } else if (seen <= 5) {
-                            System.out.println("DEBUG missing country fields at #" + seen
-                                    + " -> iso3=" + iso3 + ", name=" + name + ", numeric=" + numeric);
-                        }
-
+                    if (!end.equalsIgnoreCase("country")) {
                         iso3 = name = numeric = null;
+                        continue;
                     }
+
+                    if (iso3 == null) {
+                        name = numeric = null;
+                        continue;
+                    }
+
+                    iso3 = iso3.trim().toUpperCase();
+                    if (iso3.length() > 3) {
+                        iso3 = iso3.substring(0, 3);
+                    }
+
+                    String fixed = NAME_FIXUPS.get(iso3);
+                    if (fixed != null) {
+                        name = fixed;
+                    }
+
+                    if (name != null) {
+                        name = name.trim();
+                    }
+                    if (numeric != null) {
+                        numeric = numeric.trim();
+                    }
+
+                    if (iso3 != null && iso3.length() == 3 && name != null && !name.isBlank()) {
+                        batch.add(new String[]{iso3, name,
+                            (numeric == null || numeric.isBlank()) ? null : numeric});
+                        queued++;
+
+                        if (batch.size() >= BATCH) {
+                            flushCountryBatch(batch);
+                            batch.clear();
+                            System.out.println("Upserted countries so far: " + queued);
+                        }
+                    } else if (seen <= 5) {
+                        System.out.println("DEBUG missing country fields at #" + seen
+                                + " -> iso3=" + iso3 + ", name=" + name + ", numeric=" + numeric);
+                    }
+
+                    iso3 = name = numeric = null;
                 }
             }
 
@@ -233,7 +239,6 @@ public class WitsMetadataClient {
             System.out.println("Deleted existing rows: " + deleted);
         } catch (Exception e) {
             System.err.println("Warning: failed to delete previous rows; continuing ingest");
-            e.printStackTrace();
         }
 
         final String url = props.getBaseUrl() + props.getMetadata().getProduct() + "/ALL";
