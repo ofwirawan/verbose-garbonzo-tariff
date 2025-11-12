@@ -4,6 +4,7 @@ import com.verbosegarbonzo.tariff.model.Country;
 import com.verbosegarbonzo.tariff.repository.CountryRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.web.client.RestTemplate;
 
 import java.util.Optional;
 
@@ -13,12 +14,14 @@ import static org.mockito.Mockito.*;
 class FreightServiceTest {
 
     private CountryRepository countryRepository;
+    private RestTemplate restTemplate;
     private FreightService freightService;
 
     @BeforeEach
     void setup() {
         countryRepository = mock(CountryRepository.class);
-        freightService = new FreightService(countryRepository);
+        restTemplate = mock(RestTemplate.class);
+        freightService = new FreightService(countryRepository, restTemplate);
     }
 
     @Test
