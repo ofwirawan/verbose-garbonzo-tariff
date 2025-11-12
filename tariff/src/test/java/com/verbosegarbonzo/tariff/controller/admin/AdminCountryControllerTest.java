@@ -10,6 +10,7 @@ import java.util.UUID;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -20,6 +21,9 @@ import org.springframework.test.context.TestPropertySource;
 
 import com.verbosegarbonzo.tariff.model.UserInfo;
 import com.verbosegarbonzo.tariff.repository.CountryRepository;
+import com.verbosegarbonzo.tariff.repository.MeasureRepository;
+import com.verbosegarbonzo.tariff.repository.PreferenceRepository;
+import com.verbosegarbonzo.tariff.repository.SuspensionRepository;
 import com.verbosegarbonzo.tariff.repository.TransactionRepository;
 import com.verbosegarbonzo.tariff.repository.UserInfoRepository;
 import com.verbosegarbonzo.tariff.service.JwtService;
@@ -43,6 +47,15 @@ class AdminCountryControllerTest {
     private CountryRepository countryRepository;
 
     @Autowired
+    private MeasureRepository measureRepository;
+
+    @Autowired
+    private PreferenceRepository preferenceRepository;
+
+    @Autowired
+    private SuspensionRepository suspensionRepository;
+
+    @Autowired
     private UserInfoRepository userInfoRepository;
 
     @Autowired
@@ -62,15 +75,30 @@ class AdminCountryControllerTest {
         RestAssured.enableLoggingOfRequestAndResponseIfValidationFails();
 
         // Clean database before each test
-        transactionRepository.deleteAll();
-        countryRepository.deleteAll();
+        // Delete dependent entities first (those with foreign keys) before deleting referenced entities
+        suspensionRepository.deleteAll();  // FK to Country
+        transactionRepository.deleteAll();  // FK to UserInfo
+        measureRepository.deleteAll();      // FK to Country, Product
+        preferenceRepository.deleteAll();   // FK to Country (importer/exporter), Product
         userInfoRepository.deleteAll();
+        countryRepository.deleteAll();
 
         userInfoService
                 .addUser(new UserInfo(null, "admin", "admin@email.com", "goodpassword", "ROLE_ADMIN", null));
 
         // Authenticate using the actual AuthController and get JWT token
         adminJwtToken = jwtService.token("admin@email.com");
+    }
+
+    @AfterEach
+    void tearDown() {
+        // Delete dependent entities first before deleting referenced entities
+        suspensionRepository.deleteAll();  // FK to Country
+        transactionRepository.deleteAll();  // FK to UserInfo
+        measureRepository.deleteAll();      // FK to Country, Product
+        preferenceRepository.deleteAll();   // FK to Country (importer/exporter), Product
+        userInfoRepository.deleteAll();
+        countryRepository.deleteAll();
     }
 
     @Test
