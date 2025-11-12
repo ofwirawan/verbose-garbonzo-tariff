@@ -25,17 +25,17 @@ docker run -d \
 -e SPRING_DATASOURCE_HIKARI_CONNECTION_TIMEOUT="30000" \
 -e SPRING_DATASOURCE_HIKARI_LEAK_DETECTION_THRESHOLD="30000" \
 -e FREIGHT_API_URL="https://ship.freightos.com/api/shippingCalculator" \
--e APP_ML_MODEL_ENABLED="true" \
+-e APP_ML_MODEL_ENABLED="false" \
 -e APP_ML_MODEL_PATH="./models" \
 -e APP_ML_MODEL_VERSION="1.0.0" \
 -e APP_ML_MODEL_MIN_TRAINING_SAMPLES="3" \
 -e APP_ML_TRAINING_SCHEDULE_CRON="0 0 2 ? * SUN" \
 -e GEMINI_API_KEY="AIzaSyDjiefcKrk7ApgWRiN0QHBgsP9ySJ9V60k" \
 -e GEMINI_API_URL="https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent" \
--e APP_CACHE_FREIGHT_REFRESH_CRON="0 0 2 * * *" \
--e APP_CACHE_COUNTRY_REFRESH_CRON="0 0 3 * * 0" \
--e APP_CACHE_PRODUCT_REFRESH_CRON="0 15 3 * * 0" \
--e SPRING_DATASOURCE_URL="jdbc:postgresql://aws-1-ap-southeast-1.pooler.supabase.com:5432/postgres" \
--e SPRING_DATASOURCE_USERNAME="postgres.qgatqtfvpvlocnuwqexh" \
--e SPRING_DATASOURCE_PASSWORD="lbuDszWatpwv6P0Z" \
+-e APP_CACHE_FREIGHT_REFRESH_CRON="-" \
+-e APP_CACHE_COUNTRY_REFRESH_CRON="-" \
+-e APP_CACHE_PRODUCT_REFRESH_CRON="-" \
+-e SPRING_DATASOURCE_URL="jdbc:postgresql://aws-1-ap-southeast-1.pooler.supabase.com:6543/postgres" \
+-e SPRING_DATASOURCE_USERNAME="postgres.ukzasqjrvbotwkvcjveo" \
+-e SPRING_DATASOURCE_PASSWORD="xSkKiktT104DpY0x" \
 verboze-garbonzo-tariff

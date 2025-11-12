@@ -40,7 +40,7 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http, final JwtAuthFilter jwtAuthFilter, final UserDetailsService userDetailsService) throws Exception {
         http
                 // Enable CORS with default configuration (uses CORSConfig.java)
-                .cors(Customizer.withDefaults())
+                .cors(cors-> cors.configurationSource(corsConfigurer()))
 
                 // Disable CSRF (not needed for stateless JWT)
                 .csrf(csrf -> csrf.disable())
@@ -56,6 +56,7 @@ public class SecurityConfig {
                         .permitAll()
 
                         // Tariff calculation endpoints (public) - must be before other /api/** rules
+                        // Role-based endpoints
                         .requestMatchers("/api/calculate").permitAll()
                         .requestMatchers("/api/calculate/**").permitAll()
                         .requestMatchers("/auth/user/**").hasRole("USER")
