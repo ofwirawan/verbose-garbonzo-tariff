@@ -19,11 +19,12 @@ public class FreightService {
     private String freightApiUrl; // e.g. https://ship.freightos.com/api/shippingCalculator
 
     private final CountryRepository countryRepository;
-    private final RestTemplate restTemplate = new RestTemplate();
+    private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    public FreightService(CountryRepository countryRepository) {
+    public FreightService(CountryRepository countryRepository, RestTemplate restTemplate) {
         this.countryRepository = countryRepository;
+        this.restTemplate = restTemplate;
     }
 
     /**
