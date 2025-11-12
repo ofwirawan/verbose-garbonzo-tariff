@@ -1,12 +1,19 @@
+"use client"
+
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { useState } from "react"
 
 export function SignupForm({
   className,
   ...props
 }: React.ComponentProps<"form">) {
+  const [password, setPassword] = useState("")
+  const [confirmPassword, setConfirmPassword] = useState("")
+  const passwordsMatch = password === confirmPassword && confirmPassword !== ""
+
   return (
     <form className={cn("flex flex-col gap-6", className)} {...props}>
       <div className="flex flex-col items-center gap-2 text-center">
@@ -22,7 +29,31 @@ export function SignupForm({
         </div>
         <div className="grid gap-3">
           <Label htmlFor="password">Password</Label>
-          <Input id="password" name="password" type="password" required />
+          <Input
+            id="password"
+            name="password"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+        </div>
+        <div className="grid gap-3">
+          <Label htmlFor="confirmPassword">Confirm Password</Label>
+          <Input
+            id="confirmPassword"
+            name="confirmPassword"
+            type="password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            required
+          />
+          {confirmPassword && !passwordsMatch && (
+            <p className="text-sm text-red-500">Passwords do not match</p>
+          )}
+          {passwordsMatch && (
+            <p className="text-sm text-green-500">Passwords match</p>
+          )}
         </div>
         <Button type="submit" className="w-full">
           Sign up
