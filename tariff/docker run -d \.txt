@@ -1,0 +1,41 @@
+docker run -d \
+-p 8080:8080 \
+--name verboze-garbonzo-tariff \
+--restart always \
+--memory="768m" \
+  -e JAVA_TOOL_OPTIONS="-Xmx512m" \
+  \
+-e WITS_BASE_URL=”https://wits.worldbank.org/API/V1” \
+-e WITS_METADATA_COUNTRY=”/wits/datasource/trn/country” \
+-e WITS_METADATA_PRODUCT=”/wits/datasource/trn/product” \
+-e WITS_TARIFF_BASE_URL=”https://wits.worldbank.org/API/V1/SDMX/V21" \
+-e WITS_TARIFF_DATASET=”datasource/TRN” \
+-e JWT_SECRET="41f8e03d297e87c915bd1c8af0a0ab74627929ebaccffc05a4617bffa0c5aea0” \
+-e SPRING_JPA_HIBERNATE_DDL_AUTO="update" \
+-e SPRING_JPA_PROPERTIES_HIBERNATE_JDBC_BATCH_SIZE="500" \
+-e SPRING_JPA_PROPERTIES_HIBERNATE_ORDER_INSERTS="true" \
+-e SPRING_JPA_PROPERTIES_HIBERNATE_ORDER_UPDATES="true" \
+-e SPRING_JPA_PROPERTIES_HIBERNATE_BATCH_VERSIONED_DATA="true" \
+-e SPRING_JPA_DATABASE_PLATFORM="org.hibernate.dialect.PostgreSQLDialect" \
+-e SPRING_JPA_SHOW_SQL="true" \
+-e SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE="1" \
+-e SPRING_DATASOURCE_HIKARI_MINIMUM_IDLE="0" \
+-e SPRING_DATASOURCE_HIKARI_IDLE_TIMEOUT="300000" \
+-e SPRING_DATASOURCE_HIKARI_MAX_LIFETIME="600000" \
+-e SPRING_DATASOURCE_HIKARI_CONNECTION_TIMEOUT="30000" \
+-e SPRING_DATASOURCE_HIKARI_LEAK_DETECTION_THRESHOLD="30000" \
+-e FREIGHT_API_URL="https://ship.freightos.com/api/shippingCalculator" \
+-e APP_ML_MODEL_ENABLED="true" \
+-e APP_ML_MODEL_PATH="./models" \
+-e APP_ML_MODEL_VERSION="1.0.0" \
+-e APP_ML_MODEL_MIN_TRAINING_SAMPLES="3" \
+-e APP_ML_TRAINING_SCHEDULE_CRON="0 0 2 ? * SUN" \
+-e GEMINI_API_KEY="AIzaSyDjiefcKrk7ApgWRiN0QHBgsP9ySJ9V60k" \
+-e GEMINI_API_URL="https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent" \
+-e APP_CACHE_FREIGHT_REFRESH_CRON="0 0 2 * * *" \
+-e APP_CACHE_COUNTRY_REFRESH_CRON="0 0 3 * * 0" \
+-e APP_CACHE_PRODUCT_REFRESH_CRON="0 15 3 * * 0" \
+-e SPRING_DATASOURCE_URL="jdbc:postgresql://aws-1-ap-southeast-1.pooler.supabase.com:5432/postgres" \
+-e SPRING_DATASOURCE_USERNAME="postgres.qgatqtfvpvlocnuwqexh" \
+-e SPRING_DATASOURCE_PASSWORD="lbuDszWatpwv6P0Z" \
+verboze-garbonzo-tariff
