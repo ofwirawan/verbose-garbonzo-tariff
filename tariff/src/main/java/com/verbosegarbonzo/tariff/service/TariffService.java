@@ -1,14 +1,33 @@
 package com.verbosegarbonzo.tariff.service;
 
+import java.io.InputStream;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+import javax.xml.stream.XMLInputFactory;
+import javax.xml.stream.XMLStreamConstants;
+import javax.xml.stream.XMLStreamReader;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.core.io.buffer.DataBuffer;
+import org.springframework.core.io.buffer.DataBufferUtils;
+import org.springframework.stereotype.Service;
+import org.springframework.web.reactive.function.client.WebClient;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-
-import com.verbosegarbonzo.tariff.exception.RateNotFoundException;
-import com.verbosegarbonzo.tariff.exception.WeightRequiredException;
+import com.verbosegarbonzo.tariff.config.WitsProperties;
 import com.verbosegarbonzo.tariff.exception.InvalidRateException;
 import com.verbosegarbonzo.tariff.exception.InvalidRequestException;
-
-import com.verbosegarbonzo.tariff.config.WitsProperties;
+import com.verbosegarbonzo.tariff.exception.RateNotFoundException;
+import com.verbosegarbonzo.tariff.exception.WeightRequiredException;
 import com.verbosegarbonzo.tariff.model.CalculateRequest;
 import com.verbosegarbonzo.tariff.model.CalculateResponse;
 import com.verbosegarbonzo.tariff.model.Country;
@@ -22,27 +41,9 @@ import com.verbosegarbonzo.tariff.repository.PreferenceRepository;
 import com.verbosegarbonzo.tariff.repository.ProductRepository;
 import com.verbosegarbonzo.tariff.repository.SuspensionRepository;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.core.io.buffer.DataBuffer;
-import org.springframework.core.io.buffer.DataBufferUtils;
-import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.client.WebClient;
+import jakarta.validation.Valid;
+import lombok.NonNull;
 import reactor.core.publisher.Flux;
-
-import javax.xml.stream.XMLInputFactory;
-import javax.xml.stream.XMLStreamConstants;
-import javax.xml.stream.XMLStreamReader;
-import java.io.InputStream;
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.Optional;
-import java.util.UUID;
-import java.util.List;
-
 
 @Service
 public class TariffService {
@@ -76,10 +77,10 @@ public class TariffService {
     }
 
     private BigDecimal scaleMoney(BigDecimal value) {
-    return (value == null) ? BigDecimal.ZERO : value.setScale(2, RoundingMode.HALF_UP);
-}
+        return (value == null) ? BigDecimal.ZERO : value.setScale(2, RoundingMode.HALF_UP);
+    }
 
-    public CalculateResponse calculate(CalculateRequest req) {
+    public CalculateResponse calculate(@Valid @NonNull CalculateRequest req) {
         List<String> errors = new ArrayList<>();
 
         if (req.getHs6() == null || req.getHs6().isBlank()) {
@@ -132,7 +133,8 @@ public class TariffService {
             // Check if user provided net weight but preference only has ad-valorem rate
             List<String> warnings = new ArrayList<>();
             if (req.getNetWeight() != null) {
-                warnings.add("Net weight was provided but not used in calculation. The preferential tariff for this product only has an ad-valorem (percentage) rate. Specific duty rates (per kg) are not available.");
+                warnings.add(
+                        "Net weight was provided but not used in calculation. The preferential tariff for this product only has an ad-valorem (percentage) rate. Specific duty rates (per kg) are not available.");
                 log.info("Net weight provided but preference only has ad-valorem rate");
             }
 
@@ -160,10 +162,12 @@ public class TariffService {
             // Check if user provided net weight but suspension only has ad-valorem rate
             List<String> warnings = new ArrayList<>();
             if (req.getNetWeight() != null) {
-                warnings.add("Net weight was provided but not used in calculation. The suspension tariff for this product only has an ad-valorem (percentage) rate. Specific duty rates (per kg) are not available.");
+                warnings.add(
+                        "Net weight was provided but not used in calculation. The suspension tariff for this product only has an ad-valorem (percentage) rate. Specific duty rates (per kg) are not available.");
                 log.info("Net weight provided but suspension only has ad-valorem rate");
             }
 
+            
             // tariff suspended
             return buildResponse(req, TEMP_USER_ID, duty, null, null, null, rateSusp, warnings);
         }
@@ -209,7 +213,8 @@ public class TariffService {
             // Check if user provided net weight but measure only has ad-valorem rate
             List<String> warnings = new ArrayList<>();
             if (req.getNetWeight() != null && rateSpecific == null) {
-                warnings.add("Net weight was provided but not used in calculation. The MFN tariff for this product only has an ad-valorem (percentage) rate. Specific duty rates (per kg) are not available.");
+                warnings.add(
+                        "Net weight was provided but not used in calculation. The MFN tariff for this product only has an ad-valorem (percentage) rate. Specific duty rates (per kg) are not available.");
                 log.info("Net weight provided but measure only has ad-valorem rate");
             }
 
@@ -257,7 +262,8 @@ public class TariffService {
                 // Check if user provided net weight - WITS only provides ad-valorem rates
                 List<String> warnings = new ArrayList<>();
                 if (req.getNetWeight() != null) {
-                    warnings.add("Net weight was provided but not used in calculation. The WITS API only provides ad-valorem (percentage) rates. Specific duty rates (per kg) are not available.");
+                    warnings.add(
+                            "Net weight was provided but not used in calculation. The WITS API only provides ad-valorem (percentage) rates. Specific duty rates (per kg) are not available.");
                     log.info("Net weight provided but WITS only provides ad-valorem rates");
                 }
 
@@ -280,7 +286,8 @@ public class TariffService {
             // Check if user provided net weight - WITS only provides ad-valorem rates
             List<String> warnings = new ArrayList<>();
             if (req.getNetWeight() != null) {
-                warnings.add("Net weight was provided but not used in calculation. The WITS API only provides ad-valorem (percentage) rates. Specific duty rates (per kg) are not available.");
+                warnings.add(
+                        "Net weight was provided but not used in calculation. The WITS API only provides ad-valorem (percentage) rates. Specific duty rates (per kg) are not available.");
                 log.info("Net weight provided but WITS only provides ad-valorem rates");
             }
 
@@ -384,24 +391,32 @@ public class TariffService {
             while (reader.hasNext()) {
                 int event = reader.next();
 
-                if (event == XMLStreamConstants.START_ELEMENT) {
-                    String tagName = reader.getLocalName();
-
-                    if ("Obs".equalsIgnoreCase(tagName) || "Observation".equalsIgnoreCase(tagName)) {
-                        for (int i = 0; i < reader.getAttributeCount(); i++) {
-                            String attrName = reader.getAttributeLocalName(i);
-                            String attrValue = reader.getAttributeValue(i);
-
-                            if ("OBS_VALUE".equalsIgnoreCase(attrName) || "value".equalsIgnoreCase(attrName)) {
-                                try {
-                                    return new BigDecimal(attrValue);
-                                } catch (NumberFormatException e) {
-                                    log.warn("Invalid rate value in WITS XML: {}", attrValue);
-                                }
-                            }
-                        }
-                    }
+                if (event != XMLStreamConstants.START_ELEMENT) {
+                    continue;
                 }
+
+                String tagName = reader.getLocalName();
+                if (!tagName.equalsIgnoreCase("Obs") && !tagName.equalsIgnoreCase("Observation")) {
+                    continue;
+                }
+
+                for (int i = 0; i < reader.getAttributeCount(); i++) {
+                    String attrName = reader.getAttributeLocalName(i);
+                    String attrValue = reader.getAttributeValue(i);
+
+                    if (!"OBS_VALUE".equalsIgnoreCase(attrName) && !"value".equalsIgnoreCase(attrName)) {
+                        continue;
+                    }
+
+
+                    try {
+                        return new BigDecimal(attrValue);
+                    } catch (NumberFormatException e) {
+                        log.warn("Invalid rate value in WITS XML: {}", attrValue);
+                    }
+                    
+                }
+
             }
 
             return null;
@@ -478,16 +493,7 @@ public class TariffService {
 
         long tid = System.currentTimeMillis();
 
-        CalculateResponse resp = new CalculateResponse();
-        resp.setTransactionId(tid);
-        resp.setUid(uid);
-        resp.setHs6(req.getHs6());
-        resp.setImporterCode(req.getImporterCode());
-        resp.setExporterCode(req.getExporterCode());
-        resp.setTransactionDate(req.getTransactionDate());
-        resp.setTradeOriginal(scaleMoney(req.getTradeOriginal()));
-        resp.setNetWeight(req.getNetWeight());
-        resp.setTradeFinal(scaleMoney(req.getTradeOriginal().add(duty)));
+        CalculateResponse resp = new CalculateResponse(tid, req);
 
         // Set default valuation basis (CIF, CFR, FOB)
         Country importer = countryRepository.findById(req.getImporterCode()).orElse(null);
@@ -511,7 +517,8 @@ public class TariffService {
         try {
             // === FREIGHT CALCULATION ===
             // Calculate freight if requested, regardless of valuation basis
-            // For CIF/CFR, it's included in duty; for FOB, it's shown for informational purposes
+            // For CIF/CFR, it's included in duty; for FOB, it's shown for informational
+            // purposes
             if (req.isIncludeFreight()) {
                 BigDecimal weight = (req.getNetWeight() != null && req.getNetWeight().compareTo(BigDecimal.ZERO) > 0)
                         ? req.getNetWeight()
@@ -535,41 +542,41 @@ public class TariffService {
 
                 } catch (Exception ex) {
                     log.warn("Freight calculation failed: {}", ex.getMessage());
-                    warnings.add("Freight cost could not be fetched (" + ex.getMessage() + "). " + "Calculation continues without freight adjustment.");
+                    warnings.add("Freight cost could not be fetched (" + ex.getMessage() + "). "
+                            + "Calculation continues without freight adjustment.");
                     valuationApplied = "FOB";
                 }
             }
 
             // === INSURANCE CALCULATION ===
-            if (basisDeclared.equals("CIF")) {
-                // CIF requires insurance
-                insuranceCost = req.getTradeOriginal()
-                        .multiply(insuranceRate)
-                        .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
-                totalCost = totalCost.add(insuranceCost);
-
-            } else if (basisDeclared.equals("CFR")) {
-                // CFR includes freight but excludes insurance
-                if (req.isIncludeInsurance()) {
-                    warnings.add("Insurance selected by user, but CFR valuation excludes insurance.");
-                }
-                insuranceCost = BigDecimal.ZERO;
-
-            } else if (basisDeclared.equals("FOB")) {
-                // FOB excludes both freight and insurance
-                if (req.isIncludeInsurance()) {
-                    warnings.add("Insurance selected by user, but FOB valuation excludes insurance.");
-                }
-                insuranceCost = BigDecimal.ZERO;
-
-            } else {
-                // fallback for unrecognized valuation basis
-                if (req.isIncludeInsurance()) {
+            switch (basisDeclared) {
+                case "CIF":
                     insuranceCost = req.getTradeOriginal()
                             .multiply(insuranceRate)
                             .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
                     totalCost = totalCost.add(insuranceCost);
-                }
+                    break;
+                case "CFR":
+                    // CFR includes freight but excludes insurance
+                    if (req.isIncludeInsurance()) {
+                        warnings.add("Insurance selected by user, but CFR valuation excludes insurance.");
+                    }
+                    insuranceCost = BigDecimal.ZERO;
+                    break;
+                case "FOB":
+                    // FOB excludes both freight and insurance
+                    if (req.isIncludeInsurance()) {
+                        warnings.add("Insurance selected by user, but FOB valuation excludes insurance.");
+                    }
+                    insuranceCost = BigDecimal.ZERO;
+                    break;
+                default:
+                    if (req.isIncludeInsurance()) {
+                        insuranceCost = req.getTradeOriginal()
+                                .multiply(insuranceRate)
+                                .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+                        totalCost = totalCost.add(insuranceCost);
+                    }
             }
 
         } catch (Exception e) {
@@ -594,6 +601,7 @@ public class TariffService {
 
         resp.setAppliedRate(rateNode);
         resp.setWarnings(warnings);
+        resp.setTradeFinal(totalCost);
         return resp;
     }
 }

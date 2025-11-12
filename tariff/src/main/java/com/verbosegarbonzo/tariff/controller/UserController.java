@@ -1,6 +1,6 @@
 package com.verbosegarbonzo.tariff.controller;
 
-import com.verbosegarbonzo.tariff.controller.TariffController.ErrorPayload;
+import com.verbosegarbonzo.tariff.exception.GlobalExceptionHandler.ErrorPayload;
 import com.verbosegarbonzo.tariff.model.AuthRequest;
 import com.verbosegarbonzo.tariff.model.UserInfo;
 import com.verbosegarbonzo.tariff.repository.UserInfoRepository;
@@ -14,7 +14,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
 
 import lombok.RequiredArgsConstructor;
 

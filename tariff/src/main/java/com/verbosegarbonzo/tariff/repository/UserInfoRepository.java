@@ -12,7 +12,7 @@ import java.util.UUID;
 
 
 public interface UserInfoRepository extends JpaRepository<UserInfo, UUID> {
-    Optional<UserInfo> findByEmail(String email); // Use 'email' if that is the correct field for login
+    public Optional<UserInfo> findByEmail(String email); // Use 'email' if that is the correct field for login
 
     // Search by name or email (uid is UUID and cannot use IgnoreCase)
     Page<UserInfo> findByNameContainingIgnoreCaseOrEmailContainingIgnoreCase(

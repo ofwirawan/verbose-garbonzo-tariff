@@ -8,11 +8,12 @@ import com.verbosegarbonzo.tariff.repository.MeasureRepository;
 import com.verbosegarbonzo.tariff.repository.CountryRepository;
 import com.verbosegarbonzo.tariff.repository.ProductRepository;
 import jakarta.validation.Valid;
+import lombok.NonNull;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.http.HttpStatus;
 
@@ -113,7 +114,7 @@ public class AdminMeasureController {
 
     // Get a Measure by ID
     @GetMapping("/{id}")
-    public ResponseEntity<?> getMeasureById(@PathVariable Integer id) {
+    public ResponseEntity<?> getMeasureById(@PathVariable @NonNull Integer id) {
         return measureRepository.findById(id)
                 .map(this::toDTO)
                 .map(ResponseEntity::ok)
@@ -123,7 +124,7 @@ public class AdminMeasureController {
 
     // Update Measure by ID
     @PutMapping("/{id}")
-    public ResponseEntity<?> updateMeasure(@PathVariable Integer id, @Valid @RequestBody MeasureDTO dto) {
+    public ResponseEntity<?> updateMeasure(@PathVariable @NonNull Integer id, @Valid @RequestBody MeasureDTO dto) {
         validateRequiredFields(dto.getImporterCode(), dto.getProductCode(), dto.getValidFrom());
         Optional<Measure> optionalMeasure = measureRepository.findById(id);
         if (optionalMeasure.isPresent()) {
@@ -163,7 +164,7 @@ public class AdminMeasureController {
 
     // Delete Measure by ID
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteMeasureById(@PathVariable Integer id) {
+    public ResponseEntity<?> deleteMeasureById(@PathVariable @NonNull Integer id) {
         if (measureRepository.existsById(id)) {
             measureRepository.deleteById(id);
             return ResponseEntity.noContent().build();
@@ -174,9 +175,9 @@ public class AdminMeasureController {
     // Get Measure by importerCode, productCode, and validFrom
     @GetMapping("/search")
     public ResponseEntity<?> searchMeasure(
-            @RequestParam String importerCode,
-            @RequestParam String productCode,
-            @RequestParam LocalDate validFrom) {
+            @RequestParam @NonNull String importerCode,
+            @RequestParam @NonNull String productCode,
+            @RequestParam @NonNull LocalDate validFrom) {
         validateRequiredFields(importerCode, productCode, validFrom);
         Country importer = countryRepository.findById(importerCode)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
@@ -188,27 +189,5 @@ public class AdminMeasureController {
                 .map(ResponseEntity::ok)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "Measure not found for given parameters"));
-    }
-
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ErrorPayload> handleValidationException(MethodArgumentNotValidException ex) {
-        String errorMsg = ex.getBindingResult().getFieldErrors().stream()
-                .map(e -> e.getField() + ": " + e.getDefaultMessage())
-                .findFirst()
-                .orElse("Invalid request");
-        return ResponseEntity.badRequest().body(new ErrorPayload("BAD_REQUEST", errorMsg));
-    }
-
-    @ExceptionHandler(ResponseStatusException.class)
-    public ResponseEntity<ErrorPayload> handleResponseStatusException(ResponseStatusException ex) {
-        String errorType = ex.getStatusCode() == HttpStatus.CONFLICT ? "CONFLICT_ERROR"
-                : ex.getStatusCode() == HttpStatus.NOT_FOUND ? "NOT_FOUND_ERROR"
-                        : ex.getStatusCode() == HttpStatus.BAD_REQUEST ? "BAD_REQUEST"
-                                : "REQUEST_ERROR";
-        return ResponseEntity.status(ex.getStatusCode())
-                .body(new ErrorPayload(errorType, ex.getReason()));
-    }
-
-    record ErrorPayload(String error, String message) {
     }
 }

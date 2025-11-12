@@ -5,8 +5,13 @@ import com.verbosegarbonzo.tariff.repository.UserInfoRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.context.TestPropertySource;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -14,17 +19,27 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+@SpringBootTest
+@TestPropertySource(properties = {
+        "spring.datasource.url=jdbc:h2:mem:testdb",
+        "spring.h2.console.enabled=false",
+        "spring.jpa.hibernate.ddl-auto=create-drop",
+        "logging.level.org.springframework.security=WARN",
+        "logging.level.csd.security=WARN",
+        "freight.api.url=https://ship.freightos.com/api/shippingCalculator"
+})
 class UserInfoServiceTest {
-
+    @Mock
     private UserInfoRepository userInfoRepository;
-    private PasswordEncoder passwordEncoder;
+
+    @Mock
+    private PasswordEncoder encoder;
+
     private UserInfoService service;
 
     @BeforeEach
     void setup() {
-        userInfoRepository = mock(UserInfoRepository.class);
-        passwordEncoder = mock(PasswordEncoder.class);
-        service = new UserInfoService(userInfoRepository, passwordEncoder);
+        service = new UserInfoService(userInfoRepository, encoder);
     }
 
     @Test
@@ -54,7 +69,7 @@ class UserInfoServiceTest {
         u.setEmail("b@example.com");
         u.setPassword("plain");
 
-        when(passwordEncoder.encode("plain")).thenReturn("ENCODED");
+        when(encoder.encode("plain")).thenReturn("ENCODED");
 
         String msg = service.addUser(u);
         assertEquals("User added successfully!", msg);

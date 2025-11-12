@@ -1,20 +1,20 @@
 package com.verbosegarbonzo.tariff.service;
 
-import com.verbosegarbonzo.tariff.model.UserInfo;
+import java.util.Collection;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.stream.Collectors;
+import com.verbosegarbonzo.tariff.model.UserInfo;
 
 public class UserInfoDetails implements UserDetails {
 
-    private String username; // Changed from 'name' to 'email' for clarity
-    private String password;
-    private List<GrantedAuthority> authorities;
+    private final String username; // Changed from 'name' to 'email' for clarity
+    private final String password;
+    private final List<GrantedAuthority> authorities;
 
     public UserInfoDetails(UserInfo userInfo) {
         this.username = userInfo.getEmail(); // Use email as username
@@ -24,6 +24,7 @@ public class UserInfoDetails implements UserDetails {
                 .map(SimpleGrantedAuthority::new)
                 .collect(Collectors.toList());
     }
+    
     @Override
     public String getPassword() {
         return password;

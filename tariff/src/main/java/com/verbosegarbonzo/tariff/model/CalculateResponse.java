@@ -1,6 +1,7 @@
 package com.verbosegarbonzo.tariff.model;
 
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.math.BigDecimal;
@@ -11,7 +12,7 @@ import java.util.List;
 import com.fasterxml.jackson.databind.JsonNode;
 
 //Output Data Transfer Object for tariff calculation
-
+@NoArgsConstructor
 @Getter
 @Setter
 public class CalculateResponse {
@@ -40,4 +41,16 @@ public class CalculateResponse {
     private String valuationBasisApplied;
 
     private BigDecimal totalLandedCost; // tradeFinal + freight + insurance
+
+    public CalculateResponse(Long tid, CalculateRequest req) {
+        this.setTransactionId(tid);
+        this.setUid(uid);
+        this.setHs6(req.getHs6());
+        this.setImporterCode(req.getImporterCode());
+        this.setExporterCode(req.getExporterCode());
+        this.setTransactionDate(req.getTransactionDate());
+    }
+
+
+
 }
