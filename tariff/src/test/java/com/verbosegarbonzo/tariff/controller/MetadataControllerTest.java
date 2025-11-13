@@ -1,28 +1,28 @@
 package com.verbosegarbonzo.tariff.controller;
 
-import com.verbosegarbonzo.tariff.client.WitsMetadataClient;
-import com.verbosegarbonzo.tariff.model.UserInfo;
-import com.verbosegarbonzo.tariff.repository.CountryRepository;
-import com.verbosegarbonzo.tariff.repository.ProductRepository;
-import com.verbosegarbonzo.tariff.repository.UserInfoRepository;
-import com.verbosegarbonzo.tariff.service.JwtService;
-
+import static org.hamcrest.Matchers.equalTo;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
-import io.restassured.RestAssured;
-import io.restassured.http.ContentType;
-import static io.restassured.RestAssured.given;
-
-import static org.hamcrest.Matchers.*;
-import static org.mockito.Mockito.*;
-
+import com.verbosegarbonzo.tariff.client.WitsMetadataClient;
+import com.verbosegarbonzo.tariff.model.UserInfo;
+import com.verbosegarbonzo.tariff.repository.CountryRepository;
+import com.verbosegarbonzo.tariff.repository.ProductRepository;
 import com.verbosegarbonzo.tariff.repository.TransactionRepository;
+import com.verbosegarbonzo.tariff.repository.UserInfoRepository;
+import com.verbosegarbonzo.tariff.service.JwtService;
+
+import io.restassured.RestAssured;
+import static io.restassured.RestAssured.given;
+import io.restassured.http.ContentType;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @TestPropertySource(properties = {
@@ -59,6 +59,7 @@ public class MetadataControllerTest {
 
     private String adminJwtToken;
     @BeforeEach
+
     void setUp() {
         RestAssured.port = port;
         RestAssured.enableLoggingOfRequestAndResponseIfValidationFails();

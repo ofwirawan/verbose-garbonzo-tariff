@@ -1,9 +1,10 @@
 package com.verbosegarbonzo.tariff.service;
 
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.CacheManager;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Service for managing cache lifecycle and scheduled cache refresh.
@@ -88,13 +89,12 @@ public class CacheRefreshService {
     public void clearAllCaches() {
         try {
             if (cacheManager != null) {
-                cacheManager.getCacheNames().forEach(cacheName -> {
-                    var cache = cacheManager.getCache(cacheName);
-                    if (cache != null) {
-                        cache.clear();
+                for (String cacheName : cacheManager.getCacheNames()) {
+                    if (cacheName != null) {
+                        clearCache(cacheName);
                         log.info("✓ Cache cleared: {}", cacheName);
                     }
-                });
+                }
             }
             log.info("✓ All caches cleared successfully.");
         } catch (Exception e) {

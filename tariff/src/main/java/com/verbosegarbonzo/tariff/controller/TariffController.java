@@ -1,15 +1,18 @@
 package com.verbosegarbonzo.tariff.controller;
 
+import java.util.List;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
 import com.verbosegarbonzo.tariff.model.CalculateRequest;
 import com.verbosegarbonzo.tariff.model.CalculateResponse;
 import com.verbosegarbonzo.tariff.service.TariffService;
 
 import jakarta.validation.Valid;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
-import java.net.URI;
-import java.util.List;
 
 @RestController
 @RequestMapping("/api")
@@ -27,8 +30,7 @@ public class TariffController {
 
         //return 201 Created with Location header
         return ResponseEntity
-                .created(URI.create("/api/transactions/" + resp.getTransactionId()))
-                .body(resp);
+                .ok().body(resp);
     }
 
     @PostMapping("/calculate/batch")
@@ -37,7 +39,7 @@ public class TariffController {
                 .map(service::calculate)
                 .collect(java.util.stream.Collectors.toList());
 
-        return ResponseEntity.ok(responses);
+        return ResponseEntity.ok().body(responses);
     }
 
 }
