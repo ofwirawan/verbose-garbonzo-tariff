@@ -2,48 +2,104 @@
 import { PrismaClient } from "@prisma/client";
 import { supabase } from "@/lib/supabaseClient";
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "";
+
+interface Country {
+  countryCode: string;
+  name: string;
+  numericCode: string;
+  city?: string;
+  valuationBasis?: string;
+}
+
+interface Product {
+  hs6Code: string;
+  description?: string;
+}
+
 export async function fetchUser() {
   // Use shared Supabase client instance
   const { data: user } = await supabase.auth.getUser();
   return { user };
 }
 
+/**
+ * Fetch all countries from Java backend API
+ * Calls GET /api/metadata/countries endpoint
+ */
 export async function fetchCountries() {
-  const prisma = new PrismaClient();
-  let countries = [];
   try {
-    countries = await prisma.country.findMany({
-      select: { country_code: true, name: true, numeric_code: true, city: true },
-      orderBy: { name: "asc" },
+    const response = await fetch(`${API_BASE_URL}/api/metadata/countries`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      cache: "force-cache",
+      next: { revalidate: 3600 }, // Cache for 1 hour
     });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch countries: ${response.statusText}`);
+    }
+
+    const countries: Country[] = await response.json();
+
+    // Transform API response to match frontend expectations
+    const transformedCountries = countries.map((country) => ({
+      country_code: country.countryCode,
+      name: country.name,
+      numeric_code: country.numericCode,
+      city: country.city || null,
+      valuation_basis: country.valuationBasis || null,
+    }));
+
+    return { countries: transformedCountries };
   } catch (error) {
     throw new Error(
       error instanceof Error
         ? error.message
-        : "Unknown error fetching countries"
+        : "Unknown error fetching countries from API"
     );
-  } finally {
-    await prisma.$disconnect();
   }
-  return { countries };
 }
 
+/**
+ * Fetch all products from Java backend API
+ * Calls GET /api/metadata/products endpoint
+ */
 export async function fetchProduct() {
-  const prisma = new PrismaClient();
-  let products = [];
   try {
-    products = await prisma.product.findMany({
-      select: { hs6code: true, description: true },
-      orderBy: { description: "asc" },
+    const response = await fetch(`${API_BASE_URL}/api/metadata/products`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      cache: "force-cache",
+      next: { revalidate: 3600 }, // Cache for 1 hour
     });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch products: ${response.statusText}`);
+    }
+
+    const products: Product[] = await response.json();
+
+    // Transform API response to match frontend expectations
+    const transformedProducts = products.map((product) => ({
+      hs6code: product.hs6Code,
+      description: product.description || null,
+    }));
+
+    return { products: transformedProducts };
   } catch (error) {
     throw new Error(
-      error instanceof Error ? error.message : "Unknown error fetching products"
+      error instanceof Error
+        ? error.message
+        : "Unknown error fetching products from API"
     );
-  } finally {
-    await prisma.$disconnect();
   }
-  return { products };
 }
 
 export async function fetchSuspensionsByProduct(

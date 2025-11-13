@@ -58,9 +58,12 @@ public class SecurityConfig {
                         .permitAll()
 
                         // Tariff calculation endpoints (public) - must be before other /api/** rules
-                        // Role-based endpoints
                         .requestMatchers("/api/calculate").permitAll()
                         .requestMatchers("/api/calculate/**").permitAll()
+
+                        // Metadata endpoints (countries and products) - public for frontend dropdown population
+                        .requestMatchers("/api/metadata/countries").permitAll()
+                        .requestMatchers("/api/metadata/products").permitAll()
                         .requestMatchers("/auth/user/**").hasRole("USER")
                         .requestMatchers("/auth/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
