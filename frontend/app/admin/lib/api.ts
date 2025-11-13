@@ -1,9 +1,8 @@
 "use client";
 
 // Admin API Service Layer
-const API_BASE_URL = `${
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"
-}/api/admin`;
+// Use Next.js API proxy instead of direct backend calls to avoid mixed content errors
+const API_BASE_URL = `/api/admin`;
 
 // Helper function to get auth headers - retrieve token from cookies
 function getAuthHeaders(): HeadersInit {
