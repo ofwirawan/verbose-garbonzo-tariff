@@ -44,24 +44,6 @@ export default function HistoryPage() {
     fetchHistory()
   }, [])
 
-  // Delete multiple history records using authenticated requests
-  const handleDelete = async (ids: number[]) => {
-    try {
-      await Promise.all(
-        ids.map((id) =>
-          authenticatedFetch(`/api/history/${id}`, {
-            method: "DELETE",
-          })
-        )
-      )
-
-      // Remove deleted records from state
-      setHistory((prev) => prev.filter((item) => !ids.includes(item.id)))
-    } catch (err) {
-      console.error("Delete history error:", err)
-    }
-  }
-
   return (
     <SidebarProvider
       style={
@@ -77,11 +59,10 @@ export default function HistoryPage() {
         <div className="flex flex-1 flex-col overflow-hidden">
           <div className="@container/main flex-1 overflow-auto">
             <div className="flex flex-col gap-6 p-4 md:p-6">
-              <h1 className="text-2xl font-bold">Trade History</h1>
               {history.length === 0 ? (
                 <p>No history yet. Make a calculation first!</p>
               ) : (
-                <HistoryTable data={history} onDelete={handleDelete} />
+                <HistoryTable data={history} />
               )}
             </div>
           </div>
