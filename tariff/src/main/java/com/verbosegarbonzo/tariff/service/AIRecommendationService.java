@@ -63,11 +63,9 @@ public class AIRecommendationService {
             List<OptimalPeriod> optimalPeriods = findOptimalPeriods(forecasts, currentRate, importerCode, hs6Code);
             List<AvoidPeriod> avoidPeriods = findAvoidPeriods(forecasts, currentRate, importerCode, hs6Code);
 
-            // Calculate potential savings
-            BigDecimal potentialSavings = calculatePotentialSavings(optimalPeriods, currentRate);
-            BigDecimal potentialSavingsPercent = currentRate.compareTo(BigDecimal.ZERO) > 0
-                ? potentialSavings.divide(currentRate, 2, RoundingMode.HALF_UP).multiply(new BigDecimal("100"))
-                : BigDecimal.ZERO;
+            // Calculate potential savings - get both the percentage and dollar amount
+            BigDecimal potentialSavingsPercent = calculatePotentialSavingsPercent(optimalPeriods);
+            BigDecimal potentialSavings = calculatePotentialSavingsAmount(optimalPeriods);
 
             // Calculate average confidence
             int avgConfidence = (int) forecasts.stream()
@@ -211,9 +209,9 @@ public class AIRecommendationService {
     }
 
     /**
-     * Calculate potential savings based on optimal periods.
+     * Calculate potential savings percentage based on optimal periods.
      */
-    private BigDecimal calculatePotentialSavings(List<OptimalPeriod> optimalPeriods, BigDecimal currentRate) {
+    private BigDecimal calculatePotentialSavingsPercent(List<OptimalPeriod> optimalPeriods) {
         if (optimalPeriods.isEmpty()) {
             return BigDecimal.ZERO;
         }
@@ -223,10 +221,25 @@ public class AIRecommendationService {
             return BigDecimal.ZERO;
         }
 
-        // Calculate savings on $10,000 trade value
-        return bestPeriod.getSavingsPercent()
-            .multiply(new BigDecimal("10000"))
-            .divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP);
+        // Return the savings percentage from the best period
+        return bestPeriod.getSavingsPercent();
+    }
+
+    /**
+     * Calculate potential savings dollar amount based on optimal periods.
+     */
+    private BigDecimal calculatePotentialSavingsAmount(List<OptimalPeriod> optimalPeriods) {
+        if (optimalPeriods.isEmpty()) {
+            return BigDecimal.ZERO;
+        }
+
+        OptimalPeriod bestPeriod = optimalPeriods.get(0);
+        if (bestPeriod.getEstimatedSavingsAmount() == null) {
+            return BigDecimal.ZERO;
+        }
+
+        // Return the estimated savings amount from the best period
+        return bestPeriod.getEstimatedSavingsAmount();
     }
 
     /**

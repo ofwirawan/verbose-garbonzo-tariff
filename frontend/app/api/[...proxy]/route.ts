@@ -86,6 +86,12 @@ export async function GET(
     const endpoint = resolvedParams.proxy.join('/');
     const backendUrl = getBackendUrl(endpoint);
 
+    // Preserve query parameters from the original request
+    const queryString = request.nextUrl.search;
+    const fullUrl = queryString ? `${backendUrl}${queryString}` : backendUrl;
+
+    console.log(`[API Proxy] GET ${endpoint} -> ${fullUrl}`);
+
     const authHeader = request.headers.get('Authorization');
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
@@ -93,12 +99,15 @@ export async function GET(
 
     if (authHeader) {
       headers['Authorization'] = authHeader;
+      console.log(`[API Proxy] Forwarding Authorization header`);
     }
 
-    const response = await fetch(backendUrl, {
+    const response = await fetch(fullUrl, {
       method: 'GET',
       headers,
     });
+
+    console.log(`[API Proxy] Backend responded with status: ${response.status}`);
 
     const contentType = response.headers.get('content-type');
     let data;
@@ -196,6 +205,11 @@ export async function DELETE(
       method: 'DELETE',
       headers,
     });
+
+    // Handle 204 No Content responses - they should have no body
+    if (response.status === 204) {
+      return new NextResponse(null, { status: 204 });
+    }
 
     const contentType = response.headers.get('content-type');
     let data;

@@ -4,9 +4,11 @@ import com.verbosegarbonzo.tariff.model.UserInfo;
 import com.verbosegarbonzo.tariff.repository.UserInfoRepository;
 
 import jakarta.validation.Valid;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.server.ResponseStatusException;
@@ -19,9 +21,11 @@ import java.util.UUID;
 public class AdminUserController {
 
     private final UserInfoRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    public AdminUserController(UserInfoRepository userRepository) {
+    public AdminUserController(UserInfoRepository userRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     // Create new User
@@ -30,6 +34,10 @@ public class AdminUserController {
         if (user.getUid() != null && userRepository.existsById(user.getUid())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                 "A user with ID '" + user.getUid() + "' already exists.");
+        }
+        // Hash the password before saving
+        if (user.getPassword() != null && !user.getPassword().isEmpty()) {
+            user.setPassword(passwordEncoder.encode(user.getPassword()));
         }
         UserInfo created = userRepository.save(user);
         return ResponseEntity.status(201).body(created);
@@ -61,8 +69,15 @@ public class AdminUserController {
             @Valid @RequestBody UserInfo updatedUser) {
         UserInfo user = userRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found: " + id));
-        user.setEmail(updatedUser.getEmail());
-        user.setPassword(updatedUser.getPassword());
+        if (updatedUser.getEmail() != null) {
+            user.setEmail(updatedUser.getEmail());
+        }
+        if (updatedUser.getPassword() != null && !updatedUser.getPassword().isEmpty()) {
+            user.setPassword(passwordEncoder.encode(updatedUser.getPassword()));
+        }
+        if (updatedUser.getRoles() != null) {
+            user.setRoles(updatedUser.getRoles());
+        }
         UserInfo saved = userRepository.save(user);
         return ResponseEntity.ok(saved);
     }
@@ -94,6 +109,17 @@ public class AdminUserController {
                         : "REQUEST_ERROR";
         return ResponseEntity.status(ex.getStatusCode())
                 .body(new ErrorPayload(errorType, ex.getReason()));
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ErrorPayload> handleDataIntegrityViolation(DataIntegrityViolationException ex) {
+        String message = ex.getMessage();
+        if (message != null && message.contains("email")) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(new ErrorPayload("DATA_INTEGRITY_ERROR", "A user with this email already exists."));
+        }
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(new ErrorPayload("DATA_INTEGRITY_ERROR", "Data constraint violation: " + ex.getMessage()));
     }
 
     record ErrorPayload(String error, String message) {

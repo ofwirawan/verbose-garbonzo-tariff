@@ -5,8 +5,6 @@ import {
   GeminiSummaryResponse,
 } from "@/app/dashboard/components/utils/types";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "";
-
 /**
  * Get AI timing recommendations for a trade route
  * Analyzes historical tariff data and personalizes based on user profile
@@ -26,7 +24,8 @@ export async function getAIRecommendation(
     headers["Authorization"] = `Bearer ${token}`;
   }
 
-  const response = await fetch(`${API_BASE_URL}/api/ai/recommendation`, {
+  // Use Next.js API proxy route to avoid mixed-content issues
+  const response = await fetch(`/api/ai/recommendation`, {
     method: "POST",
     headers,
     body: JSON.stringify(request),
@@ -184,7 +183,8 @@ export async function getGeminiSummary(
     headers["Authorization"] = `Bearer ${token}`;
   }
 
-  const response = await fetch(`${API_BASE_URL}/api/ai/gemini-summary`, {
+  // Use Next.js API proxy route to avoid mixed-content issues
+  const response = await fetch(`/api/ai/gemini-summary`, {
     method: "POST",
     headers,
     body: JSON.stringify(request),

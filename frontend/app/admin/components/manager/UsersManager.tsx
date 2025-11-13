@@ -5,6 +5,13 @@ import { ColumnDef } from "@tanstack/react-table";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { DataTable } from "../DataTable";
 import { FormDialog } from "../FormDialog";
 import { userAPI, User } from "@/app/admin/lib/api";
@@ -22,7 +29,7 @@ export function UsersManager() {
     uid: "",
     email: "",
     pwHash: "",
-    roles: "user",
+    roles: "ROLE_USER",
   });
 
   const loadUsers = async (page = 0, search = "") => {
@@ -72,7 +79,7 @@ export function UsersManager() {
 
   const handleAdd = () => {
     setEditingUser(null);
-    setFormData({ uid: "", email: "", pwHash: "", roles: "user" });
+    setFormData({ uid: "", email: "", pwHash: "", roles: "ROLE_USER" });
     setDialogOpen(true);
   };
 
@@ -83,8 +90,13 @@ export function UsersManager() {
   };
 
   const handleSubmit = async () => {
-    if (!formData.uid || !formData.email || !formData.roles) {
+    if (!formData.roles) {
       toast.error("Please fill in all required fields");
+      return;
+    }
+
+    if (!editingUser && (!formData.email || !formData.pwHash)) {
+      toast.error("Email and password are required for new users");
       return;
     }
 
@@ -92,17 +104,10 @@ export function UsersManager() {
     try {
       if (editingUser) {
         await userAPI.update(editingUser.uid, {
-          email: formData.email,
           roles: formData.roles,
-          ...(formData.pwHash && { pwHash: formData.pwHash }),
         });
         toast.success("User updated successfully");
       } else {
-        if (!formData.pwHash) {
-          toast.error("Password hash is required for new users");
-          setIsSubmitting(false);
-          return;
-        }
         await userAPI.create(formData);
         toast.success("User created successfully");
       }
@@ -164,7 +169,7 @@ export function UsersManager() {
         onOpenChange={setDialogOpen}
         title={editingUser ? "Edit User" : "Add User"}
         description={
-          editingUser ? "Update the user information" : "Create a new user"
+          editingUser ? "Update the user role" : "Create a new user"
         }
         onSubmit={handleSubmit}
         isSubmitting={isSubmitting}
@@ -192,18 +197,39 @@ export function UsersManager() {
                 setFormData({ ...formData, email: e.target.value })
               }
               placeholder="e.g., user@example.com"
+              disabled={!!editingUser}
             />
           </div>
+          {!editingUser && (
+            <div className="grid gap-3">
+              <Label htmlFor="pwHash">Password Hash</Label>
+              <Input
+                id="pwHash"
+                type="password"
+                value={formData.pwHash}
+                onChange={(e) =>
+                  setFormData({ ...formData, pwHash: e.target.value })
+                }
+                placeholder="Enter password hash"
+              />
+            </div>
+          )}
           <div className="grid gap-3">
             <Label htmlFor="roles">Role</Label>
-            <Input
-              id="roles"
+            <Select
               value={formData.roles}
-              onChange={(e) =>
-                setFormData({ ...formData, roles: e.target.value })
+              onValueChange={(value) =>
+                setFormData({ ...formData, roles: value })
               }
-              placeholder="e.g., admin, user"
-            />
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select a role" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ROLE_USER">User</SelectItem>
+                <SelectItem value="ROLE_ADMIN">Admin</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
       </FormDialog>

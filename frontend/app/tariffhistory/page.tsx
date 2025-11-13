@@ -320,7 +320,7 @@ export default function TariffHistoryPage() {
                       >
                         {isFetching ? (
                           <span className="flex items-center gap-3">
-                            <span className="h-4 w-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin"></span>
+                            <span className="h-4 w-4 border-2 border-background border-t-transparent rounded-full animate-spin"></span>
                             Fetching...
                           </span>
                         ) : (
@@ -345,16 +345,16 @@ export default function TariffHistoryPage() {
                     </div>
 
                     {fetchStatus && (
-                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                        <p className="text-blue-800 text-sm font-medium">
+                      <div className="bg-primary/10 border border-primary/20 rounded-lg p-4">
+                        <p className="text-primary text-sm font-medium">
                           {fetchStatus}
                         </p>
                       </div>
                     )}
 
                     {error && (
-                      <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                        <p className="text-red-600 text-sm font-medium">
+                      <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
+                        <p className="text-destructive text-sm font-medium">
                           {error}
                         </p>
                       </div>

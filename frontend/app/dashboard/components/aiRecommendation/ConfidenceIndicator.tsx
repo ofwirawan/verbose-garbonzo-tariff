@@ -71,7 +71,9 @@ export function ConfidenceIndicator({
                 </span>
               )}
             </div>
-            <div className={`${progressHeight[size]} w-full bg-secondary/20 rounded-full overflow-hidden border border-secondary/30`}>
+            <div
+              className={`${progressHeight[size]} w-full bg-secondary/20 rounded-full overflow-hidden border border-secondary/30`}
+            >
               <div
                 className={`${progressHeight[size]} rounded-full transition-all duration-300 ${progressColor}`}
                 style={{ width: `${confidence}%` }}
@@ -92,8 +94,11 @@ export function ConfidenceIndicator({
                 />
               </button>
             </TooltipTrigger>
-            <TooltipContent side="top" className="max-w-sm">
-              <p className="text-sm">
+            <TooltipContent
+              side="top"
+              className="bg-white max-w-sm p-4 text-black border border-border shadow-lg"
+            >
+              <p className="text-xs text-gray-600">
                 Confidence level indicates how reliable this prediction is based
                 on historical data. Higher confidence means more reliable
                 recommendations.

@@ -49,6 +49,8 @@ public class CalculateResponse {
         this.setImporterCode(req.getImporterCode());
         this.setExporterCode(req.getExporterCode());
         this.setTransactionDate(req.getTransactionDate());
+        this.setTradeOriginal(req.getTradeOriginal());
+        this.setNetWeight(req.getNetWeight());
     }
 
 
