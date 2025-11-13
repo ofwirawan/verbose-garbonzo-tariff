@@ -219,6 +219,16 @@
 						<goals>
 							<goal>report</goal>
 						</goals>
+						<configuration>
+							<excludes>
+								<!-- Exclude specific packages -->
+								<exclude>com/verbosegarbonzo/tariff/model/*</exclude>
+								<exclude>com/verbosegarbonzo/tariff/client/*</exclude>
+								<exclude>com/verbosegarbonzo/tariff/controller/admin/*</exclude>
+								<!-- Exclude specific classes -->
+								<exclude>com/verbosegarbonzo/tariff/service/TariffMLService/TariffMLModel.class</exclude>
+							</excludes>
+						</configuration>
 					</execution>
 				</executions>
 			</plugin>

@@ -42,6 +42,7 @@ import com.verbosegarbonzo.tariff.repository.ProductRepository;
 import com.verbosegarbonzo.tariff.repository.SuspensionRepository;
 
 import jakarta.validation.Valid;
+import lombok.Generated;
 import lombok.NonNull;
 import reactor.core.publisher.Flux;
 
@@ -382,6 +383,7 @@ public class TariffService {
         }
     }
 
+    @Generated
     private BigDecimal parseWitsXmlForRate(InputStream is) {
         try (InputStream in = is) {
             XMLInputFactory factory = XMLInputFactory.newFactory();
@@ -427,6 +429,7 @@ public class TariffService {
         }
     }
 
+    @Generated
     private void saveMeasureToDatabase(Country importer, Product product, BigDecimal rate, LocalDate date) {
         try {
             // Check if already exists to avoid duplicates
@@ -453,6 +456,7 @@ public class TariffService {
         }
     }
 
+    @Generated
     private void savePreferenceToDatabase(Country importer, Country exporter,
             Product product, BigDecimal rate, LocalDate date) {
         try {
