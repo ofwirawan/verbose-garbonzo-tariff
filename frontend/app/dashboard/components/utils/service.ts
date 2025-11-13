@@ -8,8 +8,6 @@ import {
   ComparisonAnalysis,
 } from "@/app/dashboard/components/utils/types";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "";
-
 export interface CalculateTariffRequest {
   importerCode: string;
   exporterCode: string | null;
@@ -43,7 +41,7 @@ export async function calculateTariff(
     headers["Authorization"] = `Bearer ${token}`;
   }
 
-  const response = await fetch(`${API_BASE_URL}/api/calculate`, {
+  const response = await fetch(`/api/calculate`, {
     method: "POST",
     headers,
     body: JSON.stringify(request),
@@ -343,7 +341,7 @@ export async function calculateBatchTariffs(
     headers["Authorization"] = `Bearer ${token}`;
   }
 
-  const response = await fetch(`${API_BASE_URL}/api/calculate/batch`, {
+  const response = await fetch(`/api/calculate/batch`, {
     method: "POST",
     headers,
     body: JSON.stringify(requests),

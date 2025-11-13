@@ -12,6 +12,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { toast } from "sonner";
 import { TariffCalculationResult } from "./utils/types";
 import { authenticatedFetch } from "@/lib/auth";
@@ -108,9 +114,15 @@ function CostSummary({
 
   const rateInfo = getRateInfo();
   const totalCost = Number(result.totalLandedCost) || Number(result.tradeFinal);
-  const hasValuationBasis = result.valuationBasisDeclared || result.valuationBasisApplied;
+  const hasValuationBasis =
+    result.valuationBasisDeclared || result.valuationBasisApplied;
   const cardCount = (hasFreightData ? 1 : 0) + (hasValuationBasis ? 1 : 0) + 2; // trade + duty + optional freight + optional valuation
-  const gridCols = cardCount === 2 ? "sm:grid-cols-2" : cardCount === 3 ? "sm:grid-cols-3 lg:grid-cols-3" : "sm:grid-cols-2 lg:grid-cols-4";
+  const gridCols =
+    cardCount === 2
+      ? "sm:grid-cols-2"
+      : cardCount === 3
+      ? "sm:grid-cols-3 lg:grid-cols-3"
+      : "sm:grid-cols-2 lg:grid-cols-4";
 
   return (
     <div className="space-y-4">
@@ -181,18 +193,76 @@ function CostSummary({
         {/* Valuation Basis Card (if applicable) */}
         {hasValuationBasis ? (
           <div className="bg-card rounded-lg border border-border p-4 sm:p-5 md:p-6">
-            <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">
-              Valuation Basis
+            <div className="flex items-center gap-2 mb-3">
+              <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                Valuation Basis
+              </div>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-muted hover:bg-muted/80 transition-colors">
+                      <svg
+                        className="w-3 h-3 text-muted-foreground"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
+                      </svg>
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent className="bg-white max-w-xs p-4 text-black border border-border shadow-lg">
+                    <div className="space-y-2 text-xs">
+                      <div>
+                        <span className="font-bold text-black">
+                          CIF (Cost, Insurance, Freight):
+                        </span>
+                        <p className="text-gray-600 mt-1">
+                          Includes the cost of goods, insurance, and freight
+                          charges to the destination port.
+                        </p>
+                      </div>
+                      <div>
+                        <span className="font-bold text-black">
+                          CFR (Cost and Freight):
+                        </span>
+                        <p className="text-gray-600 mt-1">
+                          Includes the cost of goods and freight charges, but
+                          excludes insurance.
+                        </p>
+                      </div>
+                      <div>
+                        <span className="font-bold text-black">
+                          FOB (Free On Board):
+                        </span>
+                        <p className="text-gray-600 mt-1">
+                          Includes only the cost of goods loaded onto the vessel
+                          at the port of origin.
+                        </p>
+                      </div>
+                    </div>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <div className="text-xs text-muted-foreground font-medium mb-1">Declared</div>
+                <div className="text-xs text-muted-foreground font-medium mb-1">
+                  Declared
+                </div>
                 <div className="text-lg sm:text-2xl font-bold text-foreground">
                   {result.valuationBasisDeclared || "—"}
                 </div>
               </div>
               <div>
-                <div className="text-xs text-muted-foreground font-medium mb-1">Applied</div>
+                <div className="text-xs text-muted-foreground font-medium mb-1">
+                  Applied
+                </div>
                 <div className="text-lg sm:text-2xl font-bold text-foreground">
                   {result.valuationBasisApplied || "—"}
                 </div>
@@ -200,7 +270,6 @@ function CostSummary({
             </div>
           </div>
         ) : null}
-
       </div>
 
       {/* Total Landed Cost - Prominent Display */}
@@ -375,21 +444,24 @@ function DetailsSection({
                     />
                   </>
                 )}
-                {result.insuranceRate !== undefined && result.insuranceRate !== null && (
-                  <InfoItem
-                    label="Insurance Rate"
-                    value={`${result.insuranceRate.toFixed(2)}%`}
-                  />
-                )}
-                {result.insuranceCost !== undefined && result.insuranceCost !== null && result.insuranceCost > 0 && (
-                  <InfoItem
-                    label="Insurance Cost"
-                    value={`$${Number(result.insuranceCost).toLocaleString(
-                      "en-US",
-                      { minimumFractionDigits: 2 }
-                    )}`}
-                  />
-                )}
+                {result.insuranceRate !== undefined &&
+                  result.insuranceRate !== null && (
+                    <InfoItem
+                      label="Insurance Rate"
+                      value={`${result.insuranceRate.toFixed(2)}%`}
+                    />
+                  )}
+                {result.insuranceCost !== undefined &&
+                  result.insuranceCost !== null &&
+                  result.insuranceCost > 0 && (
+                    <InfoItem
+                      label="Insurance Cost"
+                      value={`$${Number(result.insuranceCost).toLocaleString(
+                        "en-US",
+                        { minimumFractionDigits: 2 }
+                      )}`}
+                    />
+                  )}
               </div>
             </div>
           )}
@@ -413,7 +485,10 @@ function DetailsSection({
               </h5>
               <ul className="space-y-2">
                 {result.warnings.map((warning, index) => (
-                  <li key={index} className="text-sm text-muted-foreground flex gap-3">
+                  <li
+                    key={index}
+                    className="text-sm text-muted-foreground flex gap-3"
+                  >
                     <span className="text-primary font-bold min-w-fit">•</span>
                     <span>{warning}</span>
                   </li>
@@ -459,7 +534,9 @@ function DetailsSection({
 function InfoItem({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <div className="text-xs text-muted-foreground font-medium mb-1">{label}</div>
+      <div className="text-xs text-muted-foreground font-medium mb-1">
+        {label}
+      </div>
       <div className="text-sm text-foreground font-semibold break-words">
         {value}
       </div>

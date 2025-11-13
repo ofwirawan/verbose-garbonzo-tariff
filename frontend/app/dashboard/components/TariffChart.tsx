@@ -333,12 +333,12 @@ function TariffChartForm({
                     <InfoIcon className="w-4 h-4" />
                   </button>
                 </TooltipTrigger>
-                <TooltipContent className="max-w-xs p-4 bg-foreground text-background">
+                <TooltipContent className="bg-white max-w-xs p-4 text-black border border-border shadow-lg">
                   <div className="space-y-2 text-xs">
-                    <p className="font-semibold">
+                    <p className="font-semibold text-black">
                       How freight costs are calculated:
                     </p>
-                    <ul className="space-y-1 list-disc list-inside">
+                    <ul className="space-y-1 list-disc list-inside text-gray-600">
                       <li>
                         Estimates calculated using Freightos marketplace rates
                       </li>
@@ -348,7 +348,7 @@ function TariffChartForm({
                       </li>
                       <li>Costs shown as min-max range with average</li>
                     </ul>
-                    <p className="text-muted-foreground italic mt-2">
+                    <p className="text-gray-500 italic mt-2">
                       Note: Actual shipping costs may vary based on carrier,
                       exact location, package size, and current market rates.
                     </p>
@@ -441,12 +441,12 @@ function TariffChartForm({
                     <InfoIcon className="w-4 h-4" />
                   </button>
                 </TooltipTrigger>
-                <TooltipContent className="max-w-xs p-4 bg-foreground text-background">
+                <TooltipContent className="bg-white max-w-xs p-4 text-black border border-border shadow-lg">
                   <div className="space-y-2 text-xs">
-                    <p className="font-semibold">
+                    <p className="font-semibold text-black">
                       How insurance costs are calculated:
                     </p>
-                    <ul className="space-y-1 list-disc list-inside">
+                    <ul className="space-y-1 list-disc list-inside text-gray-600">
                       <li>
                         Insurance is calculated as a percentage of the trade
                         value
@@ -460,7 +460,7 @@ function TariffChartForm({
                         insurance
                       </li>
                     </ul>
-                    <p className="text-muted-foreground italic mt-2">
+                    <p className="text-gray-500 italic mt-2">
                       Default rate is 1% if not specified. Enter 0 to exclude
                       insurance.
                     </p>

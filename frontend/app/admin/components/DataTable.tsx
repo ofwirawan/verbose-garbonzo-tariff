@@ -174,15 +174,15 @@ export function DataTable<TData, TValue>({
   };
 
   return (
-    <div className="w-full space-y-4">
+    <div className="w-full space-y-4 px-4 sm:px-0">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h3 className="text-lg font-semibold">{title}</h3>
+          <h3 className="text-lg sm:text-2xl font-semibold">{title}</h3>
         </div>
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center gap-4">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
           <Input
             placeholder={`Search ${title.toLowerCase()}...`}
-            className="max-w-sm"
+            className="w-full sm:max-w-sm text-xs sm:text-sm h-9 sm:h-10 px-2 sm:px-4"
             value={filterValue}
             onChange={(e) => {
               const value = e.target.value;
@@ -200,42 +200,46 @@ export function DataTable<TData, TValue>({
               }
             }}
           />
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline">
-                Columns <ChevronDown className="ml-2 h-4 w-4" />
+          <div className="flex gap-2 sm:gap-4">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="text-xs sm:text-sm h-9 sm:h-10 px-2 sm:px-4">
+                  <ChevronDown className="w-3 h-3 sm:w-4 sm:h-4" />
+                  <span className="hidden sm:inline ml-2">Columns</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {table
+                  .getAllColumns()
+                  .filter((column) => column.getCanHide())
+                  .map((column) => {
+                    return (
+                      <DropdownMenuCheckboxItem
+                        key={column.id}
+                        className="capitalize text-xs sm:text-sm"
+                        checked={column.getIsVisible()}
+                        onCheckedChange={(value) =>
+                          column.toggleVisibility(!!value)
+                        }
+                      >
+                        {column.id}
+                      </DropdownMenuCheckboxItem>
+                    );
+                  })}
+              </DropdownMenuContent>
+            </DropdownMenu>
+            {showAddButton && (
+              <Button
+                onClick={onAdd}
+                className="bg-primary text-primary-foreground hover:bg-primary/90 text-xs sm:text-sm h-9 sm:h-10 px-2 sm:px-4"
+                disabled={isLoading}
+              >
+                <Plus className="w-3 h-3 sm:w-4 sm:h-4" />
+                <span className="hidden sm:inline ml-2">Add {title}</span>
+                <span className="sm:hidden ml-1">Add</span>
               </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {table
-                .getAllColumns()
-                .filter((column) => column.getCanHide())
-                .map((column) => {
-                  return (
-                    <DropdownMenuCheckboxItem
-                      key={column.id}
-                      className="capitalize"
-                      checked={column.getIsVisible()}
-                      onCheckedChange={(value) =>
-                        column.toggleVisibility(!!value)
-                      }
-                    >
-                      {column.id}
-                    </DropdownMenuCheckboxItem>
-                  );
-                })}
-            </DropdownMenuContent>
-          </DropdownMenu>
-          {showAddButton && (
-            <Button
-              onClick={onAdd}
-              className="bg-primary text-primary-foreground hover:bg-primary/90"
-              disabled={isLoading}
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              Add {title}
-            </Button>
-          )}
+            )}
+          </div>
         </div>
       </div>
 
@@ -246,7 +250,7 @@ export function DataTable<TData, TValue>({
       ) : (
         <>
           <div
-            className={`rounded-md border overflow-hidden ${
+            className={`rounded-md border overflow-hidden overflow-x-auto ${
               data.length > 10 ? "flex flex-col" : ""
             }`}
           >
@@ -255,13 +259,16 @@ export function DataTable<TData, TValue>({
                 data.length > 10 ? "overflow-y-auto max-h-[600px]" : ""
               }
             >
-              <Table>
-                <TableHeader className="bg-card sticky top-0 z-10">
+              <Table className="min-w-full text-xs sm:text-sm">
+                <TableHeader className="bg-card sticky top-0 z-0">
                   {table.getHeaderGroups().map((headerGroup) => (
                     <TableRow key={headerGroup.id}>
                       {headerGroup.headers.map((header) => {
                         return (
-                          <TableHead key={header.id}>
+                          <TableHead
+                            key={header.id}
+                            className="px-2 sm:px-4 py-2 whitespace-nowrap text-xs sm:text-sm font-medium"
+                          >
                             {header.isPlaceholder
                               ? null
                               : flexRender(
@@ -282,7 +289,10 @@ export function DataTable<TData, TValue>({
                         data-state={row.getIsSelected() && "selected"}
                       >
                         {row.getVisibleCells().map((cell) => (
-                          <TableCell key={cell.id}>
+                          <TableCell
+                            key={cell.id}
+                            className="px-2 sm:px-4 py-2 text-xs sm:text-sm break-words max-w-[150px] sm:max-w-none"
+                          >
                             {flexRender(
                               cell.column.columnDef.cell,
                               cell.getContext()
@@ -295,7 +305,7 @@ export function DataTable<TData, TValue>({
                     <TableRow>
                       <TableCell
                         colSpan={columnsWithActions.length}
-                        className="h-24 text-center"
+                        className="h-24 text-center text-xs sm:text-sm"
                       >
                         {emptyMessage}
                       </TableCell>
@@ -306,28 +316,30 @@ export function DataTable<TData, TValue>({
             </div>
           </div>
 
-          <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
-            <div className="text-sm text-muted-foreground">
+          <div className="flex flex-col items-center justify-between gap-2 sm:gap-4 sm:flex-row text-xs sm:text-sm">
+            <div className="text-muted-foreground truncate">
               {table.getFilteredSelectedRowModel().rows.length} of{" "}
               {table.getFilteredRowModel().rows.length} row(s) selected.
             </div>
-            <div className="flex gap-2 items-center">
+            <div className="flex gap-1 sm:gap-2 items-center flex-wrap justify-center">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => onPageChange(currentPage - 1)}
                 disabled={currentPage === 0 || isLoading}
+                className="text-xs h-8 px-2"
               >
-                Previous
+                Prev
               </Button>
-              <div className="text-sm font-medium text-foreground px-2 py-1 bg-muted rounded min-w-fit">
-                Page {currentPage + 1} of {totalPages}
+              <div className="text-xs sm:text-sm font-medium text-foreground px-1 sm:px-2 py-1 bg-muted rounded min-w-fit">
+                {currentPage + 1}/{totalPages}
               </div>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => onPageChange(currentPage + 1)}
                 disabled={currentPage === totalPages - 1 || isLoading}
+                className="text-xs h-8 px-2"
               >
                 Next
               </Button>

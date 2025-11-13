@@ -14,7 +14,9 @@ import lombok.NoArgsConstructor;
 import java.util.UUID;
 
 @Entity
-@Table(name="user_info")
+@Table(name="user_info", uniqueConstraints = {
+    @jakarta.persistence.UniqueConstraint(columnNames = "email")
+})
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
@@ -26,6 +28,7 @@ public class UserInfo {
 
     @Column(nullable = true)
     private String name;
+    @Column(unique = true, nullable = false)
     private String email;
     private String password;
     private String roles;

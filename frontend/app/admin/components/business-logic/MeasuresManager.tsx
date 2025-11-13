@@ -5,6 +5,10 @@ import { ColumnDef } from "@tanstack/react-table";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { CalendarIcon } from "lucide-react";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 import {
   Select,
   SelectContent,
@@ -12,6 +16,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 import { DataTable } from "../DataTable";
 import { FormDialog } from "../FormDialog";
 import {
@@ -34,6 +44,8 @@ export function MeasuresManager() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingMeasure, setEditingMeasure] = useState<Measure | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [validFromPopoverOpen, setValidFromPopoverOpen] = useState(false);
+  const [validToPopoverOpen, setValidToPopoverOpen] = useState(false);
   const [formData, setFormData] = useState<Measure>({
     importerCode: "",
     productCode: "",
@@ -142,8 +154,8 @@ export function MeasuresManager() {
 
     setIsSubmitting(true);
     try {
-      if (editingMeasure && editingMeasure.id) {
-        await measureAPI.update(editingMeasure.id, formData);
+      if (editingMeasure && editingMeasure.measureId) {
+        await measureAPI.update(editingMeasure.measureId, formData);
         toast.success("Measure updated successfully");
       } else {
         await measureAPI.create(formData);
@@ -163,10 +175,13 @@ export function MeasuresManager() {
   };
 
   const handleDeleteConfirm = async (row: Measure) => {
-    if (row.id) {
-      await measureAPI.delete(row.id);
-      loadMeasures(currentPage, searchQuery);
+    if (!row.measureId) {
+      throw new Error("Invalid measure ID");
     }
+
+    await measureAPI.delete(row.measureId);
+    // Reload the data after successful deletion
+    await loadMeasures(currentPage, searchQuery);
   };
 
   const columns: ColumnDef<Measure>[] = [
@@ -256,8 +271,11 @@ export function MeasuresManager() {
                 setFormData({ ...formData, productCode: value })
               }
             >
-              <SelectTrigger id="productCode">
-                <SelectValue placeholder="Select a product" />
+              <SelectTrigger id="productCode" className="truncate">
+                <SelectValue
+                  placeholder="Select a product"
+                  className="truncate"
+                />
               </SelectTrigger>
               <SelectContent>
                 {products.map((product) => (
@@ -269,26 +287,86 @@ export function MeasuresManager() {
             </Select>
           </div>
           <div className="grid gap-3">
-            <Label htmlFor="validFrom">Valid From (YYYY-MM-DD)</Label>
-            <Input
-              id="validFrom"
-              type="date"
-              value={formData.validFrom}
-              onChange={(e) =>
-                setFormData({ ...formData, validFrom: e.target.value })
-              }
-            />
+            <Label htmlFor="validFrom">Valid From</Label>
+            <Popover open={validFromPopoverOpen} onOpenChange={setValidFromPopoverOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  id="validFrom"
+                  variant="outline"
+                  className={cn(
+                    "w-full justify-start text-left h-10 px-3 border-border hover:border-ring transition-colors font-normal",
+                    !formData.validFrom && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {formData.validFrom
+                    ? format(new Date(formData.validFrom), "MMM d, yyyy")
+                    : "Select date"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={
+                    formData.validFrom
+                      ? new Date(formData.validFrom)
+                      : undefined
+                  }
+                  onSelect={(date) => {
+                    if (date) {
+                      setFormData({
+                        ...formData,
+                        validFrom: format(date, "yyyy-MM-dd"),
+                      });
+                      setValidFromPopoverOpen(false);
+                    }
+                  }}
+                  captionLayout="dropdown"
+                  startMonth={new Date(1990, 0)}
+                  endMonth={new Date(new Date().getFullYear() + 1, 11)}
+                />
+              </PopoverContent>
+            </Popover>
           </div>
           <div className="grid gap-3">
-            <Label htmlFor="validTo">Valid To (YYYY-MM-DD)</Label>
-            <Input
-              id="validTo"
-              type="date"
-              value={formData.validTo}
-              onChange={(e) =>
-                setFormData({ ...formData, validTo: e.target.value })
-              }
-            />
+            <Label htmlFor="validTo">Valid To</Label>
+            <Popover open={validToPopoverOpen} onOpenChange={setValidToPopoverOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  id="validTo"
+                  variant="outline"
+                  className={cn(
+                    "w-full justify-start text-left h-10 px-3 border-border hover:border-ring transition-colors font-normal",
+                    !formData.validTo && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {formData.validTo
+                    ? format(new Date(formData.validTo), "MMM d, yyyy")
+                    : "Select date"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={
+                    formData.validTo ? new Date(formData.validTo) : undefined
+                  }
+                  onSelect={(date) => {
+                    if (date) {
+                      setFormData({
+                        ...formData,
+                        validTo: format(date, "yyyy-MM-dd"),
+                      });
+                      setValidToPopoverOpen(false);
+                    }
+                  }}
+                  captionLayout="dropdown"
+                  startMonth={new Date(1990, 0)}
+                  endMonth={new Date(new Date().getFullYear() + 1, 11)}
+                />
+              </PopoverContent>
+            </Popover>
           </div>
           <div className="grid gap-3">
             <Label htmlFor="mfnAdvalRate">MFN AdVal Rate (%)</Label>

@@ -72,7 +72,7 @@ public class UserControllerTest {
                 .contentType(ContentType.JSON)
                 .body(newUser)
                 .when()
-                .post("/auth/register")
+                .post("/api/auth/register")
                 .then()
                 .statusCode(200)
                 .body(containsString("User added successfully"));
@@ -106,7 +106,7 @@ public class UserControllerTest {
                 .contentType(ContentType.JSON)
                 .body(req)
                 .when()
-                .post("/auth/token")
+                .post("/api/auth/token")
                 .then()
                 .statusCode(200)
                 // .body(notNull())
@@ -123,7 +123,7 @@ public class UserControllerTest {
                 .contentType(ContentType.JSON)
                 .body(req)
                 .when()
-                .post("/auth/token")
+                .post("/api/auth/token")
                 .then()
                 .statusCode(401);
     }
@@ -133,7 +133,7 @@ public class UserControllerTest {
         given()
                 .header("Authorization", "Bearer " + userJwt)
                 .when()
-                .get("/auth/profile")
+                .get("/api/auth/profile")
                 .then()
                 .statusCode(200)
                 .body(equalTo(testUser.getEmail()));
@@ -143,7 +143,7 @@ public class UserControllerTest {
     void userProfile_WithoutAuth_Returns403() {
         given()
                 .when()
-                .get("/auth/profile")
+                .get("/api/auth/profile")
                 .then()
                 .statusCode(403);
     }

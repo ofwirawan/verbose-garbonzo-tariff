@@ -1,9 +1,8 @@
 "use client";
 
 // Admin API Service Layer
-const API_BASE_URL = `${
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"
-}/api/admin`;
+// Use Next.js API proxy instead of direct backend calls to avoid mixed content errors
+const API_BASE_URL = `/api/admin`;
 
 // Helper function to get auth headers - retrieve token from cookies
 function getAuthHeaders(): HeadersInit {
@@ -67,7 +66,7 @@ export interface User {
 }
 
 export interface Measure {
-  id?: number;
+  measureId?: number;
   importerCode: string;
   productCode: string;
   validFrom: string;
@@ -77,7 +76,7 @@ export interface Measure {
 }
 
 export interface Preference {
-  id?: number;
+  preferenceId?: number;
   importerCode: string;
   exporterCode: string;
   productCode: string;
@@ -233,10 +232,15 @@ export const userAPI = {
   },
 
   async create(data: User): Promise<User> {
+    const { uid, pwHash, ...userDataWithoutUid } = data;
+    const userPayload = {
+      ...userDataWithoutUid,
+      password: pwHash,
+    };
     const response = await fetch(`${API_BASE_URL}/users`, {
       method: "POST",
       headers: getAuthHeaders(),
-      body: JSON.stringify(data),
+      body: JSON.stringify(userPayload),
     });
     if (!response.ok) throw new Error("Failed to create user");
     return response.json();
@@ -270,8 +274,8 @@ export const measureAPI = {
     );
   },
 
-  async getById(id: number): Promise<Measure> {
-    const response = await fetch(`${API_BASE_URL}/measures/${id}`, {
+  async getById(measureId: number): Promise<Measure> {
+    const response = await fetch(`${API_BASE_URL}/measures/${measureId}`, {
       headers: getAuthHeaders(),
     });
     if (!response.ok) throw new Error("Failed to fetch measure");
@@ -288,8 +292,8 @@ export const measureAPI = {
     return response.json();
   },
 
-  async update(id: number, data: Measure): Promise<Measure> {
-    const response = await fetch(`${API_BASE_URL}/measures/${id}`, {
+  async update(measureId: number, data: Measure): Promise<Measure> {
+    const response = await fetch(`${API_BASE_URL}/measures/${measureId}`, {
       method: "PUT",
       headers: getAuthHeaders(),
       body: JSON.stringify(data),
@@ -298,8 +302,8 @@ export const measureAPI = {
     return response.json();
   },
 
-  async delete(id: number): Promise<void> {
-    const response = await fetch(`${API_BASE_URL}/measures/${id}`, {
+  async delete(measureId: number): Promise<void> {
+    const response = await fetch(`${API_BASE_URL}/measures/${measureId}`, {
       method: "DELETE",
       headers: getAuthHeaders(),
     });
@@ -338,8 +342,8 @@ export const preferenceAPI = {
     return response.json();
   },
 
-  async getById(id: number): Promise<Preference> {
-    const response = await fetch(`${API_BASE_URL}/preferences/${id}`, {
+  async getById(preferenceId: number): Promise<Preference> {
+    const response = await fetch(`${API_BASE_URL}/preferences/${preferenceId}`, {
       headers: getAuthHeaders(),
     });
     if (!response.ok) throw new Error("Failed to fetch preference");
@@ -356,8 +360,8 @@ export const preferenceAPI = {
     return response.json();
   },
 
-  async update(id: number, data: Preference): Promise<Preference> {
-    const response = await fetch(`${API_BASE_URL}/preferences/${id}`, {
+  async update(preferenceId: number, data: Preference): Promise<Preference> {
+    const response = await fetch(`${API_BASE_URL}/preferences/${preferenceId}`, {
       method: "PUT",
       headers: getAuthHeaders(),
       body: JSON.stringify(data),
@@ -366,8 +370,8 @@ export const preferenceAPI = {
     return response.json();
   },
 
-  async delete(id: number): Promise<void> {
-    const response = await fetch(`${API_BASE_URL}/preferences/${id}`, {
+  async delete(preferenceId: number): Promise<void> {
+    const response = await fetch(`${API_BASE_URL}/preferences/${preferenceId}`, {
       method: "DELETE",
       headers: getAuthHeaders(),
     });

@@ -162,8 +162,10 @@ export function TimingRecommendationCard({
                       />
                     </button>
                   </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Based on $10,000 trade value estimate</p>
+                  <TooltipContent className="bg-white p-4 text-black border border-border shadow-lg">
+                    <p className="text-xs text-gray-600">
+                      Based on $10,000 trade value estimate
+                    </p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>

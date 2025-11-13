@@ -45,18 +45,21 @@ public class SecurityConfig {
 
                         // Public endpoints - allow all OPTIONS requests for CORS preflight
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .requestMatchers("/auth/register", "/auth/token").permitAll()
+                        .requestMatchers("/api/auth/register", "/api/auth/token").permitAll()
 
                         // Swagger UI endpoints
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-resources/**", "/webjars/**")
                         .permitAll()
 
                         // Tariff calculation endpoints (public) - must be before other /api/** rules
-                        // Role-based endpoints
                         .requestMatchers("/api/calculate").permitAll()
                         .requestMatchers("/api/calculate/**").permitAll()
-                        .requestMatchers("/auth/user/**").hasRole("USER")
-                        .requestMatchers("/auth/admin/**").hasRole("ADMIN")
+
+                        // Metadata endpoints (countries and products) - public for frontend dropdown population
+                        .requestMatchers("/api/metadata/countries").permitAll()
+                        .requestMatchers("/api/metadata/products").permitAll()
+                        .requestMatchers("/api/auth/user/**").hasRole("USER")
+                        .requestMatchers("/api/auth/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
 
                         // AI endpoints require authentication
