@@ -45,11 +45,42 @@ export async function login(credentials: LoginCredentials): Promise<string> {
     throw new Error(errorMessage);
   }
 
-  const data = await response.json();
-  const accessToken = data.accessToken || data.token;
-  const refreshToken = data.refreshToken;
+  let data;
+  let accessToken: string | null = null;
+  let refreshToken: string | null = null;
+
+  // Try to parse as JSON first
+  try {
+    data = await response.json();
+    console.log("Login response data (JSON):", data);
+
+    // Handle both new format (object) and old format (just token string)
+    if (typeof data === 'object' && data !== null) {
+      accessToken = data.accessToken || data.token;
+      refreshToken = data.refreshToken;
+    } else if (typeof data === 'string') {
+      // Old format: just a plain token string
+      accessToken = data;
+    }
+  } catch (e) {
+    console.error("Failed to parse response as JSON:", e);
+    // Try to get as text (old format might be returning plain string)
+    try {
+      const responseText = await response.text();
+      console.log("Response text:", responseText);
+
+      // If it's a plain token string without JSON wrapper
+      if (responseText && !responseText.startsWith('{')) {
+        accessToken = responseText.replace(/^"(.*)"$/, '$1'); // Remove quotes if wrapped
+      }
+    } catch (textError) {
+      console.error("Failed to parse response:", textError);
+      throw new Error("Invalid response format from server");
+    }
+  }
 
   if (!accessToken) {
+    console.error("No access token in response. Response data:", data);
     throw new Error("No access token received from server");
   }
 

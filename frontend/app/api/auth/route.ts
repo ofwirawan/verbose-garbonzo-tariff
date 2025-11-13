@@ -55,14 +55,15 @@ export async function POST(request: NextRequest) {
     if (contentType && contentType.includes('application/json')) {
       try {
         data = await response.json();
-      } catch {
+      } catch (e) {
+        console.error(`[Auth Proxy] Failed to parse JSON:`, e);
         data = await response.text();
       }
     } else {
       data = await response.text();
     }
 
-    console.log(`[Auth Proxy] Response status: ${response.status}`);
+    console.log(`[Auth Proxy] Response status: ${response.status}, Content-Type: ${contentType}, Data:`, data);
 
     return NextResponse.json(data, { status: response.status });
   } catch (error) {
