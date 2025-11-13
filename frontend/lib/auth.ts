@@ -12,7 +12,7 @@ export interface RegisterData {
   roles: string;
 }
 
-//Login user and get JWT token
+//Login user and get JWT tokens (access and refresh)
 export async function login(credentials: LoginCredentials): Promise<string> {
   console.log("Login attempt with email:", credentials.username);
 
@@ -45,31 +45,42 @@ export async function login(credentials: LoginCredentials): Promise<string> {
     throw new Error(errorMessage);
   }
 
-  let token = await response.text();
-  console.log("Login successful, token received (raw):", token);
+  const data = await response.json();
+  const accessToken = data.accessToken || data.token;
+  const refreshToken = data.refreshToken;
 
-  // Remove quotes if the backend returns them wrapped in quotes
-  token = token.replace(/^"(.*)"$/, '$1');
-  console.log("Login successful, token cleaned:", token);
+  if (!accessToken) {
+    throw new Error("No access token received from server");
+  }
 
-  // Store token in both localStorage and cookies
+  console.log("Login successful, tokens received");
+
+  // Store tokens in both localStorage and cookies
   if (typeof window !== "undefined") {
-    localStorage.setItem("jwt_token", token);
+    localStorage.setItem("jwt_token", accessToken);
     localStorage.setItem("username", credentials.username);
+    if (refreshToken) {
+      localStorage.setItem("refresh_token", refreshToken);
+    }
 
-    // Also store in cookies for middleware access - ensure no quotes
-    const cleanToken = token.replace(/^"(.*)"$/, '$1'); // Remove surrounding quotes if present
-    document.cookie = `jwt_token=${cleanToken}; path=/; max-age=${
-      60 * 60 * 24 * 7
+    // Store in cookies for middleware access
+    document.cookie = `jwt_token=${accessToken}; path=/; max-age=${
+      30 * 60
     }; SameSite=Lax`;
-    
-    console.log("🔍 Token stored:", {
-      localStorage: localStorage.getItem("jwt_token"),
-      cookieSet: `jwt_token=${cleanToken}`,
+
+    if (refreshToken) {
+      document.cookie = `refresh_token=${refreshToken}; path=/; max-age=${
+        7 * 24 * 60 * 60
+      }; SameSite=Lax`;
+    }
+
+    console.log("🔍 Tokens stored:", {
+      hasAccessToken: !!accessToken,
+      hasRefreshToken: !!refreshToken,
     });
   }
 
-  return token;
+  return accessToken;
 }
 
 //Register new user
@@ -122,10 +133,12 @@ export function isAuthenticated(): boolean {
 export function logout(): void {
   if (typeof window !== "undefined") {
     localStorage.removeItem("jwt_token");
+    localStorage.removeItem("refresh_token");
     localStorage.removeItem("username");
 
     // Also remove from cookies
     document.cookie = "jwt_token=; path=/; max-age=0";
+    document.cookie = "refresh_token=; path=/; max-age=0";
   }
 }
 

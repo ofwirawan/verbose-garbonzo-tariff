@@ -41,11 +41,18 @@ public class SecurityConfig {
 
                 // Configure endpoint authorization
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/actuator/**").permitAll()        
+                        .requestMatchers("/actuator/**").permitAll()
 
                         // Public endpoints - allow all OPTIONS requests for CORS preflight
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .requestMatchers("/api/auth/register", "/api/auth/token").permitAll()
+
+                        // Auth endpoints (register and token are public)
+                        .requestMatchers("/api/auth/register").permitAll()
+                        .requestMatchers("/api/auth/token").permitAll()
+
+                        // Profile endpoints (authenticated)
+                        .requestMatchers("/api/auth/profile").authenticated()
+                        .requestMatchers("/api/auth/profile/**").authenticated()
 
                         // Swagger UI endpoints
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-resources/**", "/webjars/**")

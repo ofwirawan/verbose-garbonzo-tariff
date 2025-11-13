@@ -12,6 +12,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.UUID;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 @Entity
 @Table(name="user_info", uniqueConstraints = {
@@ -30,6 +31,7 @@ public class UserInfo {
     private String name;
     @Column(unique = true, nullable = false)
     private String email;
+    @JsonIgnore
     private String password;
     private String roles;
 

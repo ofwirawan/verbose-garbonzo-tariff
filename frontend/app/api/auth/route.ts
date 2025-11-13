@@ -5,11 +5,37 @@ const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 export async function POST(request: NextRequest) {
   try {
     const { pathname } = new URL(request.url);
-    // Remove /api/ prefix to get the endpoint (e.g., "auth/addNewUser" or "auth/generateToken")
+
+    // Handle token refresh endpoint
+    if (pathname === '/api/auth/refresh') {
+      console.log('[Auth Proxy] Handling token refresh request');
+
+      const authHeader = request.headers.get('Authorization');
+      if (!authHeader) {
+        return NextResponse.json(
+          { message: 'No authorization token provided' },
+          { status: 401 }
+        );
+      }
+
+      const backendUrl = `${BACKEND_URL}/api/auth/refresh`;
+
+      const response = await fetch(backendUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': authHeader,
+        },
+      });
+
+      const data = await response.json();
+
+      return NextResponse.json(data, { status: response.status });
+    }
+
+    // Regular auth endpoint proxying
     const endpoint = pathname.replace('/api/', '');
-
     const body = await request.json();
-
     const backendUrl = `${BACKEND_URL}/${endpoint}`;
 
     console.log(`[Auth Proxy] Proxying POST to: ${backendUrl}`);

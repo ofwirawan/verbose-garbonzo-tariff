@@ -1,6 +1,5 @@
 "use server";
 
-import { PrismaClient } from "@prisma/client";
 import { cookies } from "next/headers";
 import type { ProfileType } from "../components/profileTypes";
 
@@ -12,31 +11,12 @@ export interface UserProfile {
   profileType: ProfileType | null;
 }
 
-interface JWTPayload {
-  sub: string;
-  iat: number;
-  exp: number;
-  [key: string]: string | number;
-}
-
-// Helper function to decode JWT without external library
-function decodeJWT(token: string): JWTPayload | null {
-  try {
-    const parts = token.split(".");
-    if (parts.length !== 3) {
-      console.error("Invalid JWT format");
-      return null;
-    }
-
-    const payload = parts[1];
-    // Add padding if needed
-    const padded = payload + "=".repeat((4 - (payload.length % 4)) % 4);
-    const decoded = Buffer.from(padded, "base64").toString("utf-8");
-    return JSON.parse(decoded) as JWTPayload;
-  } catch (error) {
-    console.error("Failed to decode JWT:", error);
-    return null;
-  }
+interface UserProfileResponse {
+  uid: string;
+  name: string | null;
+  email: string;
+  roles: string;
+  profileType: string | null;
 }
 
 export async function fetchCurrentUserProfile(): Promise<UserProfile | null> {
@@ -46,56 +26,50 @@ export async function fetchCurrentUserProfile(): Promise<UserProfile | null> {
     const token = cookieStore.get("jwt_token")?.value;
 
     if (!token) {
-      console.error("No JWT token found in cookies");
+      console.error("[Profile] ❌ No JWT token found in cookies");
       return null;
     }
 
-    // Decode JWT token to get email (without verification since we just need the email)
-    // The token was already verified by the backend
-    const decoded = decodeJWT(token);
-    if (!decoded) {
-      console.error("Failed to decode JWT token");
+    console.log("[Profile] ✓ JWT token found in cookies");
+
+    // Get the API base URL - use environment variable or default to localhost
+    const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+
+    console.log("[Profile] 🔄 Calling backend API at:", apiBaseUrl);
+
+    // Call backend API endpoint to get user profile
+    const response = await fetch(`${apiBaseUrl}/api/auth/profile`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      console.error("[Profile] ❌ API response failed:", response.status, response.statusText);
+      const errorText = await response.text();
+      console.error("[Profile] Error details:", errorText);
       return null;
     }
 
-    const email = decoded?.sub;
-    if (!email) {
-      console.error("Email not found in JWT token");
-      return null;
-    }
+    const profileData: UserProfileResponse = await response.json();
+    console.log("[Profile] ✓ Profile data received from backend");
 
-    // Fetch user info from Prisma database
-    const prisma = new PrismaClient();
-    try {
-      const userInfo = await prisma.user_info.findUnique({
-        where: { email },
-        select: {
-          uid: true,
-          name: true,
-          email: true,
-          profile_type: true,
-        },
-      });
-
-      if (!userInfo) {
-        console.error("User not found in database for email:", email);
-        return null;
-      }
-
-      return {
-        uid: userInfo.uid,
-        name: userInfo.name || email.split("@")[0],
-        email: userInfo.email,
-        avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(
-          userInfo.name || email
-        )}&background=cccccc&color=ffffff`,
-        profileType: userInfo.profile_type as ProfileType | null,
-      };
-    } finally {
-      await prisma.$disconnect();
-    }
+    return {
+      uid: profileData.uid,
+      name: profileData.name || profileData.email.split("@")[0],
+      email: profileData.email,
+      avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(
+        profileData.name || profileData.email
+      )}&background=cccccc&color=ffffff`,
+      profileType: (profileData.profileType as ProfileType) || null,
+    };
   } catch (error) {
-    console.error("Error fetching user profile:", error);
+    console.error("[Profile] ❌ Error fetching user profile:", error);
+    if (error instanceof Error) {
+      console.error("[Profile] Error message:", error.message);
+    }
     return null;
   }
 }
@@ -112,45 +86,34 @@ export async function updateUserProfile(
       throw new Error("Not authenticated");
     }
 
-    // Decode JWT token to get email
-    const decoded = decodeJWT(token);
-    if (!decoded) {
-      throw new Error("Invalid token");
+    const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+
+    // Call backend API to update profile
+    const response = await fetch(`${apiBaseUrl}/api/auth/profile/update-name`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ name: newName.trim() }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to update profile: ${errorText}`);
     }
 
-    const email = decoded?.sub;
-    if (!email) {
-      throw new Error("Email not found in token");
-    }
+    const profileData: UserProfileResponse = await response.json();
 
-    // Update user info in database
-    const prisma = new PrismaClient();
-    try {
-      const updatedUser = await prisma.user_info.update({
-        where: { email },
-        data: {
-          name: newName.trim(),
-        },
-        select: {
-          uid: true,
-          name: true,
-          email: true,
-          profile_type: true,
-        },
-      });
-
-      return {
-        uid: updatedUser.uid,
-        name: updatedUser.name || email.split("@")[0],
-        email: updatedUser.email,
-        avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(
-          updatedUser.name || email
-        )}&background=cccccc&color=000000`,
-        profileType: updatedUser.profile_type as ProfileType | null,
-      };
-    } finally {
-      await prisma.$disconnect();
-    }
+    return {
+      uid: profileData.uid,
+      name: profileData.name || profileData.email.split("@")[0],
+      email: profileData.email,
+      avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(
+        profileData.name || profileData.email
+      )}&background=cccccc&color=000000`,
+      profileType: (profileData.profileType as ProfileType) || null,
+    };
   } catch (error) {
     console.error("Error updating user profile:", error);
     throw error;
@@ -169,47 +132,42 @@ export async function updateUserProfileType(
       throw new Error("Not authenticated");
     }
 
-    // Decode JWT token to get email
-    const decoded = decodeJWT(token);
-    if (!decoded) {
-      throw new Error("Invalid token");
+    const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+
+    console.log("[ProfileType Update] Sending profile type:", profileType);
+
+    // Call backend API to update profile type
+    const response = await fetch(`${apiBaseUrl}/api/auth/profile/update-type`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ profileType }),
+    });
+
+    console.log("[ProfileType Update] Response status:", response.status);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("[ProfileType Update] Error response:", errorText);
+      throw new Error(`Failed to update profile type: ${response.status} ${errorText}`);
     }
 
-    const email = decoded?.sub;
-    if (!email) {
-      throw new Error("Email not found in token");
-    }
+    const profileData: UserProfileResponse = await response.json();
+    console.log("[ProfileType Update] Received profile data:", profileData);
 
-    // Update user profile type in database
-    const prisma = new PrismaClient();
-    try {
-      const updatedUser = await prisma.user_info.update({
-        where: { email },
-        data: {
-          profile_type: profileType,
-        },
-        select: {
-          uid: true,
-          name: true,
-          email: true,
-          profile_type: true,
-        },
-      });
-
-      return {
-        uid: updatedUser.uid,
-        name: updatedUser.name || email.split("@")[0],
-        email: updatedUser.email,
-        avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(
-          updatedUser.name || email
-        )}&background=cccccc&color=ffffff`,
-        profileType: updatedUser.profile_type as ProfileType | null,
-      };
-    } finally {
-      await prisma.$disconnect();
-    }
+    return {
+      uid: profileData.uid,
+      name: profileData.name || profileData.email.split("@")[0],
+      email: profileData.email,
+      avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(
+        profileData.name || profileData.email
+      )}&background=cccccc&color=ffffff`,
+      profileType: (profileData.profileType as ProfileType) || null,
+    };
   } catch (error) {
-    console.error("Error updating profile type:", error);
+    console.error("[ProfileType Update] Error updating profile type:", error);
     throw error;
   }
 }

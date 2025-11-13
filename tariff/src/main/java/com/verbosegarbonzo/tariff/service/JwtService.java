@@ -31,15 +31,43 @@ public class JwtService {
 
     public String token(String email) { // Use email as username
         Map<String, Object> claims = new HashMap<>();
-        return createToken(claims, email);
+        return createAccessToken(claims, email);
     }
 
-    private String createToken(Map<String, Object> claims, String email) {
+    public String refreshAccessToken(String refreshToken) {
+        try {
+            String email = extractUsername(refreshToken);
+            if (!isTokenExpired(refreshToken)) {
+                Map<String, Object> claims = new HashMap<>();
+                return createAccessToken(claims, email);
+            }
+        } catch (Exception e) {
+            System.out.println("Invalid refresh token: " + e.getMessage());
+        }
+        return null;
+    }
+
+    public String createRefreshToken(String email) {
+        Map<String, Object> claims = new HashMap<>();
+        return createRefreshTokenWithClaims(claims, email);
+    }
+
+    private String createAccessToken(Map<String, Object> claims, String email) {
         return Jwts.builder()
                 .setClaims(claims)
                 .setSubject(email)
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 30))
+                .signWith(getSignKey(), SignatureAlgorithm.HS256)
+                .compact();
+    }
+
+    private String createRefreshTokenWithClaims(Map<String, Object> claims, String email) {
+        return Jwts.builder()
+                .setClaims(claims)
+                .setSubject(email)
+                .setIssuedAt(new Date())
+                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 24 * 7))
                 .signWith(getSignKey(), SignatureAlgorithm.HS256)
                 .compact();
     }

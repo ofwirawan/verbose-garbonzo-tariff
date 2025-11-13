@@ -63,12 +63,13 @@ public class UserControllerTest {
     @Test
     void addNewUser_Success() {
         Map<String, Object> newUser = Map.of(
-                "username", "newuser",
+                "name", "newuser",
                 "email", "new@example.com",
                 "password", "password123",
                 "roles", "ROLE_USER");
 
         given()
+                .relaxedHTTPSValidation()
                 .contentType(ContentType.JSON)
                 .body(newUser)
                 .when()
@@ -136,7 +137,10 @@ public class UserControllerTest {
                 .get("/api/auth/profile")
                 .then()
                 .statusCode(200)
-                .body(equalTo(testUser.getEmail()));
+                .body("email", equalTo(testUser.getEmail()))
+                .body("uid", notNullValue())
+                .body("name", notNullValue())
+                .body("roles", equalTo("ROLE_USER"));
     }
 
     @Test
@@ -146,5 +150,152 @@ public class UserControllerTest {
                 .get("/api/auth/profile")
                 .then()
                 .statusCode(403);
+    }
+
+    @Test
+    void updateProfileName_WithAuth_Success() {
+        String newName = "Updated Test User";
+        Map<String, String> updateRequest = Map.of("name", newName);
+
+        given()
+                .header("Authorization", "Bearer " + userJwt)
+                .contentType(ContentType.JSON)
+                .body(updateRequest)
+                .when()
+                .put("/api/auth/profile/update-name")
+                .then()
+                .statusCode(200)
+                .body("email", equalTo(testUser.getEmail()))
+                .body("name", equalTo(newName))
+                .body("uid", notNullValue())
+                .body("roles", equalTo("ROLE_USER"));
+    }
+
+    @Test
+    void updateProfileName_WithoutAuth_Returns403() {
+        Map<String, String> updateRequest = Map.of("name", "Updated Name");
+
+        given()
+                .contentType(ContentType.JSON)
+                .body(updateRequest)
+                .when()
+                .put("/api/auth/profile/update-name")
+                .then()
+                .statusCode(403);
+    }
+
+    @Test
+    void updateProfileName_EmptyName_ReturnsBadRequest() {
+        Map<String, String> updateRequest = Map.of("name", "");
+
+        given()
+                .header("Authorization", "Bearer " + userJwt)
+                .contentType(ContentType.JSON)
+                .body(updateRequest)
+                .when()
+                .put("/api/auth/profile/update-name")
+                .then()
+                .statusCode(400);
+    }
+
+    @Test
+    void updateProfileType_WithAuth_Success() {
+        Map<String, String> updateRequest = Map.of("profileType", "BUSINESS_OWNER");
+
+        given()
+                .header("Authorization", "Bearer " + userJwt)
+                .contentType(ContentType.JSON)
+                .body(updateRequest)
+                .when()
+                .put("/api/auth/profile/update-type")
+                .then()
+                .statusCode(200)
+                .body("email", equalTo(testUser.getEmail()))
+                .body("profileType", equalTo("BUSINESS_OWNER"))
+                .body("uid", notNullValue())
+                .body("roles", equalTo("ROLE_USER"));
+    }
+
+    @Test
+    void updateProfileType_ToMultipleTypes_Success() {
+        // Test updating to POLICY_ANALYST
+        Map<String, String> updateRequest1 = Map.of("profileType", "POLICY_ANALYST");
+
+        given()
+                .header("Authorization", "Bearer " + userJwt)
+                .contentType(ContentType.JSON)
+                .body(updateRequest1)
+                .when()
+                .put("/api/auth/profile/update-type")
+                .then()
+                .statusCode(200)
+                .body("profileType", equalTo("POLICY_ANALYST"));
+
+        // Test updating to STUDENT
+        Map<String, String> updateRequest2 = Map.of("profileType", "STUDENT");
+
+        given()
+                .header("Authorization", "Bearer " + userJwt)
+                .contentType(ContentType.JSON)
+                .body(updateRequest2)
+                .when()
+                .put("/api/auth/profile/update-type")
+                .then()
+                .statusCode(200)
+                .body("profileType", equalTo("STUDENT"));
+    }
+
+    @Test
+    void updateProfileType_WithoutAuth_Returns403() {
+        Map<String, String> updateRequest = Map.of("profileType", "BUSINESS_OWNER");
+
+        given()
+                .contentType(ContentType.JSON)
+                .body(updateRequest)
+                .when()
+                .put("/api/auth/profile/update-type")
+                .then()
+                .statusCode(403);
+    }
+
+    @Test
+    void updateProfileType_InvalidType_ReturnsBadRequest() {
+        Map<String, String> updateRequest = Map.of("profileType", "INVALID_TYPE");
+
+        given()
+                .header("Authorization", "Bearer " + userJwt)
+                .contentType(ContentType.JSON)
+                .body(updateRequest)
+                .when()
+                .put("/api/auth/profile/update-type")
+                .then()
+                .statusCode(400);
+    }
+
+    @Test
+    void updateProfileType_SetToNull_Success() {
+        // First set a profile type
+        Map<String, String> updateRequest1 = Map.of("profileType", "BUSINESS_OWNER");
+        given()
+                .header("Authorization", "Bearer " + userJwt)
+                .contentType(ContentType.JSON)
+                .body(updateRequest1)
+                .when()
+                .put("/api/auth/profile/update-type")
+                .then()
+                .statusCode(200);
+
+        // Now set it to null
+        Map<String, String> updateRequest2 = Map.of("profileType", "null");
+
+        given()
+                .header("Authorization", "Bearer " + userJwt)
+                .contentType(ContentType.JSON)
+                .body(updateRequest2)
+                .when()
+                .put("/api/auth/profile/update-type")
+                .then()
+                .statusCode(200)
+                .body("profileType", nullValue());
     }
 }

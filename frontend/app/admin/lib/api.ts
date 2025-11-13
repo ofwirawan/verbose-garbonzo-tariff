@@ -25,12 +25,102 @@ function getAuthHeaders(): HeadersInit {
   };
 }
 
-// Helper function for API calls with better error handling
-async function apiCall<T>(url: string, options?: RequestInit): Promise<T> {
-  const response = await fetch(url, {
+// Helper function to refresh the access token using refresh token
+async function refreshToken(): Promise<string | null> {
+  try {
+    console.log("[API] Attempting to refresh access token...");
+
+    // Get refresh token from cookies
+    let refreshTokenValue: string | null = null;
+    if (typeof window !== "undefined") {
+      const cookieValue = document.cookie
+        .split("; ")
+        .find((row) => row.startsWith("refresh_token="))
+        ?.split("=")[1];
+      refreshTokenValue = cookieValue || null;
+    }
+
+    if (!refreshTokenValue) {
+      console.error("[API] No refresh token found");
+      // Redirect to login if no refresh token
+      if (typeof window !== "undefined") {
+        window.location.href = "/login";
+      }
+      return null;
+    }
+
+    // Call refresh endpoint with refresh token
+    const response = await fetch("/api/auth/refresh", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${refreshTokenValue}`,
+      },
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      const newAccessToken = data.accessToken;
+
+      if (newAccessToken) {
+        // Update the access token cookie (30 minutes)
+        document.cookie = `jwt_token=${newAccessToken}; path=/; max-age=1800; SameSite=Strict`;
+        console.log("[API] Access token refreshed successfully");
+        return newAccessToken;
+      }
+    }
+
+    // If refresh fails, redirect to login
+    if (response.status === 401 || response.status === 403) {
+      console.warn("[API] Token refresh failed with status:", response.status, "- Redirecting to login");
+      if (typeof window !== "undefined") {
+        // Clear both token cookies
+        document.cookie = "jwt_token=; path=/; max-age=0;";
+        document.cookie = "refresh_token=; path=/; max-age=0;";
+        // Redirect to login
+        window.location.href = "/login";
+      }
+    } else {
+      console.warn("[API] Token refresh failed with status:", response.status);
+    }
+  } catch (error) {
+    console.error("[API] Error refreshing token:", error);
+    // On error, redirect to login for safety
+    if (typeof window !== "undefined") {
+      window.location.href = "/login";
+    }
+  }
+
+  return null;
+}
+
+// Generic fetch wrapper with automatic token refresh
+async function fetchWithRetry(url: string, options?: RequestInit): Promise<Response> {
+  let response = await fetch(url, {
     ...options,
     headers: getAuthHeaders(),
   });
+
+  // If we get a 401 or 403, try to refresh the token and retry once
+  if ((response.status === 401 || response.status === 403) && typeof window !== "undefined") {
+    console.log("[API] Received 401/403, attempting token refresh...");
+    const newToken = await refreshToken();
+
+    if (newToken) {
+      console.log("[API] Retrying request with refreshed token");
+      response = await fetch(url, {
+        ...options,
+        headers: getAuthHeaders(),
+      });
+    }
+  }
+
+  return response;
+}
+
+// Helper function for API calls with better error handling and token refresh
+async function apiCall<T>(url: string, options?: RequestInit): Promise<T> {
+  const response = await fetchWithRetry(url, options);
 
   if (!response.ok) {
     const errorText = await response.text();
@@ -129,17 +219,14 @@ export const countryAPI = {
   },
 
   async getByCode(code: string): Promise<Country> {
-    const response = await fetch(`${API_BASE_URL}/countries/${code}`, {
-      headers: getAuthHeaders(),
-    });
+    const response = await fetchWithRetry(`${API_BASE_URL}/countries/${code}`);
     if (!response.ok) throw new Error("Failed to fetch country");
     return response.json();
   },
 
   async create(data: Country): Promise<Country> {
-    const response = await fetch(`${API_BASE_URL}/countries`, {
+    const response = await fetchWithRetry(`${API_BASE_URL}/countries`, {
       method: "POST",
-      headers: getAuthHeaders(),
       body: JSON.stringify(data),
     });
     if (!response.ok) {
@@ -150,9 +237,8 @@ export const countryAPI = {
   },
 
   async update(code: string, data: Country): Promise<Country> {
-    const response = await fetch(`${API_BASE_URL}/countries/${code}`, {
+    const response = await fetchWithRetry(`${API_BASE_URL}/countries/${code}`, {
       method: "PUT",
-      headers: getAuthHeaders(),
       body: JSON.stringify(data),
     });
     if (!response.ok) throw new Error("Failed to update country");
@@ -160,9 +246,8 @@ export const countryAPI = {
   },
 
   async delete(code: string): Promise<void> {
-    const response = await fetch(`${API_BASE_URL}/countries/${code}`, {
+    const response = await fetchWithRetry(`${API_BASE_URL}/countries/${code}`, {
       method: "DELETE",
-      headers: getAuthHeaders(),
     });
     if (!response.ok) throw new Error("Failed to delete country");
   },
@@ -178,17 +263,14 @@ export const productAPI = {
   },
 
   async getByCode(code: string): Promise<Product> {
-    const response = await fetch(`${API_BASE_URL}/products/${code}`, {
-      headers: getAuthHeaders(),
-    });
+    const response = await fetchWithRetry(`${API_BASE_URL}/products/${code}`);
     if (!response.ok) throw new Error("Failed to fetch product");
     return response.json();
   },
 
   async create(data: Product): Promise<Product> {
-    const response = await fetch(`${API_BASE_URL}/products`, {
+    const response = await fetchWithRetry(`${API_BASE_URL}/products`, {
       method: "POST",
-      headers: getAuthHeaders(),
       body: JSON.stringify(data),
     });
     if (!response.ok) throw new Error("Failed to create product");
@@ -196,9 +278,8 @@ export const productAPI = {
   },
 
   async update(code: string, data: Product): Promise<Product> {
-    const response = await fetch(`${API_BASE_URL}/products/${code}`, {
+    const response = await fetchWithRetry(`${API_BASE_URL}/products/${code}`, {
       method: "PUT",
-      headers: getAuthHeaders(),
       body: JSON.stringify(data),
     });
     if (!response.ok) throw new Error("Failed to update product");
@@ -206,9 +287,8 @@ export const productAPI = {
   },
 
   async delete(code: string): Promise<void> {
-    const response = await fetch(`${API_BASE_URL}/products/${code}`, {
+    const response = await fetchWithRetry(`${API_BASE_URL}/products/${code}`, {
       method: "DELETE",
-      headers: getAuthHeaders(),
     });
     if (!response.ok) throw new Error("Failed to delete product");
   },
@@ -224,9 +304,7 @@ export const userAPI = {
   },
 
   async getById(uid: string): Promise<User> {
-    const response = await fetch(`${API_BASE_URL}/users/${uid}`, {
-      headers: getAuthHeaders(),
-    });
+    const response = await fetchWithRetry(`${API_BASE_URL}/users/${uid}`);
     if (!response.ok) throw new Error("Failed to fetch user");
     return response.json();
   },
@@ -237,9 +315,8 @@ export const userAPI = {
       ...userDataWithoutUid,
       password: pwHash,
     };
-    const response = await fetch(`${API_BASE_URL}/users`, {
+    const response = await fetchWithRetry(`${API_BASE_URL}/users`, {
       method: "POST",
-      headers: getAuthHeaders(),
       body: JSON.stringify(userPayload),
     });
     if (!response.ok) throw new Error("Failed to create user");
@@ -247,9 +324,8 @@ export const userAPI = {
   },
 
   async update(uid: string, data: Partial<User>): Promise<User> {
-    const response = await fetch(`${API_BASE_URL}/users/${uid}`, {
+    const response = await fetchWithRetry(`${API_BASE_URL}/users/${uid}`, {
       method: "PUT",
-      headers: getAuthHeaders(),
       body: JSON.stringify(data),
     });
     if (!response.ok) throw new Error("Failed to update user");
@@ -257,9 +333,8 @@ export const userAPI = {
   },
 
   async delete(uid: string): Promise<void> {
-    const response = await fetch(`${API_BASE_URL}/users/${uid}`, {
+    const response = await fetchWithRetry(`${API_BASE_URL}/users/${uid}`, {
       method: "DELETE",
-      headers: getAuthHeaders(),
     });
     if (!response.ok) throw new Error("Failed to delete user");
   },
@@ -275,17 +350,14 @@ export const measureAPI = {
   },
 
   async getById(measureId: number): Promise<Measure> {
-    const response = await fetch(`${API_BASE_URL}/measures/${measureId}`, {
-      headers: getAuthHeaders(),
-    });
+    const response = await fetchWithRetry(`${API_BASE_URL}/measures/${measureId}`);
     if (!response.ok) throw new Error("Failed to fetch measure");
     return response.json();
   },
 
   async create(data: Measure): Promise<Measure> {
-    const response = await fetch(`${API_BASE_URL}/measures`, {
+    const response = await fetchWithRetry(`${API_BASE_URL}/measures`, {
       method: "POST",
-      headers: getAuthHeaders(),
       body: JSON.stringify(data),
     });
     if (!response.ok) throw new Error("Failed to create measure");
@@ -293,9 +365,8 @@ export const measureAPI = {
   },
 
   async update(measureId: number, data: Measure): Promise<Measure> {
-    const response = await fetch(`${API_BASE_URL}/measures/${measureId}`, {
+    const response = await fetchWithRetry(`${API_BASE_URL}/measures/${measureId}`, {
       method: "PUT",
-      headers: getAuthHeaders(),
       body: JSON.stringify(data),
     });
     if (!response.ok) throw new Error("Failed to update measure");
@@ -303,9 +374,8 @@ export const measureAPI = {
   },
 
   async delete(measureId: number): Promise<void> {
-    const response = await fetch(`${API_BASE_URL}/measures/${measureId}`, {
+    const response = await fetchWithRetry(`${API_BASE_URL}/measures/${measureId}`, {
       method: "DELETE",
-      headers: getAuthHeaders(),
     });
     if (!response.ok) throw new Error("Failed to delete measure");
   },
@@ -320,9 +390,7 @@ export const measureAPI = {
       productCode,
       validFrom,
     });
-    const response = await fetch(`${API_BASE_URL}/measures/search?${params}`, {
-      headers: getAuthHeaders(),
-    });
+    const response = await fetchWithRetry(`${API_BASE_URL}/measures/search?${params}`);
     if (!response.ok) throw new Error("Failed to search measures");
     return response.json();
   },
@@ -332,28 +400,20 @@ export const measureAPI = {
 export const preferenceAPI = {
   async getAll(page = 0, size = 10, search = ""): Promise<PaginatedResponse<Preference>> {
     const searchParam = search ? `&search=${encodeURIComponent(search)}` : "";
-    const response = await fetch(
-      `${API_BASE_URL}/preferences?page=${page}&size=${size}${searchParam}`,
-      {
-        headers: getAuthHeaders(),
-      }
+    return apiCall<PaginatedResponse<Preference>>(
+      `${API_BASE_URL}/preferences?page=${page}&size=${size}${searchParam}`
     );
-    if (!response.ok) throw new Error("Failed to fetch preferences");
-    return response.json();
   },
 
   async getById(preferenceId: number): Promise<Preference> {
-    const response = await fetch(`${API_BASE_URL}/preferences/${preferenceId}`, {
-      headers: getAuthHeaders(),
-    });
+    const response = await fetchWithRetry(`${API_BASE_URL}/preferences/${preferenceId}`);
     if (!response.ok) throw new Error("Failed to fetch preference");
     return response.json();
   },
 
   async create(data: Preference): Promise<Preference> {
-    const response = await fetch(`${API_BASE_URL}/preferences`, {
+    const response = await fetchWithRetry(`${API_BASE_URL}/preferences`, {
       method: "POST",
-      headers: getAuthHeaders(),
       body: JSON.stringify(data),
     });
     if (!response.ok) throw new Error("Failed to create preference");
@@ -361,9 +421,8 @@ export const preferenceAPI = {
   },
 
   async update(preferenceId: number, data: Preference): Promise<Preference> {
-    const response = await fetch(`${API_BASE_URL}/preferences/${preferenceId}`, {
+    const response = await fetchWithRetry(`${API_BASE_URL}/preferences/${preferenceId}`, {
       method: "PUT",
-      headers: getAuthHeaders(),
       body: JSON.stringify(data),
     });
     if (!response.ok) throw new Error("Failed to update preference");
@@ -371,9 +430,8 @@ export const preferenceAPI = {
   },
 
   async delete(preferenceId: number): Promise<void> {
-    const response = await fetch(`${API_BASE_URL}/preferences/${preferenceId}`, {
+    const response = await fetchWithRetry(`${API_BASE_URL}/preferences/${preferenceId}`, {
       method: "DELETE",
-      headers: getAuthHeaders(),
     });
     if (!response.ok) throw new Error("Failed to delete preference");
   },
@@ -390,11 +448,8 @@ export const preferenceAPI = {
       productCode,
       validFrom,
     });
-    const response = await fetch(
-      `${API_BASE_URL}/preferences/search?${params}`,
-      {
-        headers: getAuthHeaders(),
-      }
+    const response = await fetchWithRetry(
+      `${API_BASE_URL}/preferences/search?${params}`
     );
     if (!response.ok) throw new Error("Failed to search preferences");
     return response.json();
@@ -405,28 +460,20 @@ export const preferenceAPI = {
 export const suspensionAPI = {
   async getAll(page = 0, size = 10, search = ""): Promise<PaginatedResponse<Suspension>> {
     const searchParam = search ? `&search=${encodeURIComponent(search)}` : "";
-    const response = await fetch(
-      `${API_BASE_URL}/suspensions?page=${page}&size=${size}${searchParam}`,
-      {
-        headers: getAuthHeaders(),
-      }
+    return apiCall<PaginatedResponse<Suspension>>(
+      `${API_BASE_URL}/suspensions?page=${page}&size=${size}${searchParam}`
     );
-    if (!response.ok) throw new Error("Failed to fetch suspensions");
-    return response.json();
   },
 
   async getById(id: number): Promise<Suspension> {
-    const response = await fetch(`${API_BASE_URL}/suspensions/${id}`, {
-      headers: getAuthHeaders(),
-    });
+    const response = await fetchWithRetry(`${API_BASE_URL}/suspensions/${id}`);
     if (!response.ok) throw new Error("Failed to fetch suspension");
     return response.json();
   },
 
   async create(data: Suspension): Promise<Suspension> {
-    const response = await fetch(`${API_BASE_URL}/suspensions`, {
+    const response = await fetchWithRetry(`${API_BASE_URL}/suspensions`, {
       method: "POST",
-      headers: getAuthHeaders(),
       body: JSON.stringify(data),
     });
     if (!response.ok) throw new Error("Failed to create suspension");
@@ -434,9 +481,8 @@ export const suspensionAPI = {
   },
 
   async update(id: number, data: Suspension): Promise<Suspension> {
-    const response = await fetch(`${API_BASE_URL}/suspensions/${id}`, {
+    const response = await fetchWithRetry(`${API_BASE_URL}/suspensions/${id}`, {
       method: "PUT",
-      headers: getAuthHeaders(),
       body: JSON.stringify(data),
     });
     if (!response.ok) throw new Error("Failed to update suspension");
@@ -444,9 +490,8 @@ export const suspensionAPI = {
   },
 
   async delete(id: number): Promise<void> {
-    const response = await fetch(`${API_BASE_URL}/suspensions/${id}`, {
+    const response = await fetchWithRetry(`${API_BASE_URL}/suspensions/${id}`, {
       method: "DELETE",
-      headers: getAuthHeaders(),
     });
     if (!response.ok) throw new Error("Failed to delete suspension");
   },
@@ -461,11 +506,8 @@ export const suspensionAPI = {
       productCode,
       validFrom,
     });
-    const response = await fetch(
-      `${API_BASE_URL}/suspensions/search?${params}`,
-      {
-        headers: getAuthHeaders(),
-      }
+    const response = await fetchWithRetry(
+      `${API_BASE_URL}/suspensions/search?${params}`
     );
     if (!response.ok) throw new Error("Failed to search suspensions");
     return response.json();
@@ -482,17 +524,14 @@ export const transactionAPI = {
   },
 
   async getById(tid: number): Promise<Transaction> {
-    const response = await fetch(`${API_BASE_URL}/transactions/${tid}`, {
-      headers: getAuthHeaders(),
-    });
+    const response = await fetchWithRetry(`${API_BASE_URL}/transactions/${tid}`);
     if (!response.ok) throw new Error("Failed to fetch transaction");
     return response.json();
   },
 
   async create(data: Transaction): Promise<Transaction> {
-    const response = await fetch(`${API_BASE_URL}/transactions`, {
+    const response = await fetchWithRetry(`${API_BASE_URL}/transactions`, {
       method: "POST",
-      headers: getAuthHeaders(),
       body: JSON.stringify(data),
     });
     if (!response.ok) throw new Error("Failed to create transaction");
@@ -500,9 +539,8 @@ export const transactionAPI = {
   },
 
   async update(tid: number, data: Partial<Transaction>): Promise<Transaction> {
-    const response = await fetch(`${API_BASE_URL}/transactions/${tid}`, {
+    const response = await fetchWithRetry(`${API_BASE_URL}/transactions/${tid}`, {
       method: "PUT",
-      headers: getAuthHeaders(),
       body: JSON.stringify(data),
     });
     if (!response.ok) throw new Error("Failed to update transaction");
@@ -510,9 +548,8 @@ export const transactionAPI = {
   },
 
   async delete(tid: number): Promise<void> {
-    const response = await fetch(`${API_BASE_URL}/transactions/${tid}`, {
+    const response = await fetchWithRetry(`${API_BASE_URL}/transactions/${tid}`, {
       method: "DELETE",
-      headers: getAuthHeaders(),
     });
     if (!response.ok) throw new Error("Failed to delete transaction");
   },
