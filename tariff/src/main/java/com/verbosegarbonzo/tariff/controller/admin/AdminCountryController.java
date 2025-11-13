@@ -84,6 +84,7 @@ public class AdminCountryController {
         }
         existingCountry.setNumericCode(updatedCountry.getNumericCode());
         existingCountry.setName(updatedCountry.getName());
+        existingCountry.setCity(updatedCountry.getCity());
         Country saved = countryRepository.save(existingCountry);
         return ResponseEntity.ok(saved);
     }

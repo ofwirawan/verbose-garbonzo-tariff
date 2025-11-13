@@ -311,6 +311,12 @@ export const userAPI = {
 
   async create(data: User): Promise<User> {
     const { uid, pwHash, ...userDataWithoutUid } = data;
+
+    // Validate password is provided
+    if (!pwHash || pwHash.trim() === "") {
+      throw new Error("Password is required for new users");
+    }
+
     const userPayload = {
       ...userDataWithoutUid,
       password: pwHash,

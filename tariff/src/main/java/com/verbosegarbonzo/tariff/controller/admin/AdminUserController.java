@@ -31,14 +31,17 @@ public class AdminUserController {
     // Create new User
     @PostMapping
     public ResponseEntity<UserInfo> createUser(@Valid @RequestBody UserInfo user) {
-        if (user.getUid() != null && userRepository.existsById(user.getUid())) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT,
-                "A user with ID '" + user.getUid() + "' already exists.");
+        // Validate that password is provided for new users
+        if (user.getPassword() == null || user.getPassword().trim().isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                "Password is required for new users");
         }
+
+        // Always generate a new UUID for new users (don't accept uid from request)
+        user.setUid(null);
+
         // Hash the password before saving
-        if (user.getPassword() != null && !user.getPassword().isEmpty()) {
-            user.setPassword(passwordEncoder.encode(user.getPassword()));
-        }
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
         UserInfo created = userRepository.save(user);
         return ResponseEntity.status(201).body(created);
     }
