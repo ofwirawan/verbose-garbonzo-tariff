@@ -7,14 +7,13 @@ import {
   flexRender,
   getCoreRowModel,
   getFilteredRowModel,
-  getPaginationRowModel,
   getSortedRowModel,
   SortingState,
   useReactTable,
   VisibilityState,
 } from "@tanstack/react-table";
 
-import { IconTrash, IconFilter2 } from "@tabler/icons-react";
+import { ChevronDown, Trash2 } from "lucide-react";
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -44,7 +43,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
 import { toast } from "sonner";
@@ -53,7 +51,6 @@ import { HistoryItem, AppliedRate } from "../types";
 
 interface HistoryTableProps {
   data: HistoryItem[];
-  onDelete: (ids: number[]) => void;
 }
 
 export const columns: ColumnDef<HistoryItem>[] = [
@@ -285,6 +282,12 @@ export function HistoryTable({ data }: HistoryTableProps) {
   const [history, setHistory] = useState<HistoryItem[]>(
     data.filter((item) => item != null)
   );
+  const [deleteRow, setDeleteRow] = useState<HistoryItem | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [filterValue, setFilterValue] = useState("");
+  const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(
+    null
+  );
 
   const table = useReactTable({
     data: history,
@@ -292,7 +295,6 @@ export function HistoryTable({ data }: HistoryTableProps) {
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     onColumnVisibilityChange: setColumnVisibility,
@@ -305,194 +307,224 @@ export function HistoryTable({ data }: HistoryTableProps) {
     },
   });
 
+  const handleDeleteSelected = async () => {
+    const selected = table.getFilteredSelectedRowModel().rows;
+
+    setIsDeleting(true);
+    try {
+      // Call backend DELETE for each row using query parameters
+      await Promise.all(
+        selected.map((row) =>
+          authenticatedFetch(`/api/history?id=${row.original.id}`, {
+            method: "DELETE",
+          })
+        )
+      );
+
+      // Update frontend state
+      setHistory((prev) =>
+        prev.filter(
+          (item) => !selected.some((row) => row.original.id === item.id)
+        )
+      );
+
+      // Reset checkbox selection
+      table.resetRowSelection();
+
+      // Show toast notification
+      toast.success(
+        `${selected.length} item${selected.length > 1 ? "s" : ""} deleted successfully!`
+      );
+      setDeleteRow(null);
+    } catch (err) {
+      console.error("Failed to delete selected items:", err);
+      toast.error("Failed to delete items. Please try again.");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleFilterChange = (value: string) => {
+    setFilterValue(value);
+
+    // Clear previous timeout
+    if (searchTimeout) clearTimeout(searchTimeout);
+
+    // Apply filter to product column
+    const timeout = setTimeout(() => {
+      table.getColumn("product")?.setFilterValue(value);
+    }, 300); // 300ms debounce
+    setSearchTimeout(timeout);
+  };
+
   return (
-    <div className="w-full">
+    <div className="w-full space-y-4 px-4 sm:px-0">
       {/* Toolbar */}
-      <div className="flex items-center py-4 space-x-2">
-        <Input
-          placeholder="Filter products..."
-          value={(table.getColumn("product")?.getFilterValue() as string) ?? ""}
-          onChange={(event) =>
-            table.getColumn("product")?.setFilterValue(event.target.value)
-          }
-          className="max-w-sm"
-        />
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h3 className="text-lg sm:text-2xl font-semibold">History</h3>
+        </div>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
+          <Input
+            placeholder="Filter products..."
+            value={filterValue}
+            onChange={(event) => handleFilterChange(event.target.value)}
+            className="w-full sm:max-w-sm text-xs sm:text-sm h-9 sm:h-10 px-2 sm:px-4"
+          />
+          <div className="flex gap-2 sm:gap-4">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="text-xs sm:text-sm h-9 sm:h-10 px-2 sm:px-4"
+                >
+                  <ChevronDown className="w-3 h-3 sm:w-4 sm:h-4" />
+                  <span className="hidden sm:inline ml-2">Columns</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {table
+                  .getAllColumns()
+                  .filter((col) => col.getCanHide())
+                  .map((col) => (
+                    <DropdownMenuCheckboxItem
+                      key={col.id}
+                      className="capitalize text-xs sm:text-sm"
+                      checked={col.getIsVisible()}
+                      onCheckedChange={(value) =>
+                        col.toggleVisibility(!!value)
+                      }
+                    >
+                      {typeof col.columnDef.header === "string"
+                        ? col.columnDef.header
+                        : col.id}
+                    </DropdownMenuCheckboxItem>
+                  ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
 
-        {/* Delete button with confirmation */}
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <Button
-              variant="outline"
-              size="sm"
-              className="ml-auto"
-              disabled={table.getFilteredSelectedRowModel().rows.length === 0}
-            >
-              <IconTrash className="h-4 w-4" />
-              Delete ({table.getFilteredSelectedRowModel().rows.length})
-            </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Confirm Deletion</AlertDialogTitle>
-              <AlertDialogDescription>
-                Are you sure you want to delete{" "}
-                <strong>
-                  {table.getFilteredSelectedRowModel().rows.length}
-                </strong>{" "}
-                selected item
-                {table.getFilteredSelectedRowModel().rows.length === 1
-                  ? ""
-                  : "s"}
-                ? This action cannot be undone.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={async () => {
-                  const selected = table.getFilteredSelectedRowModel().rows;
-
-                  try {
-                    // Call backend DELETE for each row using query parameters
-                    selected.map(async (row) => {
-                      const response = await authenticatedFetch(
-                        `/api/history?id=${row.original.id}`,
-                        {
-                          method: "DELETE",
-                        }
-                      );
-                      return response;
-                    });
-
-                    // Update frontend state
-                    setHistory((prev) =>
-                      prev.filter(
-                        (item) =>
-                          !selected.some((row) => row.original.id === item.id)
-                      )
-                    );
-
-                    // Reset checkbox selection
-                    table.resetRowSelection();
-
-                    // Show toast notification
-                    toast.success(
-                      `${selected.length} item${
-                        selected.length > 1 ? "s" : ""
-                      } deleted successfully!`
-                    );
-                  } catch (err) {
-                    console.error("Failed to delete selected items:", err);
-                    toast.error("Failed to delete items. Please try again.");
+            <AlertDialog open={!!deleteRow} onOpenChange={(open) => !open && setDeleteRow(null)}>
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-xs sm:text-sm h-9 sm:h-10 px-2 sm:px-4 text-red-600 hover:bg-red-50"
+                disabled={table.getFilteredSelectedRowModel().rows.length === 0}
+                onClick={() => {
+                  if (table.getFilteredSelectedRowModel().rows.length > 0) {
+                    setDeleteRow(table.getFilteredSelectedRowModel().rows[0].original);
                   }
                 }}
               >
-                Confirm Delete
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+                <Trash2 className="w-3 h-3 sm:w-4 sm:h-4" />
+                <span className="hidden sm:inline ml-2">
+                  Delete ({table.getFilteredSelectedRowModel().rows.length})
+                </span>
+                <span className="sm:hidden ml-1">
+                  ({table.getFilteredSelectedRowModel().rows.length})
+                </span>
+              </Button>
 
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm" className="ml-auto">
-              <IconFilter2 className="h4 w4" />
-              Filter
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            {table
-              .getAllColumns()
-              .filter((col) => col.getCanHide())
-              .map((col) => (
-                <DropdownMenuCheckboxItem
-                  key={col.id}
-                  className="capitalize"
-                  checked={col.getIsVisible()}
-                  onCheckedChange={(value) => col.toggleVisibility(!!value)}
-                >
-                  {typeof col.columnDef.header === "string"
-                    ? col.columnDef.header
-                    : col.id}
-                </DropdownMenuCheckboxItem>
-              ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Confirm Deletion</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Are you sure you want to delete{" "}
+                    <strong>{table.getFilteredSelectedRowModel().rows.length}</strong>{" "}
+                    selected item
+                    {table.getFilteredSelectedRowModel().rows.length === 1
+                      ? ""
+                      : "s"}
+                    ? This action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={handleDeleteSelected}
+                    disabled={isDeleting}
+                    className="bg-red-600 hover:bg-red-700 text-white"
+                  >
+                    {isDeleting ? "Deleting..." : "Confirm Delete"}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
+        </div>
       </div>
 
       {/* Table */}
-      <div className="overflow-hidden rounded-md border">
-        <Table>
-          <TableHeader>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
-                  <TableHead key={header.id}>
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
-                  </TableHead>
-                ))}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row) => (
-                <TableRow
-                  key={row.id}
-                  data-state={row.getIsSelected() && "selected"}
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
-                    </TableCell>
+      <div
+        className={`rounded-md border overflow-hidden overflow-x-auto ${
+          history.length > 10 ? "flex flex-col" : ""
+        }`}
+      >
+        <div
+          className={
+            history.length > 10 ? "overflow-y-auto max-h-[600px]" : ""
+          }
+        >
+          <Table className="min-w-full text-xs sm:text-sm">
+            <TableHeader className="bg-card sticky top-0 z-0">
+              {table.getHeaderGroups().map((headerGroup) => (
+                <TableRow key={headerGroup.id}>
+                  {headerGroup.headers.map((header) => (
+                    <TableHead
+                      key={header.id}
+                      className="px-2 sm:px-4 py-2 whitespace-nowrap text-xs sm:text-sm font-medium"
+                    >
+                      {header.isPlaceholder
+                        ? null
+                        : flexRender(
+                            header.column.columnDef.header,
+                            header.getContext()
+                          )}
+                    </TableHead>
                   ))}
                 </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell
-                  colSpan={columns.length}
-                  className="h-24 text-center"
-                >
-                  No results.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
+              ))}
+            </TableHeader>
+            <TableBody>
+              {table.getRowModel().rows?.length ? (
+                table.getRowModel().rows.map((row) => (
+                  <TableRow
+                    key={row.id}
+                    data-state={row.getIsSelected() && "selected"}
+                  >
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell
+                        key={cell.id}
+                        className="px-2 sm:px-4 py-2 text-xs sm:text-sm break-words max-w-[150px] sm:max-w-none"
+                      >
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext()
+                        )}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell
+                    colSpan={columns.length}
+                    className="h-24 text-center text-xs sm:text-sm"
+                  >
+                    No results.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
       </div>
 
       {/* Footer */}
-      <div className="flex items-center justify-between py-4">
-        <div className="text-sm text-muted-foreground">
+      <div className="flex flex-col items-center justify-between gap-2 sm:gap-4 sm:flex-row text-xs sm:text-sm">
+        <div className="text-muted-foreground truncate">
           {table.getFilteredSelectedRowModel().rows.length} of{" "}
           {table.getFilteredRowModel().rows.length} row(s) selected.
-        </div>
-        <div className="space-x-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
-          >
-            Previous
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
-          >
-            Next
-          </Button>
         </div>
       </div>
     </div>

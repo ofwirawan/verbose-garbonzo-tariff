@@ -17,7 +17,6 @@ import {
   IconReport,
   IconSearch,
   IconSettings,
-  IconShieldLock,
   // IconUsers,
 } from "@tabler/icons-react";
 // import { NavDocuments } from "@/components/nav-documents";
@@ -62,11 +61,6 @@ const data = {
       title: "Tariff History",
       url: "/tariffhistory",
       icon: IconChartBar,
-    },
-    {
-      title: "Admin",
-      url: "/admin",
-      icon: IconShieldLock,
     },
     // {
     //   title: "Analytics",

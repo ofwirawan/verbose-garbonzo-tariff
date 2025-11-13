@@ -112,7 +112,7 @@ export default function ProfilePage() {
           <div className="flex flex-1 flex-col overflow-hidden">
             <div className="@container/main flex-1 overflow-auto">
               <div className="flex flex-col gap-6 p-4 md:p-8 mx-auto">
-                <p className="text-center text-gray-500">
+                <p className="text-center text-muted-foreground">
                   {error || "Loading..."}
                 </p>
               </div>
@@ -140,16 +140,16 @@ export default function ProfilePage() {
             <div className="flex flex-col gap-6 p-4 md:p-8 mx-auto max-w-3xl w-full">
               {/* Page Header */}
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">
+                <h1 className="text-3xl font-bold text-foreground">
                   Account Settings
                 </h1>
-                <p className="text-sm text-gray-600 mt-1">
+                <p className="text-sm text-muted-foreground mt-1">
                   Manage your profile, security, and preferences
                 </p>
               </div>
 
               {/* Profile Section */}
-              <div className="bg-white rounded-lg border border-gray-200 p-8 shadow-sm">
+              <div className="bg-card rounded-lg border border-border p-8 shadow-sm">
                 <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
                   {/* Left side: Avatar and info */}
                   <div className="flex gap-4 items-start md:items-start">
@@ -159,7 +159,7 @@ export default function ProfilePage() {
                         src={user?.avatar}
                         alt={editName || user?.name || ""}
                       />
-                      <AvatarFallback className="rounded-lg bg-gray-200 text-base font-semibold text-gray-900">
+                      <AvatarFallback className="rounded-lg bg-muted text-base font-semibold text-foreground">
                         {(isEditMode ? editName : user?.name || user?.email)
                           ?.split(" ")
                           .map((n) => n[0])
@@ -175,7 +175,7 @@ export default function ProfilePage() {
                         <div className="space-y-1">
                           <Label
                             htmlFor="name"
-                            className="text-xs font-medium text-gray-600"
+                            className="text-xs font-medium text-muted-foreground"
                           >
                             Full Name
                           </Label>
@@ -192,7 +192,7 @@ export default function ProfilePage() {
                         <div className="space-y-1">
                           <Label
                             htmlFor="email"
-                            className="text-xs font-medium text-gray-600"
+                            className="text-xs font-medium text-muted-foreground"
                           >
                             Email Address
                           </Label>
@@ -200,16 +200,16 @@ export default function ProfilePage() {
                             id="email"
                             value={user?.email || ""}
                             disabled
-                            className="w-full bg-gray-50 text-gray-600 text-sm"
+                            className="w-full bg-muted text-muted-foreground text-sm"
                           />
                         </div>
                       </div>
                     ) : (
                       <div className="flex-1">
-                        <h3 className="text-xl font-semibold text-gray-900">
+                        <h3 className="text-xl font-semibold text-foreground">
                           {user?.name}
                         </h3>
-                        <p className="text-sm text-gray-600 mt-1">
+                        <p className="text-sm text-muted-foreground mt-1">
                           {user?.email}
                         </p>
                       </div>
@@ -225,7 +225,7 @@ export default function ProfilePage() {
                           onClick={handleEditToggle}
                           disabled={isSaving}
                           size="sm"
-                          className="border-gray-300 text-gray-900 hover:bg-gray-50 flex-1 md:flex-none"
+                          className="flex-1 md:flex-none"
                         >
                           Cancel
                         </Button>
@@ -233,31 +233,31 @@ export default function ProfilePage() {
                           onClick={handleSaveProfile}
                           disabled={isSaving}
                           size="sm"
-                          className="bg-gray-900 text-white hover:bg-gray-800 flex-1 md:flex-none"
+                          className="flex-1 md:flex-none"
                         >
                           {isSaving ? "Saving..." : "Save"}
                         </Button>
                       </>
                     ) : (
-                      <button
+                      <Button
                         onClick={handleEditToggle}
-                        className="px-4 py-2 bg-gray-900 text-white rounded-md hover:bg-gray-800 transition-colors text-sm font-medium whitespace-nowrap"
+                        className="whitespace-nowrap"
                       >
                         Edit Profile
-                      </button>
+                      </Button>
                     )}
                   </div>
                 </div>
               </div>
 
               {/* Profile Type Section */}
-              <div className="bg-white rounded-lg border border-gray-200 p-8 shadow-sm">
+              <div className="bg-card rounded-lg border border-border p-8 shadow-sm">
                 <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
                   <div className="flex-1">
-                    <h2 className="text-lg font-semibold text-gray-900 mb-2">
+                    <h2 className="text-lg font-semibold text-foreground mb-2">
                       Profile Type
                     </h2>
-                    <p className="text-sm text-gray-600 mb-4">
+                    <p className="text-sm text-muted-foreground mb-4">
                       Select your profile type to personalize your experience
                     </p>
 
@@ -281,7 +281,7 @@ export default function ProfilePage() {
                       </Select>
                     ) : (
                       <div className="inline-block">
-                        <p className="text-sm font-medium text-gray-900">
+                        <p className="text-sm font-medium text-foreground">
                           {user?.profileType
                             ? PROFILE_TYPE_LABELS[user.profileType]
                             : "Not selected"}
@@ -299,7 +299,6 @@ export default function ProfilePage() {
                             setIsEditingProfileType(false);
                             setSelectedProfileType(null);
                           }}
-                          className="border-gray-300 text-gray-900 hover:bg-gray-50"
                         >
                           Cancel
                         </Button>
@@ -322,29 +321,28 @@ export default function ProfilePage() {
                                 });
                             }
                           }}
-                          className="bg-gray-900 text-white hover:bg-gray-800"
                         >
                           Save
                         </Button>
                       </>
                     ) : (
-                      <button
+                      <Button
                         onClick={() => {
                           setIsEditingProfileType(true);
                           setSelectedProfileType(user?.profileType || null);
                         }}
-                        className="px-4 py-2 bg-gray-900 text-white rounded-md hover:bg-gray-800 transition-colors text-sm font-medium whitespace-nowrap"
+                        className="whitespace-nowrap"
                       >
                         Edit
-                      </button>
+                      </Button>
                     )}
                   </div>
                 </div>
               </div>
 
               {/* Security Section */}
-              <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
-                <h2 className="text-lg font-semibold text-gray-900 mb-6">
+              <div className="bg-card rounded-lg border border-border p-6 shadow-sm">
+                <h2 className="text-lg font-semibold text-foreground mb-6">
                   Security
                 </h2>
 
@@ -352,16 +350,16 @@ export default function ProfilePage() {
                   {/* Password */}
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-gray-900">
+                      <p className="text-sm font-medium text-foreground">
                         Password
                       </p>
-                      <p className="text-sm text-gray-600 mt-0.5">
+                      <p className="text-sm text-muted-foreground mt-0.5">
                         Change your account password
                       </p>
                     </div>
-                    <button className="px-4 py-2 text-gray-900 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors text-sm font-medium">
+                    <Button variant="outline">
                       Change Password
-                    </button>
+                    </Button>
                   </div>
 
                   <Separator />
@@ -369,31 +367,35 @@ export default function ProfilePage() {
                   {/* Two-Factor Authentication */}
                   <div className="flex items-center justify-between pt-2">
                     <div>
-                      <p className="text-sm font-medium text-gray-900">
+                      <p className="text-sm font-medium text-foreground">
                         Two-Factor Authentication
                       </p>
-                      <p className="text-sm text-gray-600 mt-0.5">
+                      <p className="text-sm text-muted-foreground mt-0.5">
                         Add an extra layer of security to your account
                       </p>
                     </div>
-                    <button className="px-4 py-2 text-gray-900 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors text-sm font-medium">
+                    <Button variant="outline">
                       Enable
-                    </button>
+                    </Button>
                   </div>
                 </div>
               </div>
 
               {/* Danger Zone Section */}
-              <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">
-                  Danger Zone
-                </h2>
-                <p className="text-sm text-gray-600 mb-4">
-                  Irreversible and destructive actions
-                </p>
-                <button className="px-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors text-sm font-medium">
-                  Delete Account
-                </button>
+              <div className="bg-card rounded-lg border border-border p-6 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-lg font-semibold text-foreground mb-2">
+                      Danger Zone
+                    </h2>
+                    <p className="text-sm text-muted-foreground">
+                      Irreversible and destructive actions
+                    </p>
+                  </div>
+                  <Button variant="outline">
+                    Delete Account
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
