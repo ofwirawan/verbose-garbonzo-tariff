@@ -63,8 +63,11 @@ public class SecurityConfig {
                         .requestMatchers("/api/calculate/**").permitAll()
 
                         // Metadata endpoints (countries and products) - public for frontend dropdown population
-                        .requestMatchers("/api/metadata/countries").permitAll()
-                        .requestMatchers("/api/metadata/products").permitAll()
+                        .requestMatchers("/api/metadata/**").permitAll()
+
+                        // Statistics endpoints - public for insights dashboard
+                        .requestMatchers("/api/statistics/**").permitAll()
+
                         .requestMatchers("/api/auth/user/**").hasRole("USER")
                         .requestMatchers("/api/auth/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")

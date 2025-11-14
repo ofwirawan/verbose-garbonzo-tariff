@@ -29,30 +29,60 @@ export function StatisticsOverview() {
           getTotalProducts(),
         ]);
 
+        console.log("Statistics data:", { totalCalc, countries, avgRate, totalProds });
+
+        const totalCalculations = totalCalc?.totalCalculations ?? 0;
+        const countriesCount = countries?.countriesCount ?? 0;
+        const averageRate = avgRate?.averageRate ?? 0;
+        const totalProducts = totalProds?.totalProducts ?? 0;
+
         setStats([
           {
             label: "Total Calculations",
-            value: totalCalc.totalCalculations.toLocaleString(),
+            value: typeof totalCalculations === "number" ? totalCalculations.toLocaleString() : totalCalculations,
             description: "Tariff calculations performed",
           },
           {
             label: "Countries Tracked",
-            value: countries.countriesCount,
+            value: countriesCount,
             description: "Total countries in database",
           },
           {
             label: "Average Tariff Rate",
-            value: `${avgRate.averageRate}%`,
+            value: `${averageRate}%`,
             description: "Mean across all products",
           },
           {
             label: "Product Categories",
-            value: totalProds.totalProducts.toLocaleString(),
+            value: typeof totalProducts === "number" ? totalProducts.toLocaleString() : totalProducts,
             description: "HS6 codes available",
           },
         ]);
       } catch (error) {
         console.error("Error fetching statistics:", error);
+        // Set default stats on error
+        setStats([
+          {
+            label: "Total Calculations",
+            value: "0",
+            description: "Tariff calculations performed",
+          },
+          {
+            label: "Countries Tracked",
+            value: 0,
+            description: "Total countries in database",
+          },
+          {
+            label: "Average Tariff Rate",
+            value: "0%",
+            description: "Mean across all products",
+          },
+          {
+            label: "Product Categories",
+            value: "0",
+            description: "HS6 codes available",
+          },
+        ]);
       } finally {
         setIsLoading(false);
       }

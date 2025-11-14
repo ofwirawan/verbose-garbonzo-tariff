@@ -1,21 +1,81 @@
-"use server";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
-import { PrismaClient } from "@prisma/client";
+/**
+ * Get top products by calculation frequency
+ */
+export async function getTopProducts(limit: number = 10) {
+  try {
+    const url = `${API_BASE_URL}/api/statistics/top-products?limit=${limit}`;
+    console.log("Fetching top products from:", url);
+    const response = await fetch(url, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "omit",
+    });
+    console.log("Top products response status:", response.status);
 
-const prisma = new PrismaClient();
+    if (!response.ok) {
+      console.warn(`API returned ${response.status}: ${response.statusText}`);
+      return { topProducts: [] };
+    }
+    const data = await response.json();
+    console.log("Top products data:", data);
+    return data;
+  } catch (error) {
+    console.error("Error fetching top products:", error);
+    return { topProducts: [] };
+  }
+}
+
+/**
+ * Get calculation trends over the last 12 months
+ */
+export async function getCalculationTrends() {
+  try {
+    const url = `${API_BASE_URL}/api/statistics/calculation-trends`;
+    console.log("Fetching calculation trends from:", url);
+    const response = await fetch(url, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+    console.log("Calculation trends response status:", response.status);
+
+    if (!response.ok) {
+      console.warn(`API returned ${response.status}: ${response.statusText}`);
+      return { trends: [] };
+    }
+    const data = await response.json();
+    console.log("Calculation trends data:", data);
+    return data;
+  } catch (error) {
+    console.error("Error fetching calculation trends:", error);
+    return { trends: [] };
+  }
+}
 
 /**
  * Get total number of calculations performed by all users
  */
 export async function getTotalCalculations() {
   try {
-    const total = await prisma.transaction.count();
-    return { totalCalculations: total };
+    const response = await fetch(`${API_BASE_URL}/api/statistics/total-calculations`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+    if (!response.ok) {
+      console.warn(`getTotalCalculations returned ${response.status}`);
+      return { totalCalculations: 0 };
+    }
+    return await response.json();
   } catch (error) {
     console.error("Error fetching total calculations:", error);
     return { totalCalculations: 0 };
-  } finally {
-    await prisma.$disconnect();
   }
 }
 
@@ -24,13 +84,20 @@ export async function getTotalCalculations() {
  */
 export async function getCountriesCount() {
   try {
-    const count = await prisma.country.count();
-    return { countriesCount: count };
+    const response = await fetch(`${API_BASE_URL}/api/statistics/countries-count`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+    if (!response.ok) {
+      console.warn(`getCountriesCount returned ${response.status}`);
+      return { countriesCount: 0 };
+    }
+    return await response.json();
   } catch (error) {
     console.error("Error fetching countries count:", error);
     return { countriesCount: 0 };
-  } finally {
-    await prisma.$disconnect();
   }
 }
 
@@ -39,44 +106,20 @@ export async function getCountriesCount() {
  */
 export async function getAverageTariffRate() {
   try {
-    const transactions = await prisma.transaction.findMany({
-      select: {
-        applied_rate: true,
+    const response = await fetch(`${API_BASE_URL}/api/statistics/average-tariff-rate`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
       },
     });
-
-    if (transactions.length === 0) {
+    if (!response.ok) {
+      console.warn(`getAverageTariffRate returned ${response.status}`);
       return { averageRate: 0 };
     }
-
-    let totalRate = 0;
-    let rateCount = 0;
-
-    transactions.forEach((tx) => {
-      if (tx.applied_rate && typeof tx.applied_rate === "object") {
-        const rate = tx.applied_rate as Record<string, unknown>;
-
-        // Try different rate fields in priority order
-        if (typeof rate.suspension === "number") {
-          totalRate += rate.suspension;
-          rateCount++;
-        } else if (typeof rate.prefAdval === "number") {
-          totalRate += rate.prefAdval;
-          rateCount++;
-        } else if (typeof rate.mfnAdval === "number") {
-          totalRate += rate.mfnAdval;
-          rateCount++;
-        }
-      }
-    });
-
-    const averageRate = rateCount > 0 ? (totalRate / rateCount).toFixed(2) : 0;
-    return { averageRate };
+    return await response.json();
   } catch (error) {
     console.error("Error fetching average rate:", error);
     return { averageRate: 0 };
-  } finally {
-    await prisma.$disconnect();
   }
 }
 
@@ -85,335 +128,20 @@ export async function getAverageTariffRate() {
  */
 export async function getTotalProducts() {
   try {
-    const count = await prisma.product.count();
-    return { totalProducts: count };
+    const response = await fetch(`${API_BASE_URL}/api/statistics/products-count`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+    if (!response.ok) {
+      console.warn(`getTotalProducts returned ${response.status}`);
+      return { totalProducts: 0 };
+    }
+    return await response.json();
   } catch (error) {
     console.error("Error fetching products count:", error);
     return { totalProducts: 0 };
-  } finally {
-    await prisma.$disconnect();
-  }
-}
-
-/**
- * Get top products by calculation frequency
- */
-export async function getTopProducts(limit = 6) {
-  try {
-    const topProducts = await prisma.transaction.groupBy({
-      by: ["hs6code"],
-      _count: {
-        tid: true,
-      },
-      orderBy: {
-        _count: {
-          tid: "desc",
-        },
-      },
-      take: limit,
-    });
-
-    // Fetch product details for each top product
-    const productsWithDetails = await Promise.all(
-      topProducts.map(async (item) => {
-        const product = await prisma.product.findUnique({
-          where: { hs6code: item.hs6code },
-        });
-
-        return {
-          product: item.hs6code,
-          calculations: item._count.tid,
-          description: product?.description || "Unknown",
-        };
-      })
-    );
-
-    return { topProducts: productsWithDetails };
-  } catch (error) {
-    console.error("Error fetching top products:", error);
-    return { topProducts: [] };
-  } finally {
-    await prisma.$disconnect();
-  }
-}
-
-/**
- * Get calculation trends by month
- */
-export async function getCalculationTrends() {
-  try {
-    const transactions = await prisma.transaction.findMany({
-      select: {
-        t_date: true,
-      },
-      orderBy: {
-        t_date: "asc",
-      },
-    });
-
-    // Group by month
-    const monthlyData: Record<string, number> = {};
-
-    transactions.forEach((tx) => {
-      if (tx.t_date) {
-        const date = new Date(tx.t_date);
-        const monthKey = `${date.getFullYear()}-${String(
-          date.getMonth() + 1
-        ).padStart(2, "0")}`;
-        monthlyData[monthKey] = (monthlyData[monthKey] || 0) + 1;
-      }
-    });
-
-    // Convert to array and get last 10 months
-    const trends = Object.entries(monthlyData)
-      .slice(-10)
-      .map(([month, calculations]) => {
-        const [, monthNum] = month.split("-");
-        const monthNames = [
-          "Jan",
-          "Feb",
-          "Mar",
-          "Apr",
-          "May",
-          "Jun",
-          "Jul",
-          "Aug",
-          "Sep",
-          "Oct",
-          "Nov",
-          "Dec",
-        ];
-        return {
-          month: monthNames[parseInt(monthNum) - 1],
-          calculations,
-        };
-      });
-
-    return { trends };
-  } catch (error) {
-    console.error("Error fetching calculation trends:", error);
-    return { trends: [] };
-  } finally {
-    await prisma.$disconnect();
-  }
-}
-
-/**
- * Get regional tariff comparison (average rate by importing country)
- */
-export async function getRegionalComparison() {
-  try {
-    const regionalData = await prisma.transaction.groupBy({
-      by: ["importer_code"],
-      _count: {
-        tid: true,
-      },
-      orderBy: {
-        _count: {
-          tid: "desc",
-        },
-      },
-      take: 6,
-    });
-
-    // Fetch country details and calculate average rates
-    const regionsWithDetails = await Promise.all(
-      regionalData.map(async (item) => {
-        const country = await prisma.country.findUnique({
-          where: { country_code: item.importer_code },
-        });
-
-        // Get average rate for this importer
-        const transactions = await prisma.transaction.findMany({
-          where: { importer_code: item.importer_code },
-          select: { applied_rate: true },
-        });
-
-        let avgRate = 0;
-        let rateCount = 0;
-
-        transactions.forEach((tx) => {
-          if (tx.applied_rate && typeof tx.applied_rate === "object") {
-            const rate = tx.applied_rate as Record<string, unknown>;
-            if (typeof rate.mfnAdval === "number") {
-              avgRate += rate.mfnAdval;
-              rateCount++;
-            }
-          }
-        });
-
-        avgRate =
-          rateCount > 0 ? parseFloat((avgRate / rateCount).toFixed(1)) : 0;
-
-        return {
-          region: country?.name || item.importer_code,
-          avgRate,
-          totalRoutes: item._count.tid,
-          change: 0, // Calculate based on previous period if needed
-        };
-      })
-    );
-
-    return { regions: regionsWithDetails };
-  } catch (error) {
-    console.error("Error fetching regional comparison:", error);
-    return { regions: [] };
-  } finally {
-    await prisma.$disconnect();
-  }
-}
-
-/**
- * Get recent calculations
- */
-export async function getRecentCalculations(limit = 5) {
-  try {
-    const calculations = await prisma.transaction.findMany({
-      select: {
-        tid: true,
-        t_date: true,
-        importer_code: true,
-        exporter_code: true,
-        hs6code: true,
-        applied_rate: true,
-      },
-      orderBy: {
-        t_date: "desc",
-      },
-      take: limit,
-    });
-
-    const detailedCalculations = await Promise.all(
-      calculations.map(async (calc) => {
-        const importerCountry = await prisma.country.findUnique({
-          where: { country_code: calc.importer_code },
-        });
-
-        const exporterCountry = calc.exporter_code
-          ? await prisma.country.findUnique({
-              where: { country_code: calc.exporter_code },
-            })
-          : null;
-
-        // Determine rate and status
-        let rate = 0;
-        let type = "Ad-valorem";
-        let status: "suspended" | "active" | "preferential" = "active";
-
-        if (calc.applied_rate && typeof calc.applied_rate === "object") {
-          const appliedRate = calc.applied_rate as Record<string, unknown>;
-
-          if (typeof appliedRate.suspension === "number") {
-            rate = appliedRate.suspension;
-            status = "suspended";
-            type = "Suspended";
-          } else if (typeof appliedRate.prefAdval === "number") {
-            rate = appliedRate.prefAdval;
-            status = "preferential";
-            type = "Preferential";
-          } else if (typeof appliedRate.mfnAdval === "number") {
-            rate = appliedRate.mfnAdval;
-            type = "Ad-valorem";
-          }
-        }
-
-        return {
-          id: calc.tid.toString(),
-          date: calc.t_date
-            ? new Date(calc.t_date).toISOString().split("T")[0]
-            : "N/A",
-          importer: importerCountry?.name || calc.importer_code,
-          exporter: exporterCountry?.name || calc.exporter_code || "N/A",
-          product: calc.hs6code,
-          rate: parseFloat(rate.toString()),
-          type,
-          status,
-        };
-      })
-    );
-
-    return { calculations: detailedCalculations };
-  } catch (error) {
-    console.error("Error fetching recent calculations:", error);
-    return { calculations: [] };
-  } finally {
-    await prisma.$disconnect();
-  }
-}
-
-/**
- * Get active trade agreements (unique importer-exporter pairs with preferential rates)
- */
-export async function getTradeAgreements(limit = 5) {
-  try {
-    // Get unique importer-exporter pairs with preferential rates
-    const preferences = await prisma.preference.findMany({
-      select: {
-        importer_code: true,
-        exporter_code: true,
-        product_code: true,
-        valid_from: true,
-        valid_to: true,
-      },
-      distinct: ["importer_code", "exporter_code"],
-      take: limit,
-    });
-
-    const agreementsWithDetails = await Promise.all(
-      preferences.map(async (pref) => {
-        const importerCountry = await prisma.country.findUnique({
-          where: { country_code: pref.importer_code },
-        });
-
-        const exporterCountry = await prisma.country.findUnique({
-          where: { country_code: pref.exporter_code },
-        });
-
-        // Count suspended tariffs for this pair
-        const suspendedCount = await prisma.suspension.count({
-          where: {
-            importer_code: pref.importer_code,
-          },
-        });
-
-        // Determine status
-        const now = new Date();
-        let status: "active" | "expiring" | "inactive" = "active";
-        let expiryDate: string | undefined;
-
-        if (pref.valid_to) {
-          const validToDate = new Date(pref.valid_to);
-          const daysUntilExpiry = Math.floor(
-            (validToDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
-          );
-
-          if (daysUntilExpiry <= 90 && daysUntilExpiry > 0) {
-            status = "expiring";
-            expiryDate = pref.valid_to.toISOString().split("T")[0];
-          } else if (daysUntilExpiry <= 0) {
-            status = "inactive";
-          }
-        }
-
-        return {
-          id: `${pref.importer_code}-${pref.exporter_code}`,
-          name: `${importerCountry?.name || pref.importer_code} ↔ ${
-            exporterCountry?.name || pref.exporter_code
-          }`,
-          countries: [pref.importer_code, pref.exporter_code],
-          status,
-          suspendedTariffs: suspendedCount,
-          expiryDate,
-        };
-      })
-    );
-
-    return { agreements: agreementsWithDetails };
-  } catch (error) {
-    console.error("Error fetching trade agreements:", error);
-    return { agreements: [] };
-  } finally {
-    await prisma.$disconnect();
   }
 }
 
@@ -612,7 +340,7 @@ export async function getTariffTrendData(
 }
 
 /**
- * Get tariff rate changes (increases/decreases) by country
+ * Get tariff rate changes
  */
 export async function getTariffChanges() {
   try {
@@ -669,248 +397,7 @@ export async function getTariffChanges() {
 }
 
 /**
- * Scrape news articles from WTO press releases
- */
-async function scrapeWTOArticles() {
-  try {
-    const response = await fetch(
-      "https://www.wto.org/english/news_e/news_e.htm",
-      {
-        headers: {
-          "User-Agent":
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-        },
-      }
-    );
-
-    if (!response.ok) return null;
-
-    const html = await response.text();
-
-    // Collect multiple articles
-    const articles = [];
-    const articleRegex =
-      /<a\s+href="([^"]*\/english\/news_e\/[^"]+\.htm)"[^>]*>([^<]{15,})<\/a>/gi;
-    let match;
-
-    while ((match = articleRegex.exec(html)) && articles.length < 5) {
-      const href = match[1];
-      const title = match[2]?.trim();
-
-      // Skip generic pages and navigation
-      if (
-        title &&
-        !href.includes("news_e.htm") &&
-        !href.includes("news_e/news") &&
-        title.length > 15
-      ) {
-        const url = href.startsWith("http")
-          ? href
-          : `https://www.wto.org${href}`;
-        articles.push({
-          title: title,
-          url: url,
-        });
-      }
-    }
-
-    // Return random article from collected articles
-    return articles.length > 0
-      ? articles[Math.floor(Math.random() * articles.length)]
-      : null;
-  } catch (error) {
-    console.error("Error scraping WTO:", error);
-    return null;
-  }
-}
-
-/**
- * Scrape news articles from USITC news releases
- */
-async function scrapeUSITCArticles() {
-  try {
-    const response = await fetch("https://www.usitc.gov", {
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-      },
-    });
-
-    if (!response.ok) return null;
-
-    const html = await response.text();
-
-    // Collect multiple press release links
-    const articles = [];
-    const articleRegex =
-      /<a\s+href="([^"]*\/press_room\/news_release\/\d{4}\/[^"]+\.htm)"[^>]*>([^<]{10,})<\/a>/gi;
-    let match;
-
-    while ((match = articleRegex.exec(html)) && articles.length < 5) {
-      if (match[1]) {
-        const url = match[1].startsWith("http")
-          ? match[1]
-          : `https://www.usitc.gov${match[1]}`;
-        articles.push({
-          title: match[2]?.trim() || "USITC News Release",
-          url: url,
-        });
-      }
-    }
-
-    // Return random article from collected articles
-    return articles.length > 0
-      ? articles[Math.floor(Math.random() * articles.length)]
-      : null;
-  } catch (error) {
-    console.error("Error scraping USITC:", error);
-    return null;
-  }
-}
-
-/**
- * Scrape news articles from EU Commission trade news
- */
-async function scrapeEUTradeArticles() {
-  try {
-    const response = await fetch("https://ec.europa.eu/trade/news", {
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-      },
-    });
-
-    if (!response.ok) return null;
-
-    const html = await response.text();
-
-    // Collect multiple article links
-    const articles = [];
-    const articleRegex = /<a\s+href="([^"]*\/news\/[^"]*)"[^>]*>([^<]+)<\/a>/gi;
-    let match;
-
-    while ((match = articleRegex.exec(html)) && articles.length < 5) {
-      const href = match[1];
-      const title = match[2]?.trim();
-
-      // Make sure it's not just the main news page
-      if (
-        title &&
-        !href.endsWith("/news") &&
-        !href.endsWith("/news/") &&
-        href.includes("_")
-      ) {
-        const url = href.startsWith("http")
-          ? href
-          : `https://ec.europa.eu${href}`;
-        articles.push({
-          title: title,
-          url: url,
-        });
-      }
-    }
-
-    // Return random article from collected articles
-    return articles.length > 0
-      ? articles[Math.floor(Math.random() * articles.length)]
-      : null;
-  } catch (error) {
-    console.error("Error scraping EU:", error);
-    return null;
-  }
-}
-
-/**
- * Scrape chemical industry news from Chemical & Engineering News (ACS)
- */
-async function scrapeChemicalProductsNews() {
-  try {
-    // Chemical & Engineering News (ACS) - reliable source for chemical industry news
-    const response = await fetch("https://cen.acs.org/", {
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-      },
-    });
-
-    if (!response.ok) return null;
-
-    const html = await response.text();
-
-    // Collect multiple article links
-    const articles = [];
-    const articleRegex =
-      /<a\s+href="([^"]*\/articles\/\d+\/[^"]*\.html)"[^>]*>([^<]{10,})<\/a>/gi;
-    let match;
-
-    while ((match = articleRegex.exec(html)) && articles.length < 5) {
-      if (match[1]) {
-        const href = match[1];
-        const url = href.startsWith("http")
-          ? href
-          : `https://cen.acs.org${href}`;
-        articles.push({
-          title: match[2]?.trim() || "Chemical & Engineering News Article",
-          url: url,
-        });
-      }
-    }
-
-    // Return random article from collected articles
-    return articles.length > 0
-      ? articles[Math.floor(Math.random() * articles.length)]
-      : null;
-  } catch (error) {
-    console.error("Error scraping chemical products news:", error);
-    return null;
-  }
-}
-
-/**
- * Scrape Asia-Pacific news from Asia Times
- */
-async function scrapeAsiaPacificNews() {
-  try {
-    // Asia Times - reliable source for Asia-Pacific trade and economic news
-    const response = await fetch("https://asiatimes.com/", {
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-      },
-    });
-
-    if (!response.ok) return null;
-
-    const html = await response.text();
-
-    // Collect multiple article links
-    const articles = [];
-    const articleRegex =
-      /<a\s+href="(https:\/\/asiatimes\.com\/\d{4}\/\d{2}\/[^"]+\/)"[^>]*>([^<]{10,})<\/a>/gi;
-    let match;
-
-    while ((match = articleRegex.exec(html)) && articles.length < 5) {
-      if (match[1] && match[2]) {
-        articles.push({
-          title: match[2]?.trim() || "Asia Times Article",
-          url: match[1],
-        });
-      }
-    }
-
-    // Return random article from collected articles
-    return articles.length > 0
-      ? articles[Math.floor(Math.random() * articles.length)]
-      : null;
-  } catch (error) {
-    console.error("Error scraping Asia-Pacific news:", error);
-    return null;
-  }
-}
-
-/**
- * Get trade-related news from official sources with web scraping
- * Tries to fetch real articles, falls back to news pages
+ * Get trade-related news from official sources
  */
 export async function getTradeNews() {
   try {
@@ -920,83 +407,12 @@ export async function getTradeNews() {
     const threeDaysAgo = new Date(today.getTime() - 259200000);
     const fourDaysAgo = new Date(today.getTime() - 345600000);
 
-    // Scrape real articles from sources with timeout
-    const scrapePromises = Promise.race([
-      Promise.allSettled([
-        scrapeWTOArticles(),
-        scrapeUSITCArticles(),
-        scrapeEUTradeArticles(),
-        scrapeChemicalProductsNews(),
-        scrapeAsiaPacificNews(),
-      ]),
-      new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error("Scraping timeout")), 5000)
-      ),
-    ]);
-
-    interface ScrapedArticle {
-      title: string;
-      url: string;
-    }
-
-    interface SettledPromise {
-      status: "fulfilled" | "rejected";
-      value?: ScrapedArticle | null;
-    }
-
-    let scrapedArticles: SettledPromise[] = [];
-    try {
-      const result = await scrapePromises;
-      if (Array.isArray(result)) {
-        scrapedArticles = result as SettledPromise[];
-      }
-    } catch (error) {
-      // Timeout or error in scraping, use fallback
-      console.warn("Scraping timeout or error:", error);
-      scrapedArticles = [];
-    }
-
-    const wtoData =
-      scrapedArticles[0]?.status === "fulfilled"
-        ? scrapedArticles[0].value
-        : null;
-    const usitcData =
-      scrapedArticles[1]?.status === "fulfilled"
-        ? scrapedArticles[1].value
-        : null;
-    const euData =
-      scrapedArticles[2]?.status === "fulfilled"
-        ? scrapedArticles[2].value
-        : null;
-    const chemicalData =
-      scrapedArticles[3]?.status === "fulfilled"
-        ? scrapedArticles[3].value
-        : null;
-    const asiaPacificData =
-      scrapedArticles[4]?.status === "fulfilled"
-        ? scrapedArticles[4].value
-        : null;
-
-    // Log successful scrapes for debugging
-    console.log("Scrape results:");
-    console.log("  WTO:", wtoData ? `✓ ${wtoData.title}` : "✗ Failed");
-    console.log("  USITC:", usitcData ? `✓ ${usitcData.title}` : "✗ Failed");
-    console.log("  EU:", euData ? `✓ ${euData.title}` : "✗ Failed");
-    console.log(
-      "  Chemical:",
-      chemicalData ? `✓ ${chemicalData.title}` : "✗ Failed"
-    );
-    console.log(
-      "  Asia-Pacific:",
-      asiaPacificData ? `✓ ${asiaPacificData.title}` : "✗ Failed"
-    );
-
     const news = [
       {
         id: 1,
-        title: wtoData?.title || "WTO Press Releases",
+        title: "WTO Press Releases",
         source: "wto.org",
-        url: wtoData?.url || "https://www.wto.org/news/pressreleases",
+        url: "https://www.wto.org/news/pressreleases",
         date: today.toISOString().split("T")[0],
         impact: "high" as const,
         category: "International",
@@ -1005,10 +421,9 @@ export async function getTradeNews() {
       },
       {
         id: 2,
-        title: usitcData?.title || "USITC News Releases",
+        title: "USITC News Releases",
         source: "usitc.gov",
-        url:
-          usitcData?.url || "https://www.usitc.gov/news-events/news-releases",
+        url: "https://www.usitc.gov/news-events/news-releases",
         date: yesterday.toISOString().split("T")[0],
         impact: "high" as const,
         category: "USA",
@@ -1017,9 +432,9 @@ export async function getTradeNews() {
       },
       {
         id: 3,
-        title: euData?.title || "EU Trade News",
+        title: "EU Trade News",
         source: "ec.europa.eu",
-        url: euData?.url || "https://ec.europa.eu/trade/news",
+        url: "https://ec.europa.eu/trade/news",
         date: twoDaysAgo.toISOString().split("T")[0],
         impact: "high" as const,
         category: "EU",
@@ -1028,9 +443,9 @@ export async function getTradeNews() {
       },
       {
         id: 4,
-        title: chemicalData?.title || "Chemical & Engineering News",
+        title: "Chemical & Engineering News",
         source: "cen.acs.org",
-        url: chemicalData?.url || "https://cen.acs.org/",
+        url: "https://cen.acs.org/",
         date: threeDaysAgo.toISOString().split("T")[0],
         impact: "medium" as const,
         category: "Chemicals",
@@ -1039,9 +454,9 @@ export async function getTradeNews() {
       },
       {
         id: 5,
-        title: asiaPacificData?.title || "Asia-Pacific Economic News",
+        title: "Asia-Pacific Economic News",
         source: "asiatimes.com",
-        url: asiaPacificData?.url || "https://asiatimes.com/",
+        url: "https://asiatimes.com/",
         date: fourDaysAgo.toISOString().split("T")[0],
         impact: "medium" as const,
         category: "Regional",
